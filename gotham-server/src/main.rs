@@ -13,6 +13,11 @@ fn internal_error() -> &'static str {
     "Internal server error"
 }
 
+#[catch(400)]
+fn bad_request() -> &'static str {
+    "Bad request"
+}
+
 #[catch(404)]
 fn not_found(req: &Request) -> String {
     format!("Unknown route '{}'.", req.uri())
@@ -20,7 +25,10 @@ fn not_found(req: &Request) -> String {
 
 fn main() {
     rocket::ignite()
-        .register(catchers![internal_error, not_found])
-        .mount("/", routes![keygen::party1_first_message])
+        .register(catchers![internal_error, not_found, bad_request])
+        .mount("/", routes![
+                keygen::party1_first_message,
+                //keygen::party1_second_message
+            ])
         .launch();
 }
