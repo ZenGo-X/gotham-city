@@ -4,4 +4,13 @@ version = "0.1.0"
 authors = ["gbenattar <g.benattar@gmail.com>"]
 edition = "2018"
 
+[lib]
+name = "server_lib"
+path = "src/lib.rs"
+
+[[bin]]
+name = "server_exec"
+path = "src/main.rs"
+
 [dependencies]
+rocket = "0.4.0"
