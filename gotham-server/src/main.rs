@@ -21,6 +21,6 @@ fn not_found(req: &Request) -> String {
 fn main() {
     rocket::ignite()
         .register(catchers![internal_error, not_found])
-        .mount("/", routes![keygen::world])
+        .mount("/", routes![keygen::party1_first_message])
         .launch();
 }
