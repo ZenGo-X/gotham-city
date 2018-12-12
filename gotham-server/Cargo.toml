@@ -1,0 +1,7 @@
+[package]
+name = "gotham-server"
+version = "0.1.0"
+authors = ["gbenattar <g.benattar@gmail.com>"]
+edition = "2018"
+
+[dependencies]
