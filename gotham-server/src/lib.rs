@@ -25,6 +25,7 @@ extern crate log;
 
 #[macro_use]
 extern crate time_test;
+extern crate time;
 
 pub mod utilities;
 pub mod routes;

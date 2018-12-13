@@ -23,6 +23,7 @@ strum = "0.12.0"
 strum_macros = "0.12.0"
 time-test = "0.2.1"
 log = "0.4"
+time = "*"
 uuid = { version = "0.7", features = ["v4"] }
 
 [dependencies.zk-paillier]
