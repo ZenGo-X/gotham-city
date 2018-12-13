@@ -12,6 +12,8 @@ use super::routes::keygen;
 use zk_paillier::zkproofs::*;
 use kms::ecdsa::two_party::*;
 use multi_party_ecdsa::protocols::two_party_ecdsa::lindell_2017::*;
+use kms::chain_code::two_party as chain_code;
+use curv::cryptographic_primitives::twoparty::dh_key_exchange::*;
 
 #[test]
 fn key_gen() {
@@ -38,7 +40,7 @@ fn key_gen() {
 
     let start = PreciseTime::now();
 
-    let (kg_party_two_first_message, _kg_ec_key_pair_party2) =
+    let (kg_party_two_first_message, kg_ec_key_pair_party2) =
         MasterKey2::key_gen_first_message();
 
     let end = PreciseTime::now();
@@ -83,7 +85,7 @@ fn key_gen() {
     let end = PreciseTime::now();
     println!("{} Client: party2 second message", start.to(end));
 
-    let (party_two_second_message, _party_two_paillier, pdl_chal) =
+    let (party_two_second_message, party_two_paillier, pdl_chal) =
         key_gen_second_message.unwrap();
     assert!(party_two_second_message.is_ok());
 
@@ -151,6 +153,112 @@ fn key_gen() {
 
     let end = PreciseTime::now();
     println!("{} Client: party2 fourth message", start.to(end));
-
     /*************** END: FOURTH MESSAGE ***************/
+
+    /*************** START: CHAINCODE FIRST MESSAGE ***************/
+    let start = PreciseTime::now();
+
+    let mut response = client
+        .post(format!("/keygen/{}/chaincode/first", id))
+        .header(ContentType::JSON)
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+
+    let end = PreciseTime::now();
+    println!("{} Network/Server: party1 chain code first message", start.to(end));
+
+    let res_body = response.body_string().unwrap();
+    let cc_party_one_first_message : Party1FirstMessage = serde_json::from_str(&res_body).unwrap();
+
+    let start = PreciseTime::now();
+    let (cc_party_two_first_message, cc_ec_key_pair2) =
+        chain_code::party2::ChainCode2::chain_code_first_message();
+    let end = PreciseTime::now();
+    println!("{} Client: party2 chain code first message", start.to(end));
+    /*************** END: CHAINCODE FIRST MESSAGE ***************/
+
+    /*************** START: CHAINCODE SECOND MESSAGE ***************/
+    let body =
+        serde_json::to_string(&cc_party_two_first_message.d_log_proof).unwrap();
+
+    let start = PreciseTime::now();
+
+    let mut response = client
+        .post(format!("/keygen/{}/chaincode/second", id))
+        .body(body)
+        .header(ContentType::JSON)
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+
+    let end = PreciseTime::now();
+    println!("{} Network/Server: party1 chain code second message", start.to(end));
+
+    let res_body = response.body_string().unwrap();
+    let cc_party_one_second_message : Party1SecondMessage = serde_json::from_str(&res_body).unwrap();
+
+    let start = PreciseTime::now();
+    let cc_party_two_second_message = chain_code::party2::ChainCode2::chain_code_second_message(
+        &cc_party_one_first_message,
+        &cc_party_one_second_message);
+
+    let end = PreciseTime::now();
+    println!("{} Client: party2 chain code second message", start.to(end));
+    /*************** END: CHAINCODE SECOND MESSAGE ***************/
+
+    /*************** START: CHAINCODE COMPUTE MESSAGE ***************/
+    let body =
+        serde_json::to_string(&cc_party_two_first_message.public_share).unwrap();
+
+    let start = PreciseTime::now();
+
+    let mut response = client
+        .post(format!("/keygen/{}/chaincode/compute", id))
+        .body(body)
+        .header(ContentType::JSON)
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+
+    let end = PreciseTime::now();
+    println!("{} Network/Server: party1 chain code compute message", start.to(end));
+
+    let start = PreciseTime::now();
+    let party2_cc = chain_code::party2::ChainCode2::compute_chain_code(
+        &cc_ec_key_pair2,
+        &cc_party_one_second_message.comm_witness.public_share,
+    );
+
+    let end = PreciseTime::now();
+    println!("{} Client: party2 chain code second message", start.to(end));
+    /*************** END: CHAINCODE COMPUTE MESSAGE ***************/
+
+    /*************** START: MASTER KEYS MESSAGE ***************/
+    let body =
+        serde_json::to_string(&kg_party_two_first_message.public_share).unwrap();
+
+    let start = PreciseTime::now();
+
+    let mut response = client
+        .post(format!("/keygen/{}/master_key", id))
+        .body(body)
+        .header(ContentType::JSON)
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+
+    let end = PreciseTime::now();
+    println!("{} Network/Server: party1 master key", start.to(end));
+
+    let start = PreciseTime::now();
+    let party_two_master_key = MasterKey2::set_master_key(
+        &party2_cc.chain_code,
+        &kg_ec_key_pair_party2,
+        &kg_party_one_second_message.comm_witness.public_share,
+        &party_two_paillier,
+    );
+
+    let end = PreciseTime::now();
+    println!("{} Client: party master_key", start.to(end));
+    /*************** END: MASTER KEYS MESSAGE ***************/
+
+    println!("\n==== Client: Master Key ====\n {} \n============\n",  serde_json::to_string(
+        &party_two_master_key).unwrap());
 }

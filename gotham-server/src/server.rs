@@ -30,7 +30,11 @@ pub fn get_server() -> Rocket {
                 keygen::first_message,
                 keygen::second_message,
                 keygen::third_message,
-                keygen::fourth_message
+                keygen::fourth_message,
+                keygen::chain_code_first_message,
+                keygen::chain_code_second_message,
+                keygen::chain_code_compute_message,
+                keygen::master_key
             ])
         .manage(config)
 }

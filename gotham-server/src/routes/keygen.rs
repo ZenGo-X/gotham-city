@@ -1,9 +1,10 @@
 use kms::ecdsa::two_party::*;
+use kms::chain_code::two_party as chain_code;
 use multi_party_ecdsa::protocols::two_party_ecdsa::lindell_2017::*;
 use zk_paillier::zkproofs::*;
 use curv::cryptographic_primitives::proofs::dlog_zk_protocol::*;
-use curv::BigInt;
-
+use curv::cryptographic_primitives::twoparty::dh_key_exchange::*;
+use curv::{BigInt, FE, GE};
 use rocket::State;
 use rocket_contrib::json::{Json};
 use uuid::Uuid;
@@ -19,7 +20,14 @@ pub enum Share {
     CommWitness,
     EcKeyPair,
     PaillierKeyPair,
-    PDLProver
+
+    PDLProver,
+    CCKeyGenFirstMsg,
+    CCCommWitness,
+    CCEcKeyPair,
+    CC,
+
+    MasterKey
 }
 
 pub struct Config {
@@ -139,4 +147,110 @@ pub fn fourth_message(
     assert!(res.is_ok());
 
     Json(res.unwrap())
+}
+
+#[post("/keygen/<id>/chaincode/first", format = "json")]
+pub fn chain_code_first_message(
+    state: State<Config>,
+    id: String,
+) -> Json<(
+    Party1FirstMessage
+)>
+{
+    let (cc_party_one_first_message, cc_comm_witness, cc_ec_key_pair1) =
+        chain_code::party1::ChainCode1::chain_code_first_message();
+
+    db::insert(&state.db, &id, &Share::CCKeyGenFirstMsg, &cc_party_one_first_message);
+    db::insert(&state.db, &id, &Share::CCCommWitness, &cc_comm_witness);
+    db::insert(&state.db, &id, &Share::CCEcKeyPair, &cc_ec_key_pair1);
+
+    Json(cc_party_one_first_message)
+}
+
+#[post("/keygen/<id>/chaincode/second", format = "json", data = "<cc_party_two_first_message_d_log_proof>")]
+pub fn chain_code_second_message(
+    state: State<Config>,
+    id: String,
+    cc_party_two_first_message_d_log_proof: Json<DLogProof>
+) -> Json<(
+    Party1SecondMessage
+)>
+{
+    let db_cc_comm_witness = db::get(&state.db, &id, &Share::CCCommWitness);
+    let cc_comm_witness: CommWitness = match db_cc_comm_witness {
+        Some(v) => serde_json::from_str(v.to_utf8().unwrap()).unwrap(),
+        None => panic!("No data for such identifier {}", id)
+    };
+
+    let party1_cc= chain_code::party1::ChainCode1::chain_code_second_message(
+        cc_comm_witness,
+        &cc_party_two_first_message_d_log_proof.0
+    );
+
+    Json(party1_cc)
+}
+
+#[post("/keygen/<id>/chaincode/compute", format = "json", data = "<cc_party_two_first_message_public_share>")]
+pub fn chain_code_compute_message(
+    state: State<Config>,
+    id: String,
+    cc_party_two_first_message_public_share: Json<GE>
+) -> Json<(
+
+)>
+{
+    let cc_ec_key_pair = db::get(&state.db, &id, &Share::CCEcKeyPair);
+    let cc_ec_key_pair_party1:  EcKeyPair = match cc_ec_key_pair {
+        Some(v) => serde_json::from_str(v.to_utf8().unwrap()).unwrap(),
+        None => panic!("No data for such identifier {}", id)
+    };
+
+    let party1_cc= chain_code::party1::ChainCode1::compute_chain_code(
+        &cc_ec_key_pair_party1,
+        &cc_party_two_first_message_public_share.0
+    );
+
+    db::insert(&state.db, &id, &Share::CC, &party1_cc);
+
+    Json(())
+}
+
+
+#[post("/keygen/<id>/master_key", format = "json", data = "<kg_party_two_first_message_public_share>")]
+pub fn master_key(
+    state: State<Config>,
+    id: String,
+    kg_party_two_first_message_public_share: Json<GE>
+) -> Json<(
+
+)>
+{
+    let db_paillier_key_pair = db::get(&state.db, &id, &Share::PaillierKeyPair);
+    let paillier_key_pair: party_one::PaillierKeyPair = match db_paillier_key_pair {
+        Some(v) => serde_json::from_str(v.to_utf8().unwrap()).unwrap(),
+        None => panic!("No data for such identifier {}", id)
+    };
+
+    let db_party1_cc = db::get(&state.db, &id, &Share::CC);
+    let party1_cc: chain_code::party1::ChainCode1 = match db_party1_cc {
+        Some(v) => serde_json::from_str(v.to_utf8().unwrap()).unwrap(),
+        None => panic!("No data for such identifier {}", id)
+    };
+
+    let ec_key_pair = db::get(&state.db, &id, &Share::EcKeyPair);
+    let kg_ec_key_pair_party1: party_one::EcKeyPair = match ec_key_pair {
+        Some(v) => serde_json::from_str(v.to_utf8().unwrap()).unwrap(),
+        None => panic!("No data for such identifier {}", id)
+    };
+
+    let masterKey = MasterKey1::set_master_key(
+        &party1_cc.chain_code,
+        &kg_ec_key_pair_party1,
+        &kg_party_two_first_message_public_share.0,
+        &paillier_key_pair,
+    );
+
+    db::insert(&state.db, &id, &Share::MasterKey, &masterKey);
+
+    Json(())
 }
