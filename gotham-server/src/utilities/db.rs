@@ -1,12 +1,13 @@
 use rocksdb::DB;
 use rocksdb::DBVector;
+use super::super::routes::keygen;
 use serde;
 
-fn idify(id: &String, name: &str) -> String {
-    format!("{}_{}", id, name)
+fn idify(id: &String, name: &keygen::Share) -> String {
+    format!("{}_{}", id, name.to_string())
 }
 
-pub fn insert<T>(db: &DB, id: &String, name: &str, v: &T)
+pub fn insert<T>(db: &DB, id: &String, name: &keygen::Share, v: &T)
     where
         T: serde::ser::Serialize,
 {
@@ -20,7 +21,7 @@ pub fn insert<T>(db: &DB, id: &String, name: &str, v: &T)
     }
 }
 
-pub fn get(db: &DB, id: &String, name: &str) ->  Option<DBVector>
+pub fn get(db: &DB, id: &String, name: &keygen::Share) ->  Option<DBVector>
 {
     let identifier = idify(id, name);
     info!("Getting from db ({})", identifier);
