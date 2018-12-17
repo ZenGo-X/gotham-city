@@ -16,9 +16,12 @@ subcommands:
         short: v
         help: Sets the level of verbosity
 - wallet:
-    about: Create an MPC wallet
+    about: Operation on wallet
     version: "1.0"
     args:
     - new-address:
           short: a
           help: Generate a new address
+    - get-balance:
+          short: b
+          help: Get wallet balance

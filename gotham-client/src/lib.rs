@@ -15,6 +15,7 @@ extern crate log;
 extern crate time;
 extern crate uuid;
 extern crate bitcoin;
+extern crate electrumx_client;
 
 pub mod ecdsa;
 pub mod utilities;

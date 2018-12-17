@@ -7,10 +7,22 @@ use curv::BigInt;
 use bitcoin;
 use bitcoin::network::constants::Network;
 use curv::elliptic::curves::traits::ECPoint;
+use std::net::TcpStream;
+use electrumx_client::{
+    electrumx_client::ElectrumxClient,
+    interface::Electrumx,
+    tools
+};
 
 use super::ecdsa::keygen;
 
 const WALLET_FILENAME : &str = "wallet/wallet.data";
+
+#[derive(Debug, Deserialize)]
+pub struct GetBalanceResponse {
+    pub confirmed:   u64,
+    pub unconfirmed: u64,
+}
 
 #[derive(Serialize, Deserialize)]
 pub struct PrivateShares {
@@ -66,9 +78,34 @@ impl Wallet {
             &self.private_shares, self.address_derivation.last_pos/* init */);
         self.address_derivation = address_derivation;
 
-        bitcoin::Address::p2wpkh(
-            &self.address_derivation.last_child_master_key.public.q.get_element(),
-            self.get_bitcoin_network())
+        Self::to_bitcoin_address(&self.address_derivation, self.get_bitcoin_network())
+    }
+
+    pub fn get_balance(&mut self) -> GetBalanceResponse  {
+        let init = 0;
+        let last_pos = self.address_derivation.last_pos;
+
+        let mut aggregated_balance = GetBalanceResponse { confirmed: 0, unconfirmed: 0 };
+
+        for n in init..last_pos {
+            let address_derivation = Self::derive_key(&self.private_shares, n);
+            let bitcoin_address = Self::to_bitcoin_address(&address_derivation, self.get_bitcoin_network());
+
+            let balance = Self::get_address_balance(&bitcoin_address);
+            aggregated_balance.unconfirmed += balance.unconfirmed;
+            aggregated_balance.confirmed += balance.confirmed;
+        }
+
+        aggregated_balance
+    }
+
+    pub fn get_address_balance(address: &bitcoin::Address) -> GetBalanceResponse  {
+        let mut client = ElectrumxClient::new(
+            "ec2-34-219-15-143.us-west-2.compute.amazonaws.com:60001").unwrap();
+
+
+        let resp = client.get_balance(&address.to_string()).unwrap();
+        GetBalanceResponse { confirmed: resp.confirmed, unconfirmed: resp.unconfirmed }
     }
 
     fn derive_key(private_shares: &PrivateShares, pos: u32) -> AddressDerivation {
@@ -82,5 +119,11 @@ impl Wallet {
 
     fn get_bitcoin_network(&self) -> Network {
         self.network.parse::<Network>().unwrap()
+    }
+
+    fn to_bitcoin_address(address_derivation: &AddressDerivation, network: Network) -> bitcoin::Address {
+        bitcoin::Address::p2wpkh(
+            &address_derivation.last_child_master_key.public.q.get_element(),
+            network)
     }
 }
