@@ -8,8 +8,8 @@ args:
     multiple: true
     help: Sets the level of verbosity
 subcommands:
-- keygen-ecdsa:
-    about: Multi-party Key Generation
+- create-wallet:
+    about: Create an MPC wallet
     version: "1.0"
     args:
     - verbose:

@@ -13,6 +13,8 @@ extern crate serde_json;
 extern crate log;
 
 extern crate time;
+extern crate uuid;
 
 pub mod ecdsa;
 pub mod utilities;
+pub mod wallet;

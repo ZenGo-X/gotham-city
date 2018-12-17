@@ -9,6 +9,7 @@ use kms::chain_code::two_party as chain_code;
 use curv::cryptographic_primitives::twoparty::dh_key_exchange::*;
 
 use super::super::utilities::requests;
+use super::super::wallet;
 
 const KG_PATH_PRE: &str = "ecdsa/keygen";
 
@@ -18,7 +19,7 @@ pub struct FourthMsgRequest {
     pub party_2_pdl_second_message: party_two::PDLSecondMessage
 }
 
-pub fn get_master_key(client: &reqwest::Client, verbose: bool) {
+pub fn get_master_key(client: &reqwest::Client) -> wallet::PrivateShares {
     let start = PreciseTime::now();
 
     let res_body = requests::post(
@@ -27,7 +28,7 @@ pub fn get_master_key(client: &reqwest::Client, verbose: bool) {
     let (id, kg_party_one_first_message) :
         (String, party_one::KeyGenFirstMsg) = serde_json::from_str(&res_body).unwrap();
 
-    if verbose { println!("(id: {}) Generating master key...", id); }
+    println!("(id: {}) Generating master key...", id);
 
     let (kg_party_two_first_message, kg_ec_key_pair_party2) =
         MasterKey2::key_gen_first_message();
@@ -113,7 +114,7 @@ pub fn get_master_key(client: &reqwest::Client, verbose: bool) {
     let _res_body = requests::postb(
         client, &format!("{}/{}/master_key", KG_PATH_PRE, id), body).unwrap();
 
-    let party_two_master_key = MasterKey2::set_master_key(
+    let masterKey = MasterKey2::set_master_key(
         &party2_cc.chain_code,
         &kg_ec_key_pair_party2,
         &kg_party_one_second_message
@@ -123,13 +124,10 @@ pub fn get_master_key(client: &reqwest::Client, verbose: bool) {
         &party_two_paillier,
     );
 
-    if verbose { println!("(id: {}) Master key gen completed", id); }
-
-    let mk_json = serde_json::to_string(&party_two_master_key).unwrap();
-    fs::write("mk.priv", mk_json).expect("Unable to write file");
-
-    if verbose { println!("(id: {}) Master key file saved locally", id); }
+    println!("(id: {}) Master key gen completed", id);
 
     let end = PreciseTime::now();
-    if verbose { println!("(id: {}) Took: {}", id, start.to(end)); }
+    println!("(id: {}) Took: {}", id, start.to(end));
+
+    wallet::PrivateShares { id, masterKey }
 }
