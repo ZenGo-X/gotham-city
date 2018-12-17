@@ -21,6 +21,7 @@ time = "*"
 clap = { version = "2.32", features = ["yaml"] }
 reqwest = "0.9.5"
 uuid = { version = "0.7", features = ["v4"] }
+bitcoin = { git = "https://github.com/rust-bitcoin/rust-bitcoin" }
 
 [dependencies.zk-paillier]
 git = "https://github.com/KZen-networks/zk-paillier"

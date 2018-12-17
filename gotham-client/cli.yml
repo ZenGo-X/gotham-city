@@ -15,3 +15,10 @@ subcommands:
     - verbose:
         short: v
         help: Sets the level of verbosity
+- wallet:
+    about: Create an MPC wallet
+    version: "1.0"
+    args:
+    - new-address:
+          short: a
+          help: Generate a new address
