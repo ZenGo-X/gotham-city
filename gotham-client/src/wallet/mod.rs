@@ -6,20 +6,28 @@ use serde_json;
 use curv::BigInt;
 use bitcoin;
 use bitcoin::network::constants::Network;
+use bitcoin::{Transaction, TxIn, TxOut};
 use curv::elliptic::curves::traits::ECPoint;
-use std::net::TcpStream;
 use electrumx_client::{
     electrumx_client::ElectrumxClient,
-    interface::Electrumx,
-    tools
+    interface::Electrumx
 };
 
 use super::ecdsa::keygen;
 
+// TODO: move that to a config file and double check electrum server addresses
+const ELECTRUM_HOST : &str = "testnet.hsmiths.com:53011";
 const WALLET_FILENAME : &str = "wallet/wallet.data";
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct GetBalanceResponse {
+    pub address: String,
+    pub confirmed:   u64,
+    pub unconfirmed: u64,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct GetWalletBalanceResponse {
     pub confirmed:   u64,
     pub unconfirmed: u64,
 }
@@ -27,7 +35,7 @@ pub struct GetBalanceResponse {
 #[derive(Serialize, Deserialize)]
 pub struct PrivateShares {
     pub id: String,
-    pub masterKey: MasterKey2
+    pub master_key: MasterKey2
 }
 
 #[derive(Serialize, Deserialize)]
@@ -73,6 +81,10 @@ impl Wallet {
         wallet
     }
 
+    /*pub fn send(to_address: String, amount_btc: u32) -> bool {
+
+    }*/
+
     pub fn get_new_bitcoin_address(&mut self) -> bitcoin::Address {
         let address_derivation = Self::derive_key(
             &self.private_shares, self.address_derivation.last_pos/* init */);
@@ -81,37 +93,74 @@ impl Wallet {
         Self::to_bitcoin_address(&self.address_derivation, self.get_bitcoin_network())
     }
 
-    pub fn get_balance(&mut self) -> GetBalanceResponse  {
-        let init = 0;
-        let last_pos = self.address_derivation.last_pos;
+    pub fn get_balance(&mut self) -> GetWalletBalanceResponse  {
+        let mut aggregated_balance = GetWalletBalanceResponse { confirmed: 0, unconfirmed: 0 };
 
-        let mut aggregated_balance = GetBalanceResponse { confirmed: 0, unconfirmed: 0 };
-
-        for n in init..last_pos {
-            let address_derivation = Self::derive_key(&self.private_shares, n);
-            let bitcoin_address = Self::to_bitcoin_address(&address_derivation, self.get_bitcoin_network());
-
-            let balance = Self::get_address_balance(&bitcoin_address);
-            aggregated_balance.unconfirmed += balance.unconfirmed;
-            aggregated_balance.confirmed += balance.confirmed;
+        for b in self.get_all_addresses_balance() {
+            aggregated_balance.unconfirmed += b.unconfirmed;
+            aggregated_balance.confirmed += b.confirmed;
         }
 
         aggregated_balance
     }
 
     pub fn get_address_balance(address: &bitcoin::Address) -> GetBalanceResponse  {
-        let mut client = ElectrumxClient::new(
-            "ec2-34-219-15-143.us-west-2.compute.amazonaws.com:60001").unwrap();
-
+        let mut client = ElectrumxClient::new(ELECTRUM_HOST).unwrap();
 
         let resp = client.get_balance(&address.to_string()).unwrap();
-        GetBalanceResponse { confirmed: resp.confirmed, unconfirmed: resp.unconfirmed }
+
+        GetBalanceResponse {
+            confirmed: resp.confirmed,
+            unconfirmed: resp.unconfirmed,
+            address: address.to_string()
+        }
+    }
+
+    // TODO: handle fees
+    pub fn select_tx_in(&self, amount_btc: u16) -> Vec<GetBalanceResponse> { // greedy selection
+        let balances = self.get_all_addresses_balance();
+
+        let mut confirmed_balances : Vec<GetBalanceResponse> = balances
+            .into_iter()
+            .filter(|b| b.confirmed > 0)
+            .collect();
+
+        confirmed_balances.sort_by(|a, b|
+                                       a.confirmed.partial_cmp(&b.confirmed).unwrap());
+
+        let mut selected : Vec<GetBalanceResponse> = Vec::new();
+
+        let mut remaining : i64 = amount_btc.into();
+        for b in confirmed_balances {
+            selected.push(b.clone());
+            remaining -= b.confirmed as i64;
+
+            if remaining < 0 { break; }
+        }
+
+        selected
+    }
+
+    fn get_all_addresses_balance(&self) -> Vec<GetBalanceResponse> {
+        let init = 0;
+        let last_pos = self.address_derivation.last_pos;
+
+        let mut response : Vec<GetBalanceResponse> = Vec::new();
+
+        for n in init..last_pos {
+            let address_derivation = Self::derive_key(&self.private_shares, n);
+            let bitcoin_address = Self::to_bitcoin_address(&address_derivation, self.get_bitcoin_network());
+
+            response.push(Self::get_address_balance(&bitcoin_address));
+        }
+
+        response
     }
 
     fn derive_key(private_shares: &PrivateShares, pos: u32) -> AddressDerivation {
         let last_pos : u32 = pos + 1;
 
-        let last_child_master_key = private_shares.masterKey
+        let last_child_master_key = private_shares.master_key
             .get_child(vec![BigInt::from(last_pos)]);
 
         AddressDerivation { last_pos, last_child_master_key }

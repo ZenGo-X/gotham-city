@@ -12,8 +12,8 @@ fn main() {
     let client = reqwest::Client::new();
     let network = "testnet".to_string();
 
-    if let Some(matches) = matches.subcommand_matches("create-wallet") {
-        let mut wallet : wallet::Wallet = wallet::Wallet::new(&client, network);
+    if let Some(_matches) = matches.subcommand_matches("create-wallet") {
+        let wallet : wallet::Wallet = wallet::Wallet::new(&client, network);
         wallet.save();
     } else if let Some(matches) = matches.subcommand_matches("wallet") {
         let mut wallet : wallet::Wallet = wallet::Wallet::load();
@@ -24,6 +24,9 @@ fn main() {
         } else if matches.is_present("get-balance") {
             let balance = wallet.get_balance();
             println!("{:?}", balance);
+
+            let tx = wallet.select_tx_in(13);
+            println!("{:?}", tx);
         }
 
         wallet.save();

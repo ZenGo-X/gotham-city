@@ -2,7 +2,6 @@ use reqwest;
 use serde_json;
 use time::PreciseTime;
 
-use std::fs;
 use kms::ecdsa::two_party::*;
 use multi_party_ecdsa::protocols::two_party_ecdsa::lindell_2017::*;
 use kms::chain_code::two_party as chain_code;
@@ -114,7 +113,7 @@ pub fn get_master_key(client: &reqwest::Client) -> wallet::PrivateShares {
     let _res_body = requests::postb(
         client, &format!("{}/{}/master_key", KG_PATH_PRE, id), body).unwrap();
 
-    let masterKey = MasterKey2::set_master_key(
+    let master_key = MasterKey2::set_master_key(
         &party2_cc.chain_code,
         &kg_ec_key_pair_party2,
         &kg_party_one_second_message
@@ -129,5 +128,5 @@ pub fn get_master_key(client: &reqwest::Client) -> wallet::PrivateShares {
     let end = PreciseTime::now();
     println!("(id: {}) Took: {}", id, start.to(end));
 
-    wallet::PrivateShares { id, masterKey }
+    wallet::PrivateShares { id, master_key }
 }
