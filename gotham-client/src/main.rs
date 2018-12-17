@@ -4,7 +4,6 @@ use clap::App;
 
 use reqwest;
 use client_lib::ecdsa::keygen;
-use client_lib::utilities::requests;
 
 fn main() {
     let yaml = load_yaml!("../cli.yml");

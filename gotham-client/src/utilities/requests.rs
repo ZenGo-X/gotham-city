@@ -1,6 +1,5 @@
 use reqwest;
 use time::PreciseTime;
-use std::collections::HashMap;
 use serde;
 
 pub fn post(client: &reqwest::Client, path: &str) -> Option<String> {
