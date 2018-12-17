@@ -1,23 +1,38 @@
-use rocket;
-use rocket::local::Client;
-use rocket::http::ContentType;
+use reqwest;
 use time::PreciseTime;
+use std::collections::HashMap;
+use serde;
 
-pub fn post(client: &Client, path: &str, body: Option<String>) -> Option<String> {
-    let req = client.post(path);
-
-    if let Some(b) = body {
-        req.set_body(b);
-    }
-
-    req.header(ContentType::JSON);
-
+pub fn post(client: &reqwest::Client, path: &str) -> Option<String> {
     let start = PreciseTime::now();
-    let res =
-        req.dispatch().body_string();
+
+    let res = client
+        .post(&format!("http://127.0.0.1:8000/{}", path))
+        .json("{}")
+        .send();
+
     let end = PreciseTime::now();
 
     info!("(req {}, took: {})", path, start.to(end));
 
-    res
+    Some(res.unwrap().text().unwrap())
+}
+
+
+pub fn postb<T>(client: &reqwest::Client, path: &str, body: T) -> Option<String>
+    where
+        T: serde::ser::Serialize,
+{
+    let start = PreciseTime::now();
+
+    let res = client
+        .post(&format!("http://127.0.0.1:8000/{}", path))
+        .json(&body)
+        .send();
+
+    let end = PreciseTime::now();
+
+    info!("(req {}, took: {})", path, start.to(end));
+
+    Some(res.unwrap().text().unwrap())
 }
