@@ -20,21 +20,27 @@ pub enum Share {
     CommWitness,
     EcKeyPair,
     PaillierKeyPair,
+    Party1Private,
 
     PDLProver,
+    PDLDecommit,
+    PDLFirstMessage,
+
     CCKeyGenFirstMsg,
     CCCommWitness,
     CCEcKeyPair,
     CC,
 
-    MasterKey
+    MasterKey,
+
+    EphEcKeyPair
 }
 
 pub struct Config {
     pub db : DB
 }
 
-#[post("/keygen/first", format = "json")]
+#[post("/ecdsa/keygen/first", format = "json")]
 pub fn first_message(
     state: State<Config>
 ) -> Json<(
@@ -54,16 +60,14 @@ pub fn first_message(
 }
 
 
-#[post("/keygen/<id>/second", format = "json", data = "<d_log_proof>")]
+#[post("/ecdsa/keygen/<id>/second", format = "json", data = "<d_log_proof>")]
 pub fn second_message(
     state: State<Config>,
     id: String,
     d_log_proof: Json<DLogProof>
 ) -> Json<(
-    party_one::KeyGenSecondMsg,
-    party_one::PaillierKeyPair,
-    RangeProofNi,
-    NICorrectKeyProof
+    party1::KeyGenParty1Message2,
+    party_one::PaillierKeyPair
 )>
 {
     let db_comm_witness = db::get(&state.db, &id, &Share::CommWitness);
@@ -78,21 +82,22 @@ pub fn second_message(
         None => panic!("No data for such identifier {}", id)
     };
 
-    let (kg_party_one_second_message, paillier_key_pair, range_proof, correct_key_proof) =
+    let (kg_party_one_second_message, paillier_key_pair, party_one_private) =
         MasterKey1::key_gen_second_message(comm_witness, &ec_key_pair, &d_log_proof.0);
 
     db::insert(&state.db, &id, &Share::PaillierKeyPair, &paillier_key_pair);
+    db::insert(&state.db, &id, &Share::Party1Private, &party_one_private);
 
-    Json((kg_party_one_second_message, paillier_key_pair, range_proof, correct_key_proof))
+    Json((kg_party_one_second_message, paillier_key_pair))
 }
 
-#[post("/keygen/<id>/third", format = "json", data = "<pdl_chal_c_tag>")]
+#[post("/ecdsa/keygen/<id>/third", format = "json", data = "<party_2_pdl_first_message>")]
 pub fn third_message(
     state: State<Config>,
     id: String,
-    pdl_chal_c_tag: Json<BigInt>
+    party_2_pdl_first_message: Json<party_two::PDLFirstMessage>
 ) -> Json<(
-    party_one::PDL
+    party_one::PDLFirstMessage
 )>
 {
     let db_paillier_key_pair = db::get(&state.db, &id, &Share::PaillierKeyPair);
@@ -101,55 +106,68 @@ pub fn third_message(
         None => panic!("No data for such identifier {}", id)
     };
 
-    let pdl_prover = MasterKey1::key_gen_third_message(&paillier_key_pair, &pdl_chal_c_tag.0);
+    let db_party_one_private = db::get(&state.db, &id, &Share::Party1Private);
+    let party_one_private: party_one::Party1Private = match db_party_one_private {
+        Some(v) => serde_json::from_str(v.to_utf8().unwrap()).unwrap(),
+        None => panic!("No data for such identifier {}", id)
+    };
 
-    db::insert(&state.db, &id, &Share::PDLProver, &pdl_prover);
+    let (party_one_third_message, party_one_pdl_decommit) =
+        MasterKey1::key_gen_third_message(&party_2_pdl_first_message.0, &party_one_private);
 
-    Json(pdl_prover)
+    db::insert(&state.db, &id, &Share::PDLDecommit, &party_one_pdl_decommit);
+    db::insert(&state.db, &id, &Share::PDLFirstMessage, &party_one_third_message);
+
+    Json(party_one_third_message)
 }
 
 // Added here because the attribute data takes only a single struct
 #[derive(Serialize, Deserialize)]
 pub struct FourthMsgRequest {
-    pub pdl_decom_party2: party_two::PDLdecommit,
-    pub pdl_chal_c_tag_tag: BigInt
+    pub party_2_pdl_first_message: party_two::PDLFirstMessage,
+    pub party_2_pdl_second_message: party_two::PDLSecondMessage
 }
 
-#[post("/keygen/<id>/fourth", format = "json", data = "<request>")]
+#[post("/ecdsa/keygen/<id>/fourth", format = "json", data = "<request>")]
 pub fn fourth_message(
     state: State<Config>,
     id: String,
     request: Json<FourthMsgRequest>
 ) -> Json<(
-    party_one::PDLdecommit
+    party_one::PDLSecondMessage
 )>
 {
-    let db_pdl_prover = db::get(&state.db, &id, &Share::PDLProver);
-    let pdl_prover: party_one::PDL = match db_pdl_prover {
+    let db_pdl_party_one_third_message = db::get(&state.db, &id, &Share::PDLFirstMessage);
+    let pdl_party_one_third_message : party_one::PDLFirstMessage = match db_pdl_party_one_third_message {
         Some(v) => serde_json::from_str(v.to_utf8().unwrap()).unwrap(),
         None => panic!("No data for such identifier {}", id)
     };
 
-    let ec_key_pair = db::get(&state.db, &id, &Share::EcKeyPair);
-    let ec_key_pair: party_one::EcKeyPair = match ec_key_pair {
+    let db_party_one_private = db::get(&state.db, &id, &Share::Party1Private);
+    let party_one_private: party_one::Party1Private = match db_party_one_private {
+        Some(v) => serde_json::from_str(v.to_utf8().unwrap()).unwrap(),
+        None => panic!("No data for such identifier {}", id)
+    };
+
+    let db_party_one_pdl_decommit = db::get(&state.db, &id, &Share::PDLDecommit);
+    let party_one_pdl_decommit: party_one::PDLdecommit = match db_party_one_pdl_decommit {
         Some(v) => serde_json::from_str(v.to_utf8().unwrap()).unwrap(),
         None => panic!("No data for such identifier {}", id)
     };
 
     let res = MasterKey1::key_gen_fourth_message(
-        &pdl_prover,
-        &request.pdl_chal_c_tag_tag,
-        ec_key_pair,
-        &request.pdl_decom_party2.a,
-        &request.pdl_decom_party2.b,
-        &request.pdl_decom_party2.blindness);
+        &pdl_party_one_third_message,
+        &request.party_2_pdl_first_message,
+        &request.party_2_pdl_second_message,
+        party_one_private,
+        party_one_pdl_decommit);
 
     assert!(res.is_ok());
 
     Json(res.unwrap())
 }
 
-#[post("/keygen/<id>/chaincode/first", format = "json")]
+#[post("/ecdsa/keygen/<id>/chaincode/first", format = "json")]
 pub fn chain_code_first_message(
     state: State<Config>,
     id: String,
@@ -167,7 +185,7 @@ pub fn chain_code_first_message(
     Json(cc_party_one_first_message)
 }
 
-#[post("/keygen/<id>/chaincode/second", format = "json", data = "<cc_party_two_first_message_d_log_proof>")]
+#[post("/ecdsa/keygen/<id>/chaincode/second", format = "json", data = "<cc_party_two_first_message_d_log_proof>")]
 pub fn chain_code_second_message(
     state: State<Config>,
     id: String,
@@ -190,7 +208,7 @@ pub fn chain_code_second_message(
     Json(party1_cc)
 }
 
-#[post("/keygen/<id>/chaincode/compute", format = "json", data = "<cc_party_two_first_message_public_share>")]
+#[post("/ecdsa/keygen/<id>/chaincode/compute", format = "json", data = "<cc_party_two_first_message_public_share>")]
 pub fn chain_code_compute_message(
     state: State<Config>,
     id: String,
@@ -216,7 +234,7 @@ pub fn chain_code_compute_message(
 }
 
 
-#[post("/keygen/<id>/master_key", format = "json", data = "<kg_party_two_first_message_public_share>")]
+#[post("/ecdsa/keygen/<id>/master_key", format = "json", data = "<kg_party_two_first_message_public_share>")]
 pub fn master_key(
     state: State<Config>,
     id: String,
@@ -237,20 +255,85 @@ pub fn master_key(
         None => panic!("No data for such identifier {}", id)
     };
 
-    let ec_key_pair = db::get(&state.db, &id, &Share::EcKeyPair);
-    let kg_ec_key_pair_party1: party_one::EcKeyPair = match ec_key_pair {
+    let db_party_one_private = db::get(&state.db, &id, &Share::Party1Private);
+    let party_one_private: party_one::Party1Private = match db_party_one_private {
+        Some(v) => serde_json::from_str(v.to_utf8().unwrap()).unwrap(),
+        None => panic!("No data for such identifier {}", id)
+    };
+
+    let db_comm_witness = db::get(&state.db, &id, &Share::CommWitness);
+    let comm_witness: party_one::CommWitness = match db_comm_witness {
         Some(v) => serde_json::from_str(v.to_utf8().unwrap()).unwrap(),
         None => panic!("No data for such identifier {}", id)
     };
 
     let masterKey = MasterKey1::set_master_key(
         &party1_cc.chain_code,
-        &kg_ec_key_pair_party1,
+        party_one_private,
+        &comm_witness.public_share,
         &kg_party_two_first_message_public_share.0,
-        &paillier_key_pair,
+        paillier_key_pair
     );
 
     db::insert(&state.db, &id, &Share::MasterKey, &masterKey);
 
     Json(())
+}
+
+#[post("/ecdsa/sign/<id>/first", format = "json")]
+pub fn sign_first(
+    state: State<Config>,
+    id: String
+) -> Json<(
+    party_one::EphKeyGenFirstMsg
+)>
+{
+    let (sign_party_one_first_message, eph_ec_key_pair_party1) =
+        MasterKey1::sign_first_message();
+
+    db::insert(&state.db, &id, &Share::EphEcKeyPair, &eph_ec_key_pair_party1);
+
+    Json(sign_party_one_first_message)
+}
+
+// Added here because the attribute data takes only a single struct
+#[derive(Serialize, Deserialize)]
+pub struct SignSecondMsgRequest {
+    pub message: BigInt,
+    pub party_two_sign_message: party2::SignMessage,
+    pub eph_key_gen_first_message_party_two: party_two::EphKeyGenFirstMsg
+}
+
+#[post("/ecdsa/sign/<id>/second", format = "json", data = "<request>")]
+pub fn sign_second(
+    state: State<Config>,
+    id: String,
+    request: Json<SignSecondMsgRequest>
+) -> Json<(
+    party_one::Signature
+)>
+{
+
+    let db_master_key = db::get(&state.db, &id, &Share::MasterKey);
+    let master_key: MasterKey1 = match db_master_key {
+        Some(v) => serde_json::from_str(v.to_utf8().unwrap()).unwrap(),
+        None => panic!("No data for such identifier {}", id)
+    };
+
+    let db_eph_ec_key_pair_party1 = db::get(&state.db, &id, &Share::EphEcKeyPair);
+    let eph_ec_key_pair_party1: party_one::EphEcKeyPair = match db_eph_ec_key_pair_party1 {
+        Some(v) => serde_json::from_str(v.to_utf8().unwrap()).unwrap(),
+        None => panic!("No data for such identifier {}", id)
+    };
+
+    let signatures = master_key.sign_second_message(
+        &request.party_two_sign_message,
+        &request.eph_key_gen_first_message_party_two,
+        &eph_ec_key_pair_party1,
+        &request.message,
+    );
+
+    assert!(signatures.is_ok());
+
+    Json(signatures.unwrap())
 }

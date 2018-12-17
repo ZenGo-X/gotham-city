@@ -1,0 +1,17 @@
+name: gotham-client
+version: "1.0"
+author: gbenattar <g.benattar@gmail.com>
+about: Command Line Interface for a minimalist decentralized crypto-currency wallet
+args:
+- verbose:
+    short: v
+    multiple: true
+    help: Sets the level of verbosity
+subcommands:
+- keygen-ecdsa:
+    about: Multi-party Key Generation
+    version: "1.0"
+    args:
+    - verbose:
+        short: v
+        help: Sets the level of verbosity
