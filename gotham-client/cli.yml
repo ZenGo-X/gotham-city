@@ -25,3 +25,9 @@ subcommands:
     - get-balance:
           short: b
           help: Get wallet balance
+    - list-unspent:
+          short: u
+          help: Get wallet list unspent
+    - backup:
+          short: e
+          help: Backup wallet with Escrow

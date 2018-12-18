@@ -16,7 +16,11 @@ extern crate time;
 extern crate uuid;
 extern crate bitcoin;
 extern crate electrumx_client;
+extern crate itertools;
+extern crate secp256k1;
+extern crate hex;
 
 pub mod ecdsa;
 pub mod utilities;
 pub mod wallet;
+pub mod escrow;
