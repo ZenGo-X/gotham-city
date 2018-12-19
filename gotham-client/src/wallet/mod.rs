@@ -119,7 +119,7 @@ impl Wallet {
     pub fn send(&mut self, client: &reqwest::Client, to_address: String, amount_btc: f32) -> bool {
         let selected = self.select_tx_in(amount_btc);
         if selected.is_empty() {
-            panic!("Not enough fund");
+            panic!("Not enough funds");
         }
 
         let to_btc_adress = bitcoin::Address::from_str(&to_address).unwrap();
