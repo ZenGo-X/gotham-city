@@ -9,7 +9,7 @@ use curv::BigInt;
 use bitcoin;
 use bitcoin::consensus::encode::{serialize, Encoder, Decoder};
 use bitcoin::network::constants::Network;
-use bitcoin::{Transaction, TxIn, TxOut};
+use bitcoin::{Transaction, TxIn, TxOut, SigHashType};
 use bitcoin::blockdata::script::Builder;
 use curv::elliptic::curves::traits::ECPoint;
 use electrumx_client::{
@@ -17,9 +17,11 @@ use electrumx_client::{
     interface::Electrumx
 };
 use std::str::FromStr;
+use std::collections::HashMap;
 use itertools::Itertools;
 use curv::arithmetic::traits::Converter;
 use secp256k1::Signature;
+use secp256k1::PublicKey;
 use secp256k1::Secp256k1;
 use super::utilities::requests;
 use super::ecdsa::keygen;
@@ -36,7 +38,8 @@ const WALLET_FILENAME : &str = "wallet/wallet.data";
 pub struct SignSecondMsgRequest {
     pub message: BigInt,
     pub party_two_sign_message: party2::SignMessage,
-    pub eph_key_gen_first_message_party_two: party_two::EphKeyGenFirstMsg
+    pub eph_key_gen_first_message_party_two: party_two::EphKeyGenFirstMsg,
+    pub pos_child_key: u32
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -69,8 +72,8 @@ pub struct PrivateShares {
 
 #[derive(Serialize, Deserialize)]
 pub struct AddressDerivation {
-    pub last_pos: u32,
-    pub last_child_master_key: MasterKey2
+    pub pos: u32,
+    pub mk: MasterKey2
 }
 
 #[derive(Serialize, Deserialize)]
@@ -78,16 +81,18 @@ pub struct Wallet {
     id: String,
     network: String,
     private_shares: PrivateShares,
-    address_derivation: AddressDerivation
+    last_derived_pos: u32,
+    addresses_derivation_map: HashMap<String, AddressDerivation>
 }
 
 impl Wallet {
     pub fn new(client: &reqwest::Client, network: String) -> Wallet {
         let id = Uuid::new_v4().to_string();
         let private_shares = keygen::get_master_key(client);
-        let address_derivation = Self::derive_key(&private_shares, 0 /* init */);
+        let last_derived_pos = 0;
+        let addresses_derivation_map = HashMap::new();
 
-        Wallet { id, network, private_shares, address_derivation }
+        Wallet { id, network, private_shares, last_derived_pos, addresses_derivation_map }
     }
 
     pub fn backup(&self, escrow: &escrow::Escrow) {
@@ -123,6 +128,7 @@ impl Wallet {
         }
 
         let to_btc_adress = bitcoin::Address::from_str(&to_address).unwrap();
+
 
         let txs_in : Vec<TxIn> = selected
             .clone()
@@ -161,7 +167,7 @@ impl Wallet {
         ];
 
         let mut transaction = bitcoin::Transaction {
-            version: 2,
+            version: 1,
             lock_time: 0,
             input: txs_in,
             output: txs_out
@@ -172,16 +178,27 @@ impl Wallet {
         let mut signed_transaction = transaction.clone();
 
         for i in 0..transaction.input.len() {
+            let address = bitcoin::Address::from_str(&selected[i].address).unwrap();
+
+            let addressDerivation = self.addresses_derivation_map.get(&selected[i].address).unwrap();
+
+            let mk = &addressDerivation.mk;
+            let pk = mk.public.q.get_element();
+
             let sig_hash = transaction.signature_hash(
                 i,
-                &bitcoin::Address::from_str(&selected[i].address).unwrap().script_pubkey(),
+                &address.script_pubkey(),
                 bitcoin::SigHashType::All.as_u32());
 
             let (eph_key_gen_first_message_party_two, party_two_sign_message) =
-                self.sign(client, sig_hash);
+                self.sign(client, sig_hash, &mk);
 
             let signatures = self.get_signature(
-                client, sig_hash, eph_key_gen_first_message_party_two, party_two_sign_message);
+                client,
+                sig_hash,
+                eph_key_gen_first_message_party_two,
+                party_two_sign_message,
+                addressDerivation.pos);
 
             let mut v = BigInt::to_vec(&signatures.r);
             v.extend(BigInt::to_vec(&signatures.s));
@@ -191,19 +208,11 @@ impl Wallet {
                 Signature::from_compact(&context, &v[..]).unwrap()
                     .serialize_der(&context);
 
-            let mut script_sig_first_part = Vec::new();
-            script_sig_first_part.extend(sig.iter());
-            // why do we need this?
+            let mut witness = Vec::new();
+            witness.push(sig);
+            witness.push(pk.serialize().to_vec());
 
-            // https://bitcoin.stackexchange.com/questions/66197/step-by-step-example-to-redeem-a-p2sh-output-required
-            script_sig_first_part.push(0x1);
-
-            // attach the signature to script_sig
-            let script_sig = Builder::new()
-                .push_slice(&script_sig_first_part)
-                .into_script();
-
-            signed_transaction.input[i].script_sig = script_sig;
+            signed_transaction.input[i].witness = witness;
         }
 
         println!("serialized: {}", hex::encode(serialize(&signed_transaction)));
@@ -215,12 +224,14 @@ impl Wallet {
                      client: &reqwest::Client,
                      message: bitcoin::util::hash::Sha256dHash,
                      eph_key_gen_first_message_party_two: party_two::EphKeyGenFirstMsg,
-                     party_two_sign_message: party2::SignMessage) -> party_one::Signature
+                     party_two_sign_message: party2::SignMessage,
+                     pos_child_key: u32) -> party_one::Signature
     {
         let request : SignSecondMsgRequest = SignSecondMsgRequest {
-            message: BigInt::from_hex(&message.to_string()),
+            message: BigInt::from_hex(&message.be_hex_string()),
             party_two_sign_message,
-            eph_key_gen_first_message_party_two
+            eph_key_gen_first_message_party_two,
+            pos_child_key
         };
 
         let res_body = requests::postb(
@@ -232,8 +243,8 @@ impl Wallet {
         signature
     }
 
-    fn sign(&self, client: &reqwest::Client, message: bitcoin::util::hash::Sha256dHash) ->
-        (party_two::EphKeyGenFirstMsg, party2::SignMessage)
+    fn sign(&self, client: &reqwest::Client, message: bitcoin::util::hash::Sha256dHash, mk: &MasterKey2) ->
+    (party_two::EphKeyGenFirstMsg, party2::SignMessage)
     {
 
         let (eph_key_gen_first_message_party_two, eph_comm_witness, eph_ec_key_pair_party2) =
@@ -245,22 +256,37 @@ impl Wallet {
         let sign_party_one_first_message : party_one::EphKeyGenFirstMsg =
             serde_json::from_str(&res_body).unwrap();
 
-        let party_two_sign_message = self.private_shares.master_key.sign_second_message(
+        let party_two_sign_message = mk.sign_second_message(
             &eph_ec_key_pair_party2,
             eph_comm_witness.clone(),
             &sign_party_one_first_message,
-            &BigInt::from_hex(&message.to_string()),
+            &BigInt::from_hex(&message.be_hex_string()),
         );
 
         (eph_key_gen_first_message_party_two, party_two_sign_message)
     }
 
     pub fn get_new_bitcoin_address(&mut self) -> bitcoin::Address {
-        let address_derivation = Self::derive_key(
-            &self.private_shares, self.address_derivation.last_pos/* init */);
-        self.address_derivation = address_derivation;
+        let (pos, mk) = Self::derive_new_key(&self.private_shares, self.last_derived_pos);
+        let pk = mk.public.q.get_element();
+        let address = bitcoin::Address::p2wpkh(&pk, self.get_bitcoin_network());
 
-        Self::to_bitcoin_address(&self.address_derivation, self.get_bitcoin_network())
+        self.addresses_derivation_map.insert(address.to_string(), AddressDerivation { mk, pos });
+
+        self.last_derived_pos = pos;
+
+        address
+    }
+
+    pub fn derived(&mut self) {
+        for i in 0..self.last_derived_pos {
+            let (pos, mk) = Self::derive_new_key(&self.private_shares, i);
+
+            let address = bitcoin::Address::p2wpkh(
+                &mk.public.q.get_element(), self.get_bitcoin_network());
+
+            self.addresses_derivation_map.insert(address.to_string(), AddressDerivation { mk, pos });
+        }
     }
 
     pub fn get_balance(&mut self) -> GetWalletBalanceResponse  {
@@ -285,6 +311,8 @@ impl Wallet {
                 a.value.partial_cmp(&b.value).unwrap())
             .into_iter()
             .collect();
+
+        println!("{:?}", list_unspent);
 
         let mut remaining : i64 = amount_btc as i64 * 100_000_000;
         let mut selected : Vec<GetListUnspentResponse> = Vec::new();
@@ -350,13 +378,13 @@ impl Wallet {
 
     fn get_all_addresses(&self) -> Vec<bitcoin::Address> {
         let init = 0;
-        let last_pos = self.address_derivation.last_pos;
+        let last_pos = self.last_derived_pos;
 
         let mut response : Vec<bitcoin::Address> = Vec::new();
 
         for n in init..last_pos {
-            let address_derivation = Self::derive_key(&self.private_shares, n);
-            let bitcoin_address = Self::to_bitcoin_address(&address_derivation, self.get_bitcoin_network());
+            let mk = self.private_shares.master_key.get_child(vec![BigInt::from(n)]);
+            let bitcoin_address = Self::to_bitcoin_address(&mk, self.get_bitcoin_network());
 
             response.push(bitcoin_address);
         }
@@ -364,22 +392,20 @@ impl Wallet {
         response
     }
 
-    fn derive_key(private_shares: &PrivateShares, pos: u32) -> AddressDerivation {
+    fn derive_new_key(private_shares: &PrivateShares, pos: u32) -> (u32, MasterKey2) {
         let last_pos : u32 = pos + 1;
 
         let last_child_master_key = private_shares.master_key
             .get_child(vec![BigInt::from(last_pos)]);
 
-        AddressDerivation { last_pos, last_child_master_key }
+        (last_pos, last_child_master_key)
     }
 
     fn get_bitcoin_network(&self) -> Network {
         self.network.parse::<Network>().unwrap()
     }
 
-    fn to_bitcoin_address(address_derivation: &AddressDerivation, network: Network) -> bitcoin::Address {
-        bitcoin::Address::p2wpkh(
-            &address_derivation.last_child_master_key.public.q.get_element(),
-            network)
+    fn to_bitcoin_address(mk: &MasterKey2, network: Network) -> bitcoin::Address {
+        bitcoin::Address::p2wpkh(&mk.public.q.get_element(), network)
     }
 }
