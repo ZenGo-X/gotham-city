@@ -3,10 +3,6 @@ Gotham City
 Gotham city is a fully functional project to demonstrate real-life 
 example of minimalist Bitcoin decentralized HD wallet using 2 party ECDSA.
 
-Disclaimer
--------
-### Gotham city is a **proof of concept**. **DO NOT USE this project for PRODUCTION use! USE AT YOUR OWN RISK, we are not responsible for software/hardware and/or any transactional issues that may occur while using Gotham city.**
-
 Project Status
 -------
 The project is currently work in progress (WIP).
@@ -51,6 +47,10 @@ Bitcoin is utilizing ECDSA as the signing scheme. There is an active line of res
 Performance
 -------
 TODO
+
+Disclaimer
+-------
+### Gotham city is a **proof of concept**. **DO NOT USE this project for PRODUCTION use! USE AT YOUR OWN RISK, we are not responsible for software/hardware and/or any transactional issues that may occur while using Gotham city.**
 
 License
 -------
