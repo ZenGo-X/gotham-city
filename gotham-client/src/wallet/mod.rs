@@ -382,7 +382,7 @@ impl Wallet {
 
         let mut response : Vec<bitcoin::Address> = Vec::new();
 
-        for n in init..last_pos {
+        for n in init..=last_pos {
             let mk = self.private_shares.master_key.get_child(vec![BigInt::from(n)]);
             let bitcoin_address = Self::to_bitcoin_address(&mk, self.get_bitcoin_network());
 
