@@ -301,7 +301,8 @@ pub fn sign_first(
 pub struct SignSecondMsgRequest {
     pub message: BigInt,
     pub party_two_sign_message: party2::SignMessage,
-    pub eph_key_gen_first_message_party_two: party_two::EphKeyGenFirstMsg
+    pub eph_key_gen_first_message_party_two: party_two::EphKeyGenFirstMsg,
+    pub pos_child_key: u32
 }
 
 #[post("/ecdsa/sign/<id>/second", format = "json", data = "<request>")]
@@ -320,13 +321,15 @@ pub fn sign_second(
         None => panic!("No data for such identifier {}", id)
     };
 
+    let child_master_key = master_key.get_child(vec![BigInt::from(request.pos_child_key)]);
+
     let db_eph_ec_key_pair_party1 = db::get(&state.db, &id, &Share::EphEcKeyPair);
     let eph_ec_key_pair_party1: party_one::EphEcKeyPair = match db_eph_ec_key_pair_party1 {
         Some(v) => serde_json::from_str(v.to_utf8().unwrap()).unwrap(),
         None => panic!("No data for such identifier {}", id)
     };
 
-    let signatures = master_key.sign_second_message(
+    let signatures = child_master_key.sign_second_message(
         &request.party_two_sign_message,
         &request.eph_key_gen_first_message_party_two,
         &eph_ec_key_pair_party1,

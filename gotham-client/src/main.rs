@@ -24,6 +24,7 @@ fn main() {
         if matches.is_present("new-address") {
             let address = wallet.get_new_bitcoin_address();
             println!("{:?}", address);
+            wallet.derived();
         } else if matches.is_present("get-balance") {
             //let balance = wallet.get_balance();
             //println!("{:?}", balance);
