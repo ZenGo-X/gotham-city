@@ -23,10 +23,14 @@ Project Description
 * For details on Threshold Signatures see [Threshold Signatures: The Future of Private Keys](https://medium.com/kzen-networks/threshold-signatures-private-key-the-next-generation-f27b30793b)
 
 #### Cryptographic libraries
-* [zk-paillier](https://github.com/KZen-networks/zk-paillier)
-* [kms](https://github.com/KZen-networks/kms)
-* [multi-party-ecdsa](https://github.com/KZen-networks/multi-party-ecdsa)
-* [curv](https://github.com/KZen-networks/curv)
+* [secp256k1](https://github.com/rust-bitcoin/rust-secp256k1/): Rust language bindings for Bitcoin secp256k1 library.
+* [curv](https://github.com/KZen-networks/curv) : basic ECC primitives using secp256k1
+* [rust-paillier](https://github.com/mortendahl/rust-paillier): A pure-Rust implementation of the Paillier encryption scheme
+* [zk-paillier](https://github.com/KZen-networks/zk-paillier): A collection of zero knowledge proofs using Paillier cryptosystem 
+* [multi-party-ecdsa](https://github.com/KZen-networks/multi-party-ecdsa): Rust implelemtation of Lindell's Crypto17 paper: [Fast Secure Two-Party ECDSA Signing](https://eprint.iacr.org/2017/552)
+* [kms](https://github.com/KZen-networks/kms): Two party key managament system (master keys, 2p-HD, shares rotation) for secp256k1 based two party digital sigantures 
+
+
 
 ### White paper overview
 #### Abstract
