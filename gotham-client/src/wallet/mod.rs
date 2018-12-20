@@ -9,6 +9,7 @@ use curv::BigInt;
 use bitcoin;
 use bitcoin::consensus::encode::{serialize, Encoder, Decoder};
 use bitcoin::network::constants::Network;
+use bitcoin::util::bip143::SighashComponents;
 use bitcoin::{Transaction, TxIn, TxOut, SigHashType};
 use bitcoin::blockdata::script::Builder;
 use curv::elliptic::curves::traits::ECPoint;
@@ -34,7 +35,7 @@ use hex;
 const ELECTRUM_HOST : &str = "ec2-34-219-15-143.us-west-2.compute.amazonaws.com:60001";
 const WALLET_FILENAME : &str = "wallet/wallet.data";
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct SignSecondMsgRequest {
     pub message: BigInt,
     pub party_two_sign_message: party2::SignMessage,
@@ -122,6 +123,8 @@ impl Wallet {
     }
 
     pub fn send(&mut self, client: &reqwest::Client, to_address: String, amount_btc: f32) -> bool {
+        println!("to_address = {:?}", to_address);
+        println!("amount_btc = {:?}", amount_btc);
         let selected = self.select_tx_in(amount_btc);
         if selected.is_empty() {
             panic!("Not enough funds");
@@ -144,9 +147,9 @@ impl Wallet {
             })
             .collect();
 
-        let fees = 100;
+        let fees = 10000;
 
-        let amount_satoshi = (amount_btc * 100_000_00 as f32) as u64;
+        let amount_satoshi = (amount_btc * 100_000_000 as f32) as u64;
 
         let change_address = self.get_new_bitcoin_address();
 
@@ -154,6 +157,9 @@ impl Wallet {
             .clone()
             .into_iter()
             .fold(0, |sum, val| sum + val.value) as u64;
+
+        println!("to_btc_adress.script_pubkey() = {:?}", to_btc_adress.script_pubkey());
+        println!("change_address.script_pubkey() = {:?}", change_address.script_pubkey());
 
         let txs_out = vec![
             TxOut {
@@ -176,6 +182,7 @@ impl Wallet {
         let mut signatures : Vec<party_one::Signature> = Vec::new();
 
         let mut signed_transaction = transaction.clone();
+        println!("signed_transaction = {:?}", signed_transaction);
 
         for i in 0..transaction.input.len() {
             let address = bitcoin::Address::from_str(&selected[i].address).unwrap();
@@ -184,11 +191,28 @@ impl Wallet {
 
             let mk = &addressDerivation.mk;
             let pk = mk.public.q.get_element();
+            println!("pk =  {:?}", pk.to_string());
+            println!("address = {:?}", address);
+            println!("network = {:?}", self.get_bitcoin_network());
+            println!("signature_hash(i = {:?}, script_pubkey = {:?}, sighash_u32 = {:?}", i, &bitcoin::Address::p2wpkh(&pk, self.get_bitcoin_network()).script_pubkey(), bitcoin::SigHashType::All.as_u32());
+            let amount = 1_000_000;
+            println!("script.is_p2pkh() = {:?}", bitcoin::Address::p2pkh(&pk, self.get_bitcoin_network()).script_pubkey().is_p2pkh());
+            println!("amount = {:?}", amount as f64 / 100_000_000 as f64);
 
-            let sig_hash = transaction.signature_hash(
+            let sighash_components = SighashComponents::new(&transaction);
+            let sig_hash = sighash_components.sighash_all(&transaction.input[i], &bitcoin::Address::p2pkh(&pk, self.get_bitcoin_network()).script_pubkey(), amount);
+            let sig_hash2 = transaction.signature_hash(
                 i,
                 &address.script_pubkey(),
                 bitcoin::SigHashType::All.as_u32());
+
+            println!("sig_hash = {:?}", sig_hash);
+            println!("sig_hash.LE = {:?}", sig_hash.le_hex_string());
+            println!("sig_hash.BE = {:?}", sig_hash.le_hex_string());
+
+            println!("sig_hash2 = {:?}", sig_hash2);
+            println!("sig_hash2.LE = {:?}", sig_hash2.le_hex_string());
+            println!("sig_hash2.BE = {:?}", sig_hash2.le_hex_string());
 
             let (eph_key_gen_first_message_party_two, party_two_sign_message) =
                 self.sign(client, sig_hash, &mk);
@@ -200,21 +224,33 @@ impl Wallet {
                 party_two_sign_message,
                 addressDerivation.pos);
 
+            println!("signatures = {:?}", signatures);
+            println!("signatures.r = {:?}", signatures.r.to_str_radix(16));
+            println!("signatures.s = {:?}", signatures.s.to_str_radix(16));
             let mut v = BigInt::to_vec(&signatures.r);
             v.extend(BigInt::to_vec(&signatures.s));
+            println!("v = {:x?}", v);
+            let data: &[u8] = v.as_slice();
+            println!("data = {:x?}", data);
 
             let context = Secp256k1::new();
-            let sig =
-                Signature::from_compact(&context, &v[..]).unwrap()
-                    .serialize_der(&context);
+            let mut sig =
+                Signature::from_compact(&context, data).unwrap().serialize_der(&context);
+//            let mut sig: Vec<u8> = signatures.serialize_der(&s);
+            println!("sig = {:?}", sig);
+
 
             let mut witness = Vec::new();
             witness.push(sig);
+            witness[0].push(SigHashType::All as u8);
             witness.push(pk.serialize().to_vec());
+            println!("pk = {:x?}", pk.serialize().to_vec());
+            println!("witness = {:x?}", witness);
 
             signed_transaction.input[i].witness = witness;
         }
 
+        println!("serialized: {:?}", signed_transaction);
         println!("serialized: {}", hex::encode(serialize(&signed_transaction)));
 
         true
@@ -227,17 +263,22 @@ impl Wallet {
                      party_two_sign_message: party2::SignMessage,
                      pos_child_key: u32) -> party_one::Signature
     {
+        println!("get_signature: message = {:?}", message);
+        println!("get_signature: message le_hex_string = {:?}", message.le_hex_string());
+        println!("get_signature: message post #2 = {:?}", BigInt::from_hex(&message.le_hex_string()).to_str_radix(16));
         let request : SignSecondMsgRequest = SignSecondMsgRequest {
-            message: BigInt::from_hex(&message.be_hex_string()),
+            message: BigInt::from_hex(&message.le_hex_string()),
             party_two_sign_message,
             eph_key_gen_first_message_party_two,
             pos_child_key
         };
+        println!("get_signature: request {:?} = ", request);
 
         let res_body = requests::postb(
             client, &format!("/ecdsa/sign/{}/second", self.private_shares.id),
             &request).unwrap();
 
+        println!("get_signature: res_body = {:?}", res_body);
         let signature : party_one::Signature = serde_json::from_str(&res_body).unwrap();
 
         signature
@@ -260,7 +301,7 @@ impl Wallet {
             &eph_ec_key_pair_party2,
             eph_comm_witness.clone(),
             &sign_party_one_first_message,
-            &BigInt::from_hex(&message.be_hex_string()),
+            &BigInt::from_hex(&message.le_hex_string()),
         );
 
         (eph_key_gen_first_message_party_two, party_two_sign_message)
@@ -382,7 +423,7 @@ impl Wallet {
 
         let mut response : Vec<bitcoin::Address> = Vec::new();
 
-        for n in init..last_pos {
+        for n in init..=last_pos {
             let mk = self.private_shares.master_key.get_child(vec![BigInt::from(n)]);
             let bitcoin_address = Self::to_bitcoin_address(&mk, self.get_bitcoin_network());
 

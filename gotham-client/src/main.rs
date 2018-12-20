@@ -26,9 +26,9 @@ fn main() {
             println!("{:?}", address);
             wallet.derived();
         } else if matches.is_present("get-balance") {
-            //let balance = wallet.get_balance();
-            //println!("{:?}", balance);
-
+//            let balance = wallet.get_balance();
+//            println!("{:?}", balance);
+            println!("trying send");
             let to = "tb1qpvwqq4e6l9jr735sdvjvv0ww4h796ffvttwfv3".to_string();
             let tx = wallet.send(&client, to, 0.001);
             println!("{:?}", tx);

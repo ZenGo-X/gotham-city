@@ -31,7 +31,7 @@ git = "https://github.com/KZen-networks/zk-paillier"
 
 [dependencies.kms]
 git = "https://github.com/KZen-networks/kms"
-branch = "schnorr_support"
+branch = "shchnorr_support_oded"
 
 [dependencies.multi-party-ecdsa]
 git = "https://github.com/KZen-networks/multi-party-ecdsa"
