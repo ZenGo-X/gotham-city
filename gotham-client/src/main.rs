@@ -49,11 +49,11 @@ fn main() {
             if let Some(matches) = matches.subcommand_matches("send") {
                 let to: &str = matches.value_of("to").unwrap();
                 let amount_btc: &str = matches.value_of("amount").unwrap();
-                let signed_tx_hex = wallet.send(&client,
+                let txid = wallet.send(&client,
                                                 to.to_string(),
                                                 amount_btc.to_string().parse::<f32>().unwrap());
 
-                println!("Network: [{}], Signed tx hex: [{}]", network, signed_tx_hex);
+                println!("Network: [{}], Sent {} BTC to address {}. Transaction ID: {}", network, amount_btc, to, txid);
             }
         }
 

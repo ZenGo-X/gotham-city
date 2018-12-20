@@ -156,9 +156,9 @@ impl Wallet {
             })
             .collect();
 
-        let fees = 10000;
+        let fees = 10_000;
 
-        let amount_satoshi = (amount_btc * 100_000_00 as f32) as u64;
+        let amount_satoshi = (amount_btc * 100_000_000 as f32) as u64;
 
         let change_address = self.get_new_bitcoin_address();
 
@@ -200,15 +200,7 @@ impl Wallet {
 
             let comp = SighashComponents::new(&transaction);
             let sig_hash = comp.sighash_all(
-                &transaction.input[i], &address.script_pubkey(), (selected[i].value as u32).into());
-
-
-            println!("Hash for address {}, input {}, sig_hash {:?}, address {}", address, i, sig_hash, selected[i].value);
-
-            /*let sig_hash = transaction.signature_hash(
-                i,
-                &address.script_pubkey(),
-                bitcoin::SigHashType::All.as_u32());*/
+                &transaction.input[i], &bitcoin::Address::p2pkh(&pk, self.get_bitcoin_network()).script_pubkey(), (selected[i].value as u32).into());
 
             let (eph_key_gen_first_message_party_two, party_two_sign_message) =
                 self.sign(client, sig_hash, &mk);
@@ -234,15 +226,14 @@ impl Wallet {
             witness.push(pk.serialize().to_vec());
 
             signed_transaction.input[i].witness = witness;
-            println!("Signing input {}, witness {:?}, address {}", i, v, address);
         }
 
         let mut electrum = ElectrumxClient::new(ELECTRUM_HOST).unwrap();
 
         let raw_tx_hex = hex::encode(serialize(&signed_transaction));
-        let res = electrum.broadcast_transaction(raw_tx_hex.clone());
-        println!("{:?}", res);
-        raw_tx_hex
+        let txid = electrum.broadcast_transaction(raw_tx_hex.clone());
+
+        txid.unwrap()
     }
 
     fn get_signature(&self,
@@ -337,8 +328,6 @@ impl Wallet {
                 a.value.partial_cmp(&b.value).unwrap())
             .into_iter()
             .collect();
-
-        println!("{:?}", list_unspent);
 
         let mut remaining : i64 = amount_btc as i64 * 100_000_000;
         let mut selected : Vec<GetListUnspentResponse> = Vec::new();
