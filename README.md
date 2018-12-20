@@ -5,7 +5,15 @@ example of minimalist Bitcoin decentralized HD wallet using 2 party ECDSA.
 
 Project Status
 -------
-The project is currently work in progress (WIP).
+The project is currently work in progress. For more information you can [email us](mailto:github@kzencorp.com).
+
+Elements
+-------
+
+| Gotham Server                                | Gotham Server                                | Gotham Client                                |
+| -------------------------------------------- | -------------------------------------------- |--------------------------------------------
+| Description | RESTful web service exposing APIs for two party ECDSA key generation and signing | Bitcoin minimalist decentralized wallet CLI app |
+| Instructions | [View](gotham-server/README.md) | [View](gotham-client/README.md) |
 
 Project Description
 -------
@@ -44,9 +52,6 @@ Bitcoin is utilizing ECDSA as the signing scheme. There is an active line of res
 
 **For more information, see our [white paper](white-paper/white-paper.pdf)**.
 
-Performance
--------
-TODO
 
 Disclaimer
 -------

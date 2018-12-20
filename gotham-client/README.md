@@ -1,4 +1,6 @@
 # Gotham Client
+![Gotham Client](../misc/client-icon.png)
+
 ## Introduction
 Gotham client is a bitcoin minimalist decentralized wallet CLI app.
 

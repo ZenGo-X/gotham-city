@@ -1,7 +1,8 @@
 # Gotham Server
+![Gotham Server](../misc/server-icon.png)
+
 ## Introduction
-Gotham server is a RESTful web service exposing APIs for two party ECDSA key 
-generation and signing.
+Gotham server is a RESTful web service exposing APIs for two party ECDSA key generation and signing.
 
 ## Installation
 ### Launching the server
