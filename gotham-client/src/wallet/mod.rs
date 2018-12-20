@@ -98,7 +98,7 @@ impl Wallet {
     pub fn backup(&self, escrow: &escrow::Escrow) {
         escrow.backup_shares(&self.private_shares.master_key);
 
-        println!("(wallet id: {}) Backup wallet with escrow", self.id);
+        debug!("(wallet id: {}) Backup wallet with escrow", self.id);
     }
 
     pub fn save(&self) {
@@ -107,7 +107,7 @@ impl Wallet {
         fs::write(WALLET_FILENAME, wallet_json)
             .expect("Unable to save wallet!");
 
-        println!("(wallet id: {}) Saved wallet to disk", self.id);
+        debug!("(wallet id: {}) Saved wallet to disk", self.id);
     }
 
     pub fn load() -> Wallet {
@@ -116,12 +116,12 @@ impl Wallet {
 
         let wallet: Wallet = serde_json::from_str(&data).unwrap();
 
-        println!("(wallet id: {}) Loaded wallet to memory", wallet.id);
+        debug!("(wallet id: {}) Loaded wallet to memory", wallet.id);
 
         wallet
     }
 
-    pub fn send(&mut self, client: &reqwest::Client, to_address: String, amount_btc: f32) -> bool {
+    pub fn send(&mut self, client: &reqwest::Client, to_address: String, amount_btc: f32) -> String {
         let selected = self.select_tx_in(amount_btc);
         if selected.is_empty() {
             panic!("Not enough fund");
@@ -215,9 +215,7 @@ impl Wallet {
             signed_transaction.input[i].witness = witness;
         }
 
-        println!("serialized: {}", hex::encode(serialize(&signed_transaction)));
-
-        true
+        hex::encode(serialize(&signed_transaction))
     }
 
     fn get_signature(&self,

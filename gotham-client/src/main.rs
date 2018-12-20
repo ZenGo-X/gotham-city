@@ -13,30 +13,39 @@ fn main() {
     let client = reqwest::Client::new();
     let network = "testnet".to_string();
 
-    let escrow = escrow::Escrow::new();
-
     if let Some(_matches) = matches.subcommand_matches("create-wallet") {
-        let wallet : wallet::Wallet = wallet::Wallet::new(&client, network);
-        wallet.save();
+        wallet::Wallet::new(&client, network).save();
     } else if let Some(matches) = matches.subcommand_matches("wallet") {
         let mut wallet : wallet::Wallet = wallet::Wallet::load();
+        let escrow = escrow::Escrow::new();
 
         if matches.is_present("new-address") {
             let address = wallet.get_new_bitcoin_address();
-            println!("{:?}", address);
-            wallet.derived();
+            println!("Network: [{}], Address: [{}]", network, address.to_string());
         } else if matches.is_present("get-balance") {
-            //let balance = wallet.get_balance();
-            //println!("{:?}", balance);
-
-            let to = "tb1qpvwqq4e6l9jr735sdvjvv0ww4h796ffvttwfv3".to_string();
-            let tx = wallet.send(&client, to, 0.001);
-            println!("{:?}", tx);
+            let balance = wallet.get_balance();
+            println!("Network: [{}], Balance: [balance: {}, pending: {}]",
+                     network, balance.confirmed, balance.unconfirmed);
         } else if matches.is_present("list-unspent") {
             let unspent = wallet.list_unspent();
-            println!("{:?}", unspent);
+            let hashes : Vec<String>= unspent
+                .into_iter()
+                .map(|u| u.tx_hash)
+                .collect();
+
+            println!("Network: [{}], Unspent tx hashes: [\n{}\n]", network, hashes.join("\n"));
         } else if matches.is_present("backup") {
             wallet.backup(&escrow);
+        } else if matches.is_present("send") {
+            if let Some(matches) = matches.subcommand_matches("send") {
+                let to: &str = matches.value_of("to").unwrap();
+                let amount_btc: &str = matches.value_of("amount").unwrap();
+                let signed_tx_hex = wallet.send(&client,
+                                                to.to_string(),
+                                                amount_btc.to_string().parse::<f32>().unwrap());
+
+                println!("Network: [{}], Signed tx hex: [{}]", network, signed_tx_hex);
+            }
         }
 
         wallet.save();

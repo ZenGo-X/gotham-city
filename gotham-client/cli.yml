@@ -3,31 +3,46 @@ version: "1.0"
 author: gbenattar <g.benattar@gmail.com>
 about: Command Line Interface for a minimalist decentralized crypto-currency wallet
 args:
-- verbose:
-    short: v
-    multiple: true
-    help: Sets the level of verbosity
+  - verbose:
+      short: v
+      multiple: true
+      help: Sets the level of verbosity
 subcommands:
-- create-wallet:
-    about: Create an MPC wallet
-    version: "1.0"
-    args:
-    - verbose:
-        short: v
-        help: Sets the level of verbosity
-- wallet:
-    about: Operation on wallet
-    version: "1.0"
-    args:
-    - new-address:
-          short: a
-          help: Generate a new address
-    - get-balance:
-          short: b
-          help: Get wallet balance
-    - list-unspent:
-          short: u
-          help: Get wallet list unspent
-    - backup:
-          short: e
-          help: Backup wallet with Escrow
+  - create-wallet:
+      about: Create an MPC wallet
+      version: "1.0"
+      args:
+      - verbose:
+          short: v
+          help: Sets the level of verbosity
+  - wallet:
+      about: Operation on wallet
+      version: "1.0"
+      args:
+        - new-address:
+              short: a
+              help: Generate a new address
+        - get-balance:
+              short: b
+              help: Total balance
+        - list-unspent:
+              short: u
+              help: List unspent transactions (tx hash)
+        - backup:
+              short: e
+              help: Wallet private shares backup
+      subcommands:
+        - send:
+            about: Send a transaction
+            version: "1.0"
+            args:
+              - to:
+                  short: t
+                  required: true
+                  value_name: to
+                  help: Receipient
+              - amount:
+                  short: a
+                  required: true
+                  value_name: amount
+                  help: Amount in BTC
