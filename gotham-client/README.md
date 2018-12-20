@@ -104,7 +104,7 @@ bc32ff53c1b9f71d7a6a5e3f5ec7bc8d20afe50214110a0718c9004be33d57d6
 
 ### Send a transaction
 ```bash
-./target/release/cli send -to [ADDRESS] -value [BTC_AMOUNT]
+./target/release/cli wallet send -t [ADDRESS] -a [BTC_AMOUNT]
 ```
 
 * Example: 
