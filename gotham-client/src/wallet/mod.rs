@@ -1,3 +1,12 @@
+// Gotham-city
+//
+// Copyright 2018 by Kzen Networks (kzencorp.com)
+// Gotham city is free software: you can redistribute
+// it and/or modify it under the terms of the GNU General Public
+// License as published by the Free Software Foundation, either
+// version 3 of the License, or (at your option) any later version.
+//
+
 use reqwest;
 use uuid::Uuid;
 use kms::ecdsa::two_party::*;
@@ -245,7 +254,7 @@ impl Wallet {
     {
 
         let request : SignSecondMsgRequest = SignSecondMsgRequest {
-            message: BigInt::from(&message),
+            message: BigInt::from_hex(&message.le_hex_string()),
             party_two_sign_message,
             eph_key_gen_first_message_party_two,
             pos_child_key
