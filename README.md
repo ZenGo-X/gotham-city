@@ -40,7 +40,7 @@ Project Description
 ### White paper overview
 #### Abstract
 We demonstrate a Bitcoin wallet that utilizes two party ECDSA (2P-ECDSA).
-Our architecture consists of a simple client-server communication
+Our architecture relies on a simple client-server communication
 model. We show support for 2 party deterministic child derivation
 (2P-HD), secret share rotation and verifiable recovery. We discuss the
 opportunities and challenges of using a multi-party wallet.
@@ -49,7 +49,7 @@ opportunities and challenges of using a multi-party wallet.
 For end-users, cryptocurrencies and blockchain-based assets are hard to store and manage.
 One of the reasons is the tradeoff between security and availability.
 Storing private keys safely requires dedicated hardware or extreme security measures which make using the coins
-on a daily basis difficult. Threshold cryptography provides ways to decentralize the private key and digital signing.
+on a daily basis difficult. Threshold cryptography provides ways to distribute the private key and digital signing.
 This can potentially benefit security but at the same time reveal new challenges such as availability, ownership and recovery.
 Bitcoin is utilizing ECDSA as the signing scheme. There is an active line of research for practical and efficient multi-party ECDSA schemes.
 
