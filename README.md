@@ -1,5 +1,8 @@
 Gotham City
 =====================================
+![Gotham City](./misc/gotham_banner.png)
+
+
 Gotham city is a fully functional project to demonstrate real-life 
 example of minimalist Bitcoin decentralized HD wallet using 2 party ECDSA.
 
