@@ -13,7 +13,7 @@ The project is currently work in progress. For more information you can [email u
 Elements
 -------
 
-| Gotham Server                                | Gotham Server                                | Gotham Client                                |
+|                                                 | Gotham Server                                | Gotham Client                                |
 | -------------------------------------------- | -------------------------------------------- |--------------------------------------------
 | Description | RESTful web service exposing APIs for two party ECDSA key generation and signing | Bitcoin minimalist decentralized wallet CLI app |
 | Instructions | [View](gotham-server/README.md) | [View](gotham-client/README.md) |
