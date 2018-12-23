@@ -29,8 +29,11 @@ subcommands:
               short: u
               help: List unspent transactions (tx hash)
         - backup:
-              short: e
-              help: Wallet private shares backup
+              short: s
+              help: Private shares backup
+        - restore:
+              short: r
+              help: Private shares recovery
       subcommands:
         - send:
             about: Send a transaction

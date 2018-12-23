@@ -16,10 +16,9 @@ use std::fs;
 use serde_json;
 use curv::BigInt;
 use bitcoin;
-use bitcoin::consensus::encode::{serialize, Encoder, Decoder};
+use bitcoin::consensus::encode::{serialize};
 use bitcoin::network::constants::Network;
-use bitcoin::{Transaction, TxIn, TxOut, SigHashType};
-use bitcoin::blockdata::script::Builder;
+use bitcoin::{TxIn, TxOut};
 use bitcoin::util::bip143::SighashComponents;
 use curv::elliptic::curves::traits::ECPoint;
 use electrumx_client::{
@@ -27,13 +26,11 @@ use electrumx_client::{
     interface::Electrumx
 };
 
-use secp256k1::Message;
 use std::str::FromStr;
 use std::collections::HashMap;
 use itertools::Itertools;
 use curv::arithmetic::traits::Converter;
 use secp256k1::Signature;
-use secp256k1::PublicKey;
 use secp256k1::Secp256k1;
 use super::utilities::requests;
 use super::ecdsa::keygen;
@@ -98,11 +95,12 @@ pub struct Wallet {
 }
 
 impl Wallet {
-    pub fn new(client: &reqwest::Client, network: String) -> Wallet {
+    pub fn new(client: &reqwest::Client, net: &String) -> Wallet {
         let id = Uuid::new_v4().to_string();
         let private_shares = keygen::get_master_key(client);
         let last_derived_pos = 0;
         let addresses_derivation_map = HashMap::new();
+        let network = net.clone();
 
         Wallet { id, network, private_shares, last_derived_pos, addresses_derivation_map }
     }
@@ -178,25 +176,21 @@ impl Wallet {
             }
         ];
 
-        let mut transaction = bitcoin::Transaction {
+        let transaction = bitcoin::Transaction {
             version: 0,
             lock_time: 0,
             input: txs_in,
             output: txs_out
         };
 
-        let mut signatures : Vec<party_one::Signature> = Vec::new();
-
         let mut signed_transaction = transaction.clone();
 
         for i in 0..transaction.input.len() {
 
-            let addressDerivation = self.addresses_derivation_map.get(&selected[i].address).unwrap();
+            let address_derivation = self.addresses_derivation_map.get(&selected[i].address).unwrap();
 
-            let mk = &addressDerivation.mk;
+            let mk = &address_derivation.mk;
             let pk = mk.public.q.get_element();
-
-            let address = bitcoin::Address::p2wpkh(&pk, self.get_bitcoin_network());
 
             let comp = SighashComponents::new(&transaction);
             let sig_hash = comp.sighash_all(
@@ -210,7 +204,7 @@ impl Wallet {
                 sig_hash,
                 eph_key_gen_first_message_party_two,
                 party_two_sign_message,
-                addressDerivation.pos);
+                address_derivation.pos);
 
             let mut v = BigInt::to_vec(&signatures.r);
             v.extend(BigInt::to_vec(&signatures.s));

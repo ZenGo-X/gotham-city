@@ -14,6 +14,7 @@ use clap::App;
 use reqwest;
 use client_lib::wallet;
 use client_lib::escrow;
+use time::PreciseTime;
 
 fn main() {
     let yaml = load_yaml!("../cli.yml");
@@ -23,10 +24,16 @@ fn main() {
     let network = "testnet".to_string();
 
     if let Some(_matches) = matches.subcommand_matches("create-wallet") {
-        wallet::Wallet::new(&client, network).save();
+        println!("Network: [{}], Creating wallet", network);
+        let wallet = wallet::Wallet::new(&client, &network);
+        wallet.save();
+        println!("Network: [{}], Wallet saved to disk", &network);
+
+        let _escrow = escrow::Escrow::new();
+        println!("Network: [{}], Escrow initiated", &network);
     } else if let Some(matches) = matches.subcommand_matches("wallet") {
         let mut wallet : wallet::Wallet = wallet::Wallet::load();
-        let escrow = escrow::Escrow::new();
+
 
         if matches.is_present("new-address") {
             let address = wallet.get_new_bitcoin_address();
@@ -44,7 +51,24 @@ fn main() {
 
             println!("Network: [{}], Unspent tx hashes: [\n{}\n]", network, hashes.join("\n"));
         } else if matches.is_present("backup") {
+            let escrow = escrow::Escrow::load();
+
+            println!("Backup private share pending (it can take some time)...");
+
+            let start = PreciseTime::now();
             wallet.backup(&escrow);
+            let end = PreciseTime::now();
+
+            println!("Backup key saved in escrow (Took: {})", start.to(end));
+        } else if matches.is_present("restore") {
+            let escrow = escrow::Escrow::load();
+            println!("Recovering private share pending (it can take some time)...");
+
+            let start = PreciseTime::now();
+            escrow.recover_and_save_shares();
+            let end = PreciseTime::now();
+
+            println!("Recovered key, saved in escrow (Took: {})", start.to(end));
         } else if matches.is_present("send") {
             if let Some(matches) = matches.subcommand_matches("send") {
                 let to: &str = matches.value_of("to").unwrap();

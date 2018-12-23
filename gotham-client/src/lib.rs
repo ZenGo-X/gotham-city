@@ -10,6 +10,7 @@
 extern crate kms;
 extern crate multi_party_ecdsa;
 extern crate zk_paillier;
+extern crate centipede;
 extern crate curv;
 extern crate reqwest;
 
