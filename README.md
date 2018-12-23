@@ -6,6 +6,9 @@ Gotham City
 Gotham city is a fully functional project to demonstrate real-life 
 example of minimalist Bitcoin decentralized HD wallet using 2 party ECDSA.
 
+| ![Demo](misc/demo-send.gif) |
+|-----------------------------|
+
 Project Status
 -------
 The project is currently work in progress. For more information you can [email us](mailto:github@kzencorp.com).
