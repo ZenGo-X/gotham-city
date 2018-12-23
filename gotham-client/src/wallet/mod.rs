@@ -39,8 +39,7 @@ use hex;
 
 // TODO: move that to a config file and double check electrum server addresses
 //const ELECTRUM_HOST : &str = "testnet.hsmiths.com:53011";
-
-const ELECTRUM_HOST : &str = "ec2-34-219-15-143.us-west-2.compute.amazonaws.com:60001";
+const ELECTRUM_HOST : &str = "testnetnode.arihanc.com:51001";
 const WALLET_FILENAME : &str = "wallet/wallet.data";
 
 #[derive(Serialize, Deserialize)]
