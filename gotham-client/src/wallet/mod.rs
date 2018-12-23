@@ -387,7 +387,7 @@ impl Wallet {
 
     fn get_all_addresses(&self) -> Vec<bitcoin::Address> {
         let init = 0;
-        let last_pos = 5;//self.last_derived_pos;
+        let last_pos = self.last_derived_pos;
 
         let mut response : Vec<bitcoin::Address> = Vec::new();
 
