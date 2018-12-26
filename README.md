@@ -61,7 +61,7 @@ The comparison was done on an Intel i7-8559U (2.7GHz)
 |        Implementation         |         KeyGen         | 
 |-------------------------------|------------------------|
 | Unbound python wrapper        |     2.132 s ±  0.072 s |
-| gotham (this repo)            | **1.580** s ±  0.142 s |
+| Gotham city (this repo)       | **1.580** s ±  0.142 s |
 
 
 Disclaimer
