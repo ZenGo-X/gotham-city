@@ -7,8 +7,8 @@
 // version 3 of the License, or (at your option) any later version.
 //
 
-use rocket::{Request, Rocket};
 use rocket;
+use rocket::{Request, Rocket};
 use rocksdb::DB;
 
 use super::routes::ecdsa;
@@ -30,12 +30,14 @@ fn not_found(req: &Request) -> String {
 
 pub fn get_server() -> Rocket {
     let config = ecdsa::Config {
-        db: DB::open_default("./db").unwrap()
+        db: DB::open_default("./db").unwrap(),
     };
 
     rocket::ignite()
         .register(catchers![internal_error, not_found, bad_request])
-        .mount("/", routes![
+        .mount(
+            "/",
+            routes![
                 ecdsa::first_message,
                 ecdsa::second_message,
                 ecdsa::third_message,
@@ -46,6 +48,7 @@ pub fn get_server() -> Rocket {
                 ecdsa::master_key,
                 ecdsa::sign_first,
                 ecdsa::sign_second
-            ])
+            ],
+        )
         .manage(config)
 }

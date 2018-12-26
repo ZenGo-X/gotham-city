@@ -11,9 +11,9 @@
 extern crate clap;
 use clap::App;
 
-use reqwest;
-use client_lib::wallet;
 use client_lib::escrow;
+use client_lib::wallet;
+use reqwest;
 use time::PreciseTime;
 
 fn main() {
@@ -32,24 +32,26 @@ fn main() {
         let _escrow = escrow::Escrow::new();
         println!("Network: [{}], Escrow initiated", &network);
     } else if let Some(matches) = matches.subcommand_matches("wallet") {
-        let mut wallet : wallet::Wallet = wallet::Wallet::load();
-
+        let mut wallet: wallet::Wallet = wallet::Wallet::load();
 
         if matches.is_present("new-address") {
             let address = wallet.get_new_bitcoin_address();
             println!("Network: [{}], Address: [{}]", network, address.to_string());
         } else if matches.is_present("get-balance") {
             let balance = wallet.get_balance();
-            println!("Network: [{}], Balance: [balance: {}, pending: {}]",
-                     network, balance.confirmed, balance.unconfirmed);
+            println!(
+                "Network: [{}], Balance: [balance: {}, pending: {}]",
+                network, balance.confirmed, balance.unconfirmed
+            );
         } else if matches.is_present("list-unspent") {
             let unspent = wallet.list_unspent();
-            let hashes : Vec<String>= unspent
-                .into_iter()
-                .map(|u| u.tx_hash)
-                .collect();
+            let hashes: Vec<String> = unspent.into_iter().map(|u| u.tx_hash).collect();
 
-            println!("Network: [{}], Unspent tx hashes: [\n{}\n]", network, hashes.join("\n"));
+            println!(
+                "Network: [{}], Unspent tx hashes: [\n{}\n]",
+                network,
+                hashes.join("\n")
+            );
         } else if matches.is_present("backup") {
             let escrow = escrow::Escrow::load();
 
@@ -73,11 +75,16 @@ fn main() {
             if let Some(matches) = matches.subcommand_matches("send") {
                 let to: &str = matches.value_of("to").unwrap();
                 let amount_btc: &str = matches.value_of("amount").unwrap();
-                let txid = wallet.send(&client,
-                                                to.to_string(),
-                                                amount_btc.to_string().parse::<f32>().unwrap());
+                let txid = wallet.send(
+                    &client,
+                    to.to_string(),
+                    amount_btc.to_string().parse::<f32>().unwrap(),
+                );
 
-                println!("Network: [{}], Sent {} BTC to address {}. Transaction ID: {}", network, amount_btc, to, txid);
+                println!(
+                    "Network: [{}], Sent {} BTC to address {}. Transaction ID: {}",
+                    network, amount_btc, to, txid
+                );
             }
         }
 

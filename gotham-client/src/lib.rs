@@ -7,12 +7,12 @@
 // version 3 of the License, or (at your option) any later version.
 //
 
-extern crate kms;
-extern crate multi_party_ecdsa;
-extern crate zk_paillier;
 extern crate centipede;
 extern crate curv;
+extern crate kms;
+extern crate multi_party_ecdsa;
 extern crate reqwest;
+extern crate zk_paillier;
 
 #[macro_use]
 extern crate serde_derive;
@@ -22,15 +22,15 @@ extern crate serde_json;
 #[macro_use]
 extern crate log;
 
-extern crate time;
-extern crate uuid;
 extern crate bitcoin;
 extern crate electrumx_client;
+extern crate hex;
 extern crate itertools;
 extern crate secp256k1;
-extern crate hex;
+extern crate time;
+extern crate uuid;
 
 pub mod ecdsa;
+pub mod escrow;
 pub mod utilities;
 pub mod wallet;
-pub mod escrow;

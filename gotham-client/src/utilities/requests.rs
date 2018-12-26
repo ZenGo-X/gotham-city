@@ -8,8 +8,8 @@
 //
 
 use reqwest;
-use time::PreciseTime;
 use serde;
+use time::PreciseTime;
 
 pub fn post(client: &reqwest::Client, path: &str) -> Option<String> {
     let start = PreciseTime::now();
@@ -26,10 +26,9 @@ pub fn post(client: &reqwest::Client, path: &str) -> Option<String> {
     Some(res.unwrap().text().unwrap())
 }
 
-
 pub fn postb<T>(client: &reqwest::Client, path: &str, body: T) -> Option<String>
-    where
-        T: serde::ser::Serialize,
+where
+    T: serde::ser::Serialize,
 {
     let start = PreciseTime::now();
 

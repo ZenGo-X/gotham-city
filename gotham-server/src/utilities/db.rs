@@ -7,9 +7,9 @@
 // version 3 of the License, or (at your option) any later version.
 //
 
-use rocksdb::DB;
-use rocksdb::DBVector;
 use super::super::routes::ecdsa;
+use rocksdb::DBVector;
+use rocksdb::DB;
 use serde;
 
 fn idify(id: &String, name: &ecdsa::Share) -> String {
@@ -17,11 +17,11 @@ fn idify(id: &String, name: &ecdsa::Share) -> String {
 }
 
 pub fn insert<T>(db: &DB, id: &String, name: &ecdsa::Share, v: &T)
-    where
-        T: serde::ser::Serialize,
+where
+    T: serde::ser::Serialize,
 {
     let identifier = idify(id, name);
-    let v : String = serde_json::to_string(&v).unwrap();
+    let v: String = serde_json::to_string(&v).unwrap();
     info!("Inserting into db ({}, {})", identifier, v);
 
     let r = db.put(identifier.as_ref(), v.as_ref());
@@ -30,8 +30,7 @@ pub fn insert<T>(db: &DB, id: &String, name: &ecdsa::Share, v: &T)
     }
 }
 
-pub fn get(db: &DB, id: &String, name: &ecdsa::Share) ->  Option<DBVector>
-{
+pub fn get(db: &DB, id: &String, name: &ecdsa::Share) -> Option<DBVector> {
     let identifier = idify(id, name);
     info!("Getting from db ({})", identifier);
 

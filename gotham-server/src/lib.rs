@@ -11,13 +11,13 @@
 
 #[macro_use]
 extern crate rocket;
-extern crate rocket_contrib;
+extern crate curv;
 extern crate kms;
 extern crate multi_party_ecdsa;
-extern crate zk_paillier;
-extern crate curv;
+extern crate rocket_contrib;
 extern crate rocksdb;
 extern crate uuid;
+extern crate zk_paillier;
 
 #[macro_use]
 extern crate serde_derive;
@@ -36,9 +36,7 @@ extern crate log;
 extern crate time_test;
 extern crate time;
 
-pub mod utilities;
 pub mod routes;
 pub mod server;
 pub mod tests;
-
-
+pub mod utilities;

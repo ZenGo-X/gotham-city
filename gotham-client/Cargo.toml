@@ -35,11 +35,9 @@ git = "https://github.com/KZen-networks/zk-paillier"
 
 [dependencies.kms]
 git = "https://github.com/KZen-networks/kms"
-branch = "schnorr_support"
 
 [dependencies.multi-party-ecdsa]
 git = "https://github.com/KZen-networks/multi-party-ecdsa"
-branch = "pdl-sub-protocol"
 
 [dependencies.curv]
 git = "https://github.com/KZen-networks/curv"
