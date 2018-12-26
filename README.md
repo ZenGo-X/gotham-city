@@ -55,7 +55,7 @@ Bitcoin is utilizing ECDSA as the signing scheme. There is an active line of res
 
 **For more information, see our [white paper](white-paper/white-paper.pdf)**.
 
-#### Comperative Performance
+### Comperative Performance
 The comparison was done on an Intel i7-8559U (2.7GHz)
 
 |        Implementation         |         KeyGen         | 
