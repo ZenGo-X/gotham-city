@@ -45,10 +45,8 @@ pub fn get_master_key(client: &reqwest::Client) -> wallet::PrivateShares {
         requests::postb(client, &format!("{}/{}/second", KG_PATH_PRE, id), body).unwrap();
 
     // TODO: second param not needed
-    let (kg_party_one_second_message, _paillier_key_pair): (
-        party1::KeyGenParty1Message2,
-        party_one::PaillierKeyPair,
-    ) = serde_json::from_str(&res_body).unwrap();
+    let kg_party_one_second_message: party1::KeyGenParty1Message2 =
+        serde_json::from_str(&res_body).unwrap();
 
     let key_gen_second_message = MasterKey2::key_gen_second_message(
         &kg_party_one_first_message,

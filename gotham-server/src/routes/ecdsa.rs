@@ -1,3 +1,4 @@
+#![allow(non_snake_case)]
 // Gotham-city
 //
 // Copyright 2018 by Kzen Networks (kzencorp.com)
@@ -8,10 +9,12 @@
 //
 
 use curv::cryptographic_primitives::proofs::dlog_zk_protocol::*;
+use curv::cryptographic_primitives::twoparty::coin_flip_optimal_rounds;
 use curv::cryptographic_primitives::twoparty::dh_key_exchange::*;
-use curv::{BigInt, FE, GE};
+use curv::{BigInt, GE};
 use kms::chain_code::two_party as chain_code;
 use kms::ecdsa::two_party::*;
+use kms::rotation::two_party::party1::Rotation1;
 use multi_party_ecdsa::protocols::two_party_ecdsa::lindell_2017::*;
 use rocket::State;
 use rocket_contrib::json::Json;
@@ -19,7 +22,6 @@ use rocksdb::DB;
 use serde_json;
 use std::string::ToString;
 use uuid::Uuid;
-use zk_paillier::zkproofs::*;
 
 use super::super::utilities::db;
 
@@ -43,8 +45,16 @@ pub enum Share {
     MasterKey,
 
     EphEcKeyPair,
-}
 
+    RotateCommitMessage1M,
+    RotateCommitMessage1R,
+    RotateRandom1,
+    RotateFirstMsg,
+    RotatePrivateNew,
+    RotatePdlDecom,
+    RotateParty2First,
+    RotateParty1Second,
+}
 pub struct Config {
     pub db: DB,
 }
@@ -67,7 +77,7 @@ pub fn second_message(
     state: State<Config>,
     id: String,
     d_log_proof: Json<DLogProof>,
-) -> Json<(party1::KeyGenParty1Message2, party_one::PaillierKeyPair)> {
+) -> Json<party1::KeyGenParty1Message2> {
     let db_comm_witness = db::get(&state.db, &id, &Share::CommWitness);
     let comm_witness: party_one::CommWitness = match db_comm_witness {
         Some(v) => serde_json::from_str(v.to_utf8().unwrap()).unwrap(),
@@ -86,7 +96,7 @@ pub fn second_message(
     db::insert(&state.db, &id, &Share::PaillierKeyPair, &paillier_key_pair);
     db::insert(&state.db, &id, &Share::Party1Private, &party_one_private);
 
-    Json((kg_party_one_second_message, paillier_key_pair))
+    Json(kg_party_one_second_message)
 }
 
 #[post(
@@ -99,12 +109,6 @@ pub fn third_message(
     id: String,
     party_2_pdl_first_message: Json<party_two::PDLFirstMessage>,
 ) -> Json<(party_one::PDLFirstMessage)> {
-    let db_paillier_key_pair = db::get(&state.db, &id, &Share::PaillierKeyPair);
-    let paillier_key_pair: party_one::PaillierKeyPair = match db_paillier_key_pair {
-        Some(v) => serde_json::from_str(v.to_utf8().unwrap()).unwrap(),
-        None => panic!("No data for such identifier {}", id),
-    };
-
     let db_party_one_private = db::get(&state.db, &id, &Share::Party1Private);
     let party_one_private: party_one::Party1Private = match db_party_one_private {
         Some(v) => serde_json::from_str(v.to_utf8().unwrap()).unwrap(),
@@ -337,4 +341,186 @@ pub fn sign_second(
     assert!(signatures.is_ok());
 
     Json(signatures.unwrap())
+}
+
+pub fn get_mk(state: &State<Config>, id: &String) -> MasterKey1 {
+    let db_master_key = db::get(&state.db, &id, &Share::MasterKey);
+    match db_master_key {
+        Some(v) => return serde_json::from_str(v.to_utf8().unwrap()).unwrap(),
+        None => panic!("No data for such identifier {}", id),
+    };
+}
+#[post("/ecdsa/rotate/<id>/first", format = "json")]
+pub fn rotate_first(
+    state: State<Config>,
+    id: String,
+) -> Json<(coin_flip_optimal_rounds::Party1FirstMessage)> {
+    let (party1_coin_flip_first_message, m1, r1) = Rotation1::key_rotate_first_message();
+    db::insert(&state.db, &id, &Share::RotateCommitMessage1M, &m1);
+    db::insert(&state.db, &id, &Share::RotateCommitMessage1R, &r1);
+    Json(party1_coin_flip_first_message)
+}
+
+#[post(
+    "/ecdsa/rotate/<id>/second",
+    format = "json",
+    data = "<party2_first_message>"
+)]
+pub fn rotate_second(
+    state: State<Config>,
+    id: String,
+    party2_first_message: Json<coin_flip_optimal_rounds::Party2FirstMessage>,
+) -> Json<
+    ((
+        coin_flip_optimal_rounds::Party1SecondMessage,
+        party1::RotationParty1Message1,
+    )),
+> {
+    let party_one_master_key = get_mk(&state, &id);
+
+    let rotate_m = db::get(&state.db, &id, &Share::RotateCommitMessage1M);
+    let m1 = match rotate_m {
+        Some(v) => serde_json::from_str(v.to_utf8().unwrap()).unwrap(),
+        None => panic!("No data for such identifier {}", id),
+    };
+    let rotate_r = db::get(&state.db, &id, &Share::RotateCommitMessage1R);
+    let r1 = match rotate_r {
+        Some(v) => serde_json::from_str(v.to_utf8().unwrap()).unwrap(),
+        None => panic!("No data for such identifier {}", id),
+    };
+    let (party1_second_message, random1) =
+        Rotation1::key_rotate_second_message(&party2_first_message.0, &m1, &r1);
+    db::insert(&state.db, &id, &Share::RotateRandom1, &random1);
+
+    let (rotation_party_one_first_message, party_one_private_new) =
+        party_one_master_key.rotation_first_message(&random1);
+    db::insert(
+        &state.db,
+        &id,
+        &Share::RotateFirstMsg,
+        &rotation_party_one_first_message,
+    );
+    db::insert(
+        &state.db,
+        &id,
+        &Share::RotatePrivateNew,
+        &party_one_private_new,
+    );
+    Json((party1_second_message, rotation_party_one_first_message))
+}
+
+#[post(
+    "/ecdsa/rotate/<id>/third",
+    format = "json",
+    data = "<rotation_party_two_first_message>"
+)]
+pub fn rotate_third(
+    state: State<Config>,
+    id: String,
+    rotation_party_two_first_message: Json<party_two::PDLFirstMessage>,
+) -> Json<(party_one::PDLFirstMessage)> {
+    let rotate_private = db::get(&state.db, &id, &Share::RotatePrivateNew);
+    let party_one_private_new = match rotate_private {
+        Some(v) => serde_json::from_str(v.to_utf8().unwrap()).unwrap(),
+        None => panic!("No data for such identifier {}", id),
+    };
+
+    let (rotation_party_one_second_message, party_one_pdl_decommit) =
+        MasterKey1::rotation_second_message(
+            &rotation_party_two_first_message.0,
+            &party_one_private_new,
+        );
+    db::insert(
+        &state.db,
+        &id,
+        &Share::RotatePdlDecom,
+        &party_one_pdl_decommit,
+    );
+    db::insert(
+        &state.db,
+        &id,
+        &Share::RotateParty2First,
+        &rotation_party_two_first_message.0,
+    );
+    db::insert(
+        &state.db,
+        &id,
+        &Share::RotateParty1Second,
+        &rotation_party_one_second_message,
+    );
+
+    Json(rotation_party_one_second_message)
+}
+
+#[post(
+    "/ecdsa/rotate/<id>/fourth",
+    format = "json",
+    data = "<rotation_party_two_second_message>"
+)]
+pub fn rotate_fourth(
+    state: State<Config>,
+    id: String,
+    rotation_party_two_second_message: Json<party_two::PDLSecondMessage>,
+) -> Json<(party_one::PDLSecondMessage)> {
+    let party_one_master_key = get_mk(&state, &id);
+
+    let get_rotate_first_message = db::get(&state.db, &id, &Share::RotateFirstMsg);
+    let rotation_party_one_first_message = match get_rotate_first_message {
+        Some(v) => serde_json::from_str(v.to_utf8().unwrap()).unwrap(),
+        None => panic!("No data for such identifier {}", id),
+    };
+
+    let rotate_private = db::get(&state.db, &id, &Share::RotatePrivateNew);
+    let party_one_private_new = match rotate_private {
+        Some(v) => serde_json::from_str(v.to_utf8().unwrap()).unwrap(),
+        None => panic!("No data for such identifier {}", id),
+    };
+
+    let get_random = db::get(&state.db, &id, &Share::RotateRandom1);
+    let random1 = match get_random {
+        Some(v) => serde_json::from_str(v.to_utf8().unwrap()).unwrap(),
+        None => panic!("No data for such identifier {}", id),
+    };
+
+    let get_rotation_party_one_second = db::get(&state.db, &id, &Share::RotateParty1Second);
+    let rotation_party_one_second_message = match get_rotation_party_one_second {
+        Some(v) => serde_json::from_str(v.to_utf8().unwrap()).unwrap(),
+        None => panic!("No data for such identifier {}", id),
+    };
+
+    let get_rotation_party_two_first = db::get(&state.db, &id, &Share::RotateParty2First);
+    let rotation_party_two_first_message = match get_rotation_party_two_first {
+        Some(v) => serde_json::from_str(v.to_utf8().unwrap()).unwrap(),
+        None => panic!("No data for such identifier {}", id),
+    };
+
+    let get_party_one_pdl_decommit = db::get(&state.db, &id, &Share::RotatePdlDecom);
+    let party_one_pdl_decommit = match get_party_one_pdl_decommit {
+        Some(v) => serde_json::from_str(v.to_utf8().unwrap()).unwrap(),
+        None => panic!("No data for such identifier {}", id),
+    };
+
+    let result_rotate_party_two_second_message = party_one_master_key.rotation_third_message(
+        &rotation_party_one_first_message,
+        party_one_private_new,
+        &random1,
+        &rotation_party_one_second_message,
+        &rotation_party_two_first_message,
+        &rotation_party_two_second_message.0,
+        party_one_pdl_decommit,
+    );
+    if result_rotate_party_two_second_message.is_err() {
+        panic!("rotation failed");
+    }
+    let (rotation_party_one_third_message, party_one_master_key_rotated) =
+        result_rotate_party_two_second_message.unwrap();
+
+    db::insert(
+        &state.db,
+        &id,
+        &Share::MasterKey,
+        &party_one_master_key_rotated,
+    );
+
+    Json(rotation_party_one_third_message)
 }

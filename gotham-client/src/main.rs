@@ -71,6 +71,15 @@ fn main() {
             let end = PreciseTime::now();
 
             println!("Recovered key, saved in escrow (Took: {})", start.to(end));
+        } else if matches.is_present("rotate") {
+            println!("Rotating secret shares");
+
+            let start = PreciseTime::now();
+            let wallet = wallet.rotate(&client);
+            wallet.save();
+            let end = PreciseTime::now();
+
+            println!("key rotation complete, (Took: {})", start.to(end));
         } else if matches.is_present("send") {
             if let Some(matches) = matches.subcommand_matches("send") {
                 let to: &str = matches.value_of("to").unwrap();
@@ -80,14 +89,12 @@ fn main() {
                     to.to_string(),
                     amount_btc.to_string().parse::<f32>().unwrap(),
                 );
-
+                wallet.save();
                 println!(
                     "Network: [{}], Sent {} BTC to address {}. Transaction ID: {}",
                     network, amount_btc, to, txid
                 );
             }
         }
-
-        wallet.save();
     }
 }

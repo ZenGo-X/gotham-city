@@ -23,7 +23,7 @@ use serde_json;
 use std::fs;
 use uuid::Uuid;
 
-use super::ecdsa::keygen;
+use super::ecdsa::{keygen, rotate};
 use super::escrow;
 use super::utilities::requests;
 use curv::arithmetic::traits::Converter;
@@ -83,11 +83,11 @@ pub struct AddressDerivation {
 
 #[derive(Serialize, Deserialize)]
 pub struct Wallet {
-    id: String,
-    network: String,
-    private_shares: PrivateShares,
-    last_derived_pos: u32,
-    addresses_derivation_map: HashMap<String, AddressDerivation>,
+    pub id: String,
+    pub network: String,
+    pub private_shares: PrivateShares,
+    pub last_derived_pos: u32,
+    pub addresses_derivation_map: HashMap<String, AddressDerivation>,
 }
 
 impl Wallet {
@@ -105,6 +105,10 @@ impl Wallet {
             last_derived_pos,
             addresses_derivation_map,
         }
+    }
+
+    pub fn rotate(self, client: &reqwest::Client) -> Self {
+        rotate::rotate_master_key(self, client)
     }
 
     pub fn backup(&self, escrow: &escrow::Escrow) {

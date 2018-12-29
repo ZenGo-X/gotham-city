@@ -8,3 +8,4 @@
 //
 
 pub mod keygen;
+pub mod rotate;

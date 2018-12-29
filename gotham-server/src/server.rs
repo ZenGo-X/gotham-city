@@ -47,7 +47,11 @@ pub fn get_server() -> Rocket {
                 ecdsa::chain_code_compute_message,
                 ecdsa::master_key,
                 ecdsa::sign_first,
-                ecdsa::sign_second
+                ecdsa::sign_second,
+                ecdsa::rotate_first,
+                ecdsa::rotate_second,
+                ecdsa::rotate_third,
+                ecdsa::rotate_fourth,
             ],
         )
         .manage(config)
