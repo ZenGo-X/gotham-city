@@ -54,6 +54,8 @@ pub enum Share {
     RotatePdlDecom,
     RotateParty2First,
     RotateParty1Second,
+
+    POS,
 }
 pub struct Config {
     pub db: DB,
@@ -64,6 +66,9 @@ pub fn first_message(state: State<Config>) -> Json<(String, party_one::KeyGenFir
     let id = Uuid::new_v4().to_string();
 
     let (key_gen_first_msg, comm_witness, ec_key_pair) = MasterKey1::key_gen_first_message();
+
+    //save pos 0
+    db::insert(&state.db, &id, &Share::POS, &0u32);
 
     db::insert(&state.db, &id, &Share::KeyGenFirstMsg, &key_gen_first_msg);
     db::insert(&state.db, &id, &Share::CommWitness, &comm_witness);
@@ -323,7 +328,18 @@ pub fn sign_second(
         None => panic!("No data for such identifier {}", id),
     };
 
-    let child_master_key = master_key.get_child(vec![BigInt::from(request.pos_child_key)]);
+    //save highest position to db:
+    let pos_option = db::get(&state.db, &id, &Share::POS);
+    let pos_old: BigInt = match pos_option {
+        Some(v) => serde_json::from_str(v.to_utf8().unwrap()).unwrap(),
+        None => panic!("No data for such identifier {}", id),
+    };
+    let pos_new = BigInt::from(request.pos_child_key);
+    if pos_new > pos_old {
+        db::insert(&state.db, &id, &Share::POS, &request.pos_child_key);
+    };
+
+    let child_master_key = master_key.get_child(vec![pos_new]);
 
     let db_eph_ec_key_pair_party1 = db::get(&state.db, &id, &Share::EphEcKeyPair);
     let eph_ec_key_pair_party1: party_one::EphEcKeyPair = match db_eph_ec_key_pair_party1 {
@@ -523,4 +539,14 @@ pub fn rotate_fourth(
     );
 
     Json(rotation_party_one_third_message)
+}
+
+#[post("/ecdsa/<id>/recover", format = "json")]
+pub fn recover(state: State<Config>, id: String) -> Json<(u32)> {
+    let pos_option = db::get(&state.db, &id, &Share::POS);
+    let pos_old: u32 = match pos_option {
+        Some(v) => serde_json::from_str(v.to_utf8().unwrap()).unwrap(),
+        None => panic!("No data for such identifier {}", id),
+    };
+    Json(pos_old)
 }

@@ -8,6 +8,7 @@
 //
 
 use super::routes::ecdsa;
+use super::server;
 use rocket;
 use rocket::http::ContentType;
 use rocket::http::Status;
@@ -66,10 +67,8 @@ fn key_gen(client: &Client) -> (String, MasterKey2) {
     println!("{} Network/Server: party1 second message", start.to(end));
 
     let res_body = response.body_string().unwrap();
-    let (kg_party_one_second_message, paillier_key_pair): (
-        party1::KeyGenParty1Message2,
-        party_one::PaillierKeyPair,
-    ) = serde_json::from_str(&res_body).unwrap();
+    let kg_party_one_second_message: party1::KeyGenParty1Message2 =
+        serde_json::from_str(&res_body).unwrap();
 
     let start = PreciseTime::now();
 

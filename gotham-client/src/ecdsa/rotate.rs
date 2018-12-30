@@ -9,15 +9,11 @@
 
 use reqwest;
 use serde_json;
-use time::PreciseTime;
 
 use super::super::utilities::requests;
 use super::super::wallet;
 use curv::cryptographic_primitives::twoparty::coin_flip_optimal_rounds;
-use curv::cryptographic_primitives::twoparty::dh_key_exchange::*;
-use kms::chain_code::two_party as chain_code;
 use kms::ecdsa::two_party::MasterKey2;
-use kms::ecdsa::two_party::*;
 use kms::ecdsa::two_party::*;
 use kms::rotation::two_party::party2::Rotation2;
 use multi_party_ecdsa::protocols::two_party_ecdsa::lindell_2017::*;
@@ -25,7 +21,6 @@ use multi_party_ecdsa::protocols::two_party_ecdsa::lindell_2017::*;
 const ROT_PATH_PRE: &str = "ecdsa/rotate";
 
 pub fn rotate_master_key(wallet: wallet::Wallet, client: &reqwest::Client) -> wallet::Wallet {
-    let start = PreciseTime::now();
     let id = &wallet.private_shares.id.clone();
     let res_body = requests::post(client, &format!("{}/{}/first", ROT_PATH_PRE, id)).unwrap();
 

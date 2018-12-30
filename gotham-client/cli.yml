@@ -30,10 +30,13 @@ subcommands:
               help: List unspent transactions (tx hash)
         - backup:
               short: s
-              help: Private shares backup
+              help: Private share backup
+        - verify:
+            short: c
+            help: Backup verification
         - restore:
               short: r
-              help: Private shares recovery
+              help: Private share recovery
         - rotate:
             short: o
             help: Private shares rotation
