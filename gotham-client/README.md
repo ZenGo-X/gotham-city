@@ -60,6 +60,9 @@ USAGE:
 
 FLAGS:
     -o               Rotate secret shares
+    -s               Create backup
+    -c               Verify encrypted backup
+    -r               Recover from backup
     -b               Total balance
     -h, --help       Prints help information
     -u               List unspent transactions (tx hash)
@@ -82,6 +85,45 @@ SUBCOMMANDS:
 Rotating secret shares
 key rotation complete, (Took: PT1.087591809S)
 ```
+
+### Backup
+Backup has 3 phases: (1) creating the backup, encrypted on a seperate file, (2) verifying the backup (3) recover
+
+#### create backup
+```bash
+./target/release/cli wallet -s
+```
+
+* Output: 
+```text
+Backup private share pending (it can take some time)...
+Backup key saved in escrow (Took: PT20.828933102S)
+```
+
+#### verify backup
+```bash
+./target/release/cli wallet -c
+```
+
+* Output: 
+```text
+verify encrypted backup (it can take some time)...
+backup verified 🍻
+ (Took: PT12.325232629S)
+```
+
+#### Recover from backup
+```bash
+./target/release/cli wallet -r
+```
+
+* Output: 
+```text
+backup recovery in process 📲 (it can take some time)...
+Recovery Completed Successfully ❤️
+ Backup recovered 💾(Took: PT0.405034789S)
+```
+
 
 ### Get a derived/new address (HD)
 ```bash
