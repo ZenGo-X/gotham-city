@@ -8,7 +8,6 @@
 //
 
 use super::routes::ecdsa;
-use super::server;
 use rocket;
 use rocket::http::ContentType;
 use rocket::http::Status;
