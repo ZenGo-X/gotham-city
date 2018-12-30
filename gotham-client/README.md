@@ -59,16 +59,28 @@ USAGE:
     cli wallet [FLAGS] [SUBCOMMAND]
 
 FLAGS:
-    -e               Wallet private shares backup
+    -o               Rotate secret shares
     -b               Total balance
     -h, --help       Prints help information
     -u               List unspent transactions (tx hash)
     -a               Generate a new address
+    -e               Wallet private shares backup
     -V, --version    Prints version information
 
 SUBCOMMANDS:
     help    Prints this message or the help of the given subcommand(s)
     send    Send a transaction
+```
+
+### Rotate secret shares
+```bash
+./target/release/cli wallet -o
+```
+
+* Output: 
+```text
+Rotating secret shares
+key rotation complete, (Took: PT1.087591809S)
 ```
 
 ### Get a derived/new address (HD)
