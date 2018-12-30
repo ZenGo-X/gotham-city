@@ -74,57 +74,6 @@ SUBCOMMANDS:
     help    Prints this message or the help of the given subcommand(s)
     send    Send a transaction
 ```
-
-### Rotate secret shares
-```bash
-./target/release/cli wallet -o
-```
-
-* Output: 
-```text
-Rotating secret shares
-key rotation complete, (Took: PT1.087591809S)
-```
-
-### Backup
-Backup has 3 phases: (1) creating the backup, encrypted on a seperate file, (2) verifying the backup (3) recover
-
-#### create backup
-```bash
-./target/release/cli wallet -s
-```
-
-* Output: 
-```text
-Backup private share pending (it can take some time)...
-Backup key saved in escrow (Took: PT20.828933102S)
-```
-
-#### verify backup
-```bash
-./target/release/cli wallet -c
-```
-
-* Output: 
-```text
-verify encrypted backup (it can take some time)...
-backup verified 🍻
- (Took: PT12.325232629S)
-```
-
-#### Recover from backup
-```bash
-./target/release/cli wallet -r
-```
-
-* Output: 
-```text
-backup recovery in process 📲 (it can take some time)...
-Recovery Completed Successfully ❤️
- Backup recovered 💾(Took: PT0.405034789S)
-```
-
-
 ### Get a derived/new address (HD)
 ```bash
 ./target/release/cli wallet -a
@@ -175,3 +124,53 @@ Network: [testnet], Sent 0.0001 BTC to address tb1quxl4c4cyl3586s7tuql7tqqsv233s
 
 * Explorer:
 https://www.blocktrail.com/tBTC/tx/44545bf81fc8aebcde855c2e33a5f83a17a93f76164330e1ee9e366e8e039444
+
+### Rotate secret shares
+```bash
+./target/release/cli wallet -o
+```
+
+* Output: 
+```text
+Rotating secret shares
+key rotation complete, (Took: PT1.087591809S)
+```
+
+### Backup
+Backup has 3 phases: (1) creating the backup, encrypted on a seperate file, (2) verifying the backup (3) recover
+
+#### create backup
+```bash
+./target/release/cli wallet -s
+```
+
+* Output: 
+```text
+Backup private share pending (it can take some time)...
+Backup key saved in escrow (Took: PT20.828933102S)
+```
+
+#### verify backup
+```bash
+./target/release/cli wallet -c
+```
+
+* Output: 
+```text
+verify encrypted backup (it can take some time)...
+backup verified 🍻
+ (Took: PT12.325232629S)
+```
+
+#### Recover from backup
+```bash
+./target/release/cli wallet -r
+```
+
+* Output: 
+```text
+backup recovery in process 📲 (it can take some time)...
+Recovery Completed Successfully ❤️
+ Backup recovered 💾(Took: PT0.405034789S)
+```
+
