@@ -52,6 +52,7 @@ pub fn get_server() -> Rocket {
                 ecdsa::rotate_second,
                 ecdsa::rotate_third,
                 ecdsa::rotate_fourth,
+                ecdsa::recover,
             ],
         )
         .manage(config)

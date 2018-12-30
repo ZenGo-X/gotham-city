@@ -37,6 +37,7 @@ fn main() {
         if matches.is_present("new-address") {
             let address = wallet.get_new_bitcoin_address();
             println!("Network: [{}], Address: [{}]", network, address.to_string());
+            wallet.save();
         } else if matches.is_present("get-balance") {
             let balance = wallet.get_balance();
             println!(
@@ -58,19 +59,30 @@ fn main() {
             println!("Backup private share pending (it can take some time)...");
 
             let start = PreciseTime::now();
-            wallet.backup(&escrow);
+            wallet.backup(escrow);
             let end = PreciseTime::now();
 
             println!("Backup key saved in escrow (Took: {})", start.to(end));
-        } else if matches.is_present("restore") {
+        } else if matches.is_present("verify") {
             let escrow = escrow::Escrow::load();
-            println!("Recovering private share pending (it can take some time)...");
+
+            println!("verify encrypted backup (it can take some time)...");
 
             let start = PreciseTime::now();
-            escrow.recover_and_save_shares();
+            wallet.verify_backup(escrow);
             let end = PreciseTime::now();
 
-            println!("Recovered key, saved in escrow (Took: {})", start.to(end));
+            println!(" (Took: {})", start.to(end));
+        } else if matches.is_present("restore") {
+            let escrow = escrow::Escrow::load();
+
+            println!("backup recovery in process 📲 (it can take some time)...");
+
+            let start = PreciseTime::now();
+            wallet::Wallet::recover_and_save_shares(escrow, &network, &client);
+            let end = PreciseTime::now();
+
+            println!(" Backup recovered 💾(Took: {})", start.to(end));
         } else if matches.is_present("rotate") {
             println!("Rotating secret shares");
 
