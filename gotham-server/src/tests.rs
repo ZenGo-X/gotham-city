@@ -275,9 +275,18 @@ pub fn sign(
     time_test!();
 
     let start = PreciseTime::now();
+    let (eph_key_gen_first_message_party_two, eph_comm_witness, eph_ec_key_pair_party2) =
+        MasterKey2::sign_first_message();
+
+    let request: party_two::EphKeyGenFirstMsg = eph_key_gen_first_message_party_two;
+
+    let body = serde_json::to_string(&request).unwrap();
+
+    let start = PreciseTime::now();
 
     let mut response = client
         .post(format!("/ecdsa/sign/{}/first", id))
+        .body(body)
         .header(ContentType::JSON)
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
@@ -292,18 +301,12 @@ pub fn sign(
     let sign_party_one_first_message: party_one::EphKeyGenFirstMsg =
         serde_json::from_str(&res_body).unwrap();
 
-    let start = PreciseTime::now();
-    let (eph_key_gen_first_message_party_two, eph_comm_witness, eph_ec_key_pair_party2) =
-        MasterKey2::sign_first_message();
-
-    let end = PreciseTime::now();
-    println!("{} Client: party2 sign first message", start.to(end));
-
     let pos = 1;
 
     let child_party_two_master_key = master_key_2.get_child(vec![BigInt::from(pos)]);
 
     let start = PreciseTime::now();
+
     let party_two_sign_message = child_party_two_master_key.sign_second_message(
         &eph_ec_key_pair_party2,
         eph_comm_witness.clone(),
@@ -317,7 +320,6 @@ pub fn sign(
     let request: ecdsa::SignSecondMsgRequest = ecdsa::SignSecondMsgRequest {
         message,
         party_two_sign_message,
-        eph_key_gen_first_message_party_two,
         pos_child_key: 1,
     };
 

@@ -48,7 +48,6 @@ const BACKUP_FILENAME: &str = "wallet/backup.data";
 pub struct SignSecondMsgRequest {
     pub message: BigInt,
     pub party_two_sign_message: party2::SignMessage,
-    pub eph_key_gen_first_message_party_two: party_two::EphKeyGenFirstMsg,
     pub pos_child_key: u32,
 }
 
@@ -308,13 +307,11 @@ impl Wallet {
                 (selected[i].value as u32).into(),
             );
 
-            let (eph_key_gen_first_message_party_two, party_two_sign_message) =
-                self.sign(client, sig_hash, &mk);
+            let party_two_sign_message = self.sign(client, sig_hash, &mk);
 
             let signatures = self.get_signature(
                 client,
                 sig_hash,
-                eph_key_gen_first_message_party_two,
                 party_two_sign_message,
                 address_derivation.pos,
             );
@@ -343,45 +340,20 @@ impl Wallet {
         txid.unwrap()
     }
 
-    fn get_signature(
-        &self,
-        client: &reqwest::Client,
-        message: bitcoin::util::hash::Sha256dHash,
-        eph_key_gen_first_message_party_two: party_two::EphKeyGenFirstMsg,
-        party_two_sign_message: party2::SignMessage,
-        pos_child_key: u32,
-    ) -> party_one::Signature {
-        let request: SignSecondMsgRequest = SignSecondMsgRequest {
-            message: BigInt::from_hex(&message.le_hex_string()),
-            party_two_sign_message,
-            eph_key_gen_first_message_party_two,
-            pos_child_key,
-        };
-
-        let res_body = requests::postb(
-            client,
-            &format!("/ecdsa/sign/{}/second", self.private_shares.id),
-            &request,
-        )
-        .unwrap();
-
-        let signature: party_one::Signature = serde_json::from_str(&res_body).unwrap();
-
-        signature
-    }
-
     fn sign(
         &self,
         client: &reqwest::Client,
         message: bitcoin::util::hash::Sha256dHash,
         mk: &MasterKey2,
-    ) -> (party_two::EphKeyGenFirstMsg, party2::SignMessage) {
+    ) -> party2::SignMessage {
         let (eph_key_gen_first_message_party_two, eph_comm_witness, eph_ec_key_pair_party2) =
             MasterKey2::sign_first_message();
 
-        let res_body = requests::post(
+        let request: party_two::EphKeyGenFirstMsg = eph_key_gen_first_message_party_two;
+        let res_body = requests::postb(
             client,
             &format!("/ecdsa/sign/{}/first", self.private_shares.id),
+            &request,
         )
         .unwrap();
 
@@ -395,7 +367,32 @@ impl Wallet {
             &BigInt::from_hex(&message.le_hex_string()),
         );
 
-        (eph_key_gen_first_message_party_two, party_two_sign_message)
+        party_two_sign_message
+    }
+
+    fn get_signature(
+        &self,
+        client: &reqwest::Client,
+        message: bitcoin::util::hash::Sha256dHash,
+        party_two_sign_message: party2::SignMessage,
+        pos_child_key: u32,
+    ) -> party_one::Signature {
+        let request: SignSecondMsgRequest = SignSecondMsgRequest {
+            message: BigInt::from_hex(&message.le_hex_string()),
+            party_two_sign_message,
+            pos_child_key,
+        };
+
+        let res_body = requests::postb(
+            client,
+            &format!("/ecdsa/sign/{}/second", self.private_shares.id),
+            &request,
+        )
+        .unwrap();
+
+        let signature: party_one::Signature = serde_json::from_str(&res_body).unwrap();
+
+        signature
     }
 
     pub fn get_new_bitcoin_address(&mut self) -> bitcoin::Address {

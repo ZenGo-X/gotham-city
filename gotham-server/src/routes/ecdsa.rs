@@ -45,6 +45,7 @@ pub enum Share {
     MasterKey,
 
     EphEcKeyPair,
+    EphKeyGenFirstMsg,
 
     RotateCommitMessage1M,
     RotateCommitMessage1R,
@@ -293,9 +294,24 @@ pub fn master_key(
     Json(())
 }
 
-#[post("/ecdsa/sign/<id>/first", format = "json")]
-pub fn sign_first(state: State<Config>, id: String) -> Json<(party_one::EphKeyGenFirstMsg)> {
+#[post(
+    "/ecdsa/sign/<id>/first",
+    format = "json",
+    data = "<eph_key_gen_first_message_party_two>"
+)]
+pub fn sign_first(
+    state: State<Config>,
+    id: String,
+    eph_key_gen_first_message_party_two: Json<party_two::EphKeyGenFirstMsg>,
+) -> Json<(party_one::EphKeyGenFirstMsg)> {
     let (sign_party_one_first_message, eph_ec_key_pair_party1) = MasterKey1::sign_first_message();
+
+    db::insert(
+        &state.db,
+        &id,
+        &Share::EphKeyGenFirstMsg,
+        &eph_key_gen_first_message_party_two.0,
+    );
 
     db::insert(
         &state.db,
@@ -312,7 +328,6 @@ pub fn sign_first(state: State<Config>, id: String) -> Json<(party_one::EphKeyGe
 pub struct SignSecondMsgRequest {
     pub message: BigInt,
     pub party_two_sign_message: party2::SignMessage,
-    pub eph_key_gen_first_message_party_two: party_two::EphKeyGenFirstMsg,
     pub pos_child_key: u32,
 }
 
@@ -328,18 +343,7 @@ pub fn sign_second(
         None => panic!("No data for such identifier {}", id),
     };
 
-    //save highest position to db:
-    let pos_option = db::get(&state.db, &id, &Share::POS);
-    let pos_old: BigInt = match pos_option {
-        Some(v) => serde_json::from_str(v.to_utf8().unwrap()).unwrap(),
-        None => panic!("No data for such identifier {}", id),
-    };
-    let pos_new = BigInt::from(request.pos_child_key);
-    if pos_new > pos_old {
-        db::insert(&state.db, &id, &Share::POS, &request.pos_child_key);
-    };
-
-    let child_master_key = master_key.get_child(vec![pos_new]);
+    let child_master_key = master_key.get_child(vec![BigInt::from(request.pos_child_key)]);
 
     let db_eph_ec_key_pair_party1 = db::get(&state.db, &id, &Share::EphEcKeyPair);
     let eph_ec_key_pair_party1: party_one::EphEcKeyPair = match db_eph_ec_key_pair_party1 {
@@ -347,14 +351,24 @@ pub fn sign_second(
         None => panic!("No data for such identifier {}", id),
     };
 
+    let eph_key_gen_first_message_party_tw_option =
+        db::get(&state.db, &id, &Share::EphKeyGenFirstMsg);
+    let eph_key_gen_first_message_party_two: party_two::EphKeyGenFirstMsg =
+        match eph_key_gen_first_message_party_tw_option {
+            Some(v) => serde_json::from_str(v.to_utf8().unwrap()).unwrap(),
+            None => panic!("No data for such identifier {}", id),
+        };
+
     let signatures = child_master_key.sign_second_message(
         &request.party_two_sign_message,
-        &request.eph_key_gen_first_message_party_two,
+        &eph_key_gen_first_message_party_two,
         &eph_ec_key_pair_party1,
         &request.message,
     );
 
-    assert!(signatures.is_ok());
+    if signatures.is_err() {
+        panic!("validation failed")
+    };
 
     Json(signatures.unwrap())
 }
