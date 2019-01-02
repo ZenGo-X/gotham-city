@@ -56,7 +56,7 @@ Bitcoin is utilizing ECDSA as the signing scheme. There is an active line of res
 **For more information, see our [white paper](white-paper/white-paper.pdf)**.
 
 ### Comperative Performance
-The comparison was done on an Intel i9-8950HK (2.9GHz)
+The comparison was done on an Intel i9-8950HK (2.9GHz) using localhost for server (no real network)
 
 |        Implementation         |   Gotham city (this repo)    |    [Unbound](https://github.com/unbound-tech/blockchain-crypto-mpc)       | 
 |-------------------------------|------------------------|------------------------|
