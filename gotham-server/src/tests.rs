@@ -113,11 +113,9 @@ fn key_gen(client: &Client) -> (String, MasterKey2) {
     /*************** END: THIRD MESSAGE ***************/
 
     /*************** START: FOURTH MESSAGE ***************/
-    let request: ecdsa::FourthMsgRequest = ecdsa::FourthMsgRequest {
-        party_2_pdl_first_message: party_two_second_message.pdl_first_message,
-        party_2_pdl_second_message: pdl_decom_party2,
-    };
 
+    let party_2_pdl_second_message = pdl_decom_party2;
+    let request = party_2_pdl_second_message;
     let body = serde_json::to_string(&request).unwrap();
 
     let start = PreciseTime::now();
@@ -205,24 +203,6 @@ fn key_gen(client: &Client) -> (String, MasterKey2) {
     println!("{} Client: party2 chain code second message", start.to(end));
     /*************** END: CHAINCODE SECOND MESSAGE ***************/
 
-    /*************** START: CHAINCODE COMPUTE MESSAGE ***************/
-    let body = serde_json::to_string(&cc_party_two_first_message.public_share).unwrap();
-
-    let start = PreciseTime::now();
-
-    let mut response = client
-        .post(format!("/ecdsa/keygen/{}/chaincode/compute", id))
-        .body(body)
-        .header(ContentType::JSON)
-        .dispatch();
-    assert_eq!(response.status(), Status::Ok);
-
-    let end = PreciseTime::now();
-    println!(
-        "{} Network/Server: party1 chain code compute message",
-        start.to(end)
-    );
-
     let start = PreciseTime::now();
     let party2_cc = chain_code::party2::ChainCode2::compute_chain_code(
         &cc_ec_key_pair2,
@@ -232,18 +212,6 @@ fn key_gen(client: &Client) -> (String, MasterKey2) {
     let end = PreciseTime::now();
     println!("{} Client: party2 chain code second message", start.to(end));
     /*************** END: CHAINCODE COMPUTE MESSAGE ***************/
-
-    /*************** START: MASTER KEYS MESSAGE ***************/
-    let body = serde_json::to_string(&kg_party_two_first_message.public_share).unwrap();
-
-    let start = PreciseTime::now();
-
-    let mut response = client
-        .post(format!("/ecdsa/keygen/{}/master_key", id))
-        .body(body)
-        .header(ContentType::JSON)
-        .dispatch();
-    assert_eq!(response.status(), Status::Ok);
 
     let end = PreciseTime::now();
     println!("{} Network/Server: party1 master key", start.to(end));

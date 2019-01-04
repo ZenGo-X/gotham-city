@@ -21,12 +21,6 @@ use super::super::wallet;
 
 const KG_PATH_PRE: &str = "ecdsa/keygen";
 
-#[derive(Serialize, Deserialize)]
-pub struct FourthMsgRequest {
-    pub party_2_pdl_first_message: party_two::PDLFirstMessage,
-    pub party_2_pdl_second_message: party_two::PDLSecondMessage,
-}
-
 pub fn get_master_key(client: &reqwest::Client) -> wallet::PrivateShares {
     let start = PreciseTime::now();
 
@@ -65,12 +59,9 @@ pub fn get_master_key(client: &reqwest::Client) -> wallet::PrivateShares {
 
     let pdl_decom_party2 = MasterKey2::key_gen_third_message(&party_two_pdl_chal);
 
-    let request: FourthMsgRequest = FourthMsgRequest {
-        party_2_pdl_first_message: party_two_second_message.pdl_first_message,
-        party_2_pdl_second_message: pdl_decom_party2,
-    };
+    let party_2_pdl_second_message = pdl_decom_party2;
 
-    let body = &request;
+    let body = &party_2_pdl_second_message;
 
     let res_body =
         requests::postb(client, &format!("{}/{}/fourth", KG_PATH_PRE, id), body).unwrap();
@@ -111,24 +102,10 @@ pub fn get_master_key(client: &reqwest::Client) -> wallet::PrivateShares {
 
     assert!(cc_party_two_second_message.is_ok());
 
-    let body = &cc_party_two_first_message.public_share;
-
-    let _res_body = requests::postb(
-        client,
-        &format!("{}/{}/chaincode/compute", KG_PATH_PRE, id),
-        body,
-    )
-    .unwrap();
-
     let party2_cc = chain_code::party2::ChainCode2::compute_chain_code(
         &cc_ec_key_pair2,
         &cc_party_one_second_message.comm_witness.public_share,
     );
-
-    let body = &kg_party_two_first_message.public_share;
-
-    let _res_body =
-        requests::postb(client, &format!("{}/{}/master_key", KG_PATH_PRE, id), body).unwrap();
 
     let master_key = MasterKey2::set_master_key(
         &party2_cc.chain_code,

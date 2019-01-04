@@ -32,10 +32,12 @@ pub enum Share {
     EcKeyPair,
     PaillierKeyPair,
     Party1Private,
+    Party2Public,
 
     PDLProver,
     PDLDecommit,
     PDLFirstMessage,
+    Party2PDLFirstMsg,
 
     CCKeyGenFirstMsg,
     CCCommWitness,
@@ -78,12 +80,14 @@ pub fn first_message(state: State<Config>) -> Json<(String, party_one::KeyGenFir
     Json((id, key_gen_first_msg))
 }
 
-#[post("/ecdsa/keygen/<id>/second", format = "json", data = "<d_log_proof>")]
+#[post("/ecdsa/keygen/<id>/second", format = "json", data = "<dlog_proof>")]
 pub fn second_message(
     state: State<Config>,
     id: String,
-    d_log_proof: Json<DLogProof>,
+    dlog_proof: Json<DLogProof>,
 ) -> Json<party1::KeyGenParty1Message2> {
+    let party2_public: GE = dlog_proof.0.pk.clone();
+    db::insert(&state.db, &id, &Share::Party2Public, &party2_public);
     let db_comm_witness = db::get(&state.db, &id, &Share::CommWitness);
     let comm_witness: party_one::CommWitness = match db_comm_witness {
         Some(v) => serde_json::from_str(v.to_utf8().unwrap()).unwrap(),
@@ -97,7 +101,7 @@ pub fn second_message(
     };
 
     let (kg_party_one_second_message, paillier_key_pair, party_one_private) =
-        MasterKey1::key_gen_second_message(comm_witness, &ec_key_pair, &d_log_proof.0);
+        MasterKey1::key_gen_second_message(comm_witness, &ec_key_pair, &dlog_proof.0);
 
     db::insert(&state.db, &id, &Share::PaillierKeyPair, &paillier_key_pair);
     db::insert(&state.db, &id, &Share::Party1Private, &party_one_private);
@@ -128,6 +132,13 @@ pub fn third_message(
     db::insert(
         &state.db,
         &id,
+        &Share::Party2PDLFirstMsg,
+        &party_2_pdl_first_message.0,
+    );
+
+    db::insert(
+        &state.db,
+        &id,
         &Share::PDLFirstMessage,
         &party_one_third_message,
     );
@@ -135,18 +146,15 @@ pub fn third_message(
     Json(party_one_third_message)
 }
 
-// Added here because the attribute data takes only a single struct
-#[derive(Serialize, Deserialize)]
-pub struct FourthMsgRequest {
-    pub party_2_pdl_first_message: party_two::PDLFirstMessage,
-    pub party_2_pdl_second_message: party_two::PDLSecondMessage,
-}
-
-#[post("/ecdsa/keygen/<id>/fourth", format = "json", data = "<request>")]
+#[post(
+    "/ecdsa/keygen/<id>/fourth",
+    format = "json",
+    data = "<party_two_pdl_second_message>"
+)]
 pub fn fourth_message(
     state: State<Config>,
     id: String,
-    request: Json<FourthMsgRequest>,
+    party_two_pdl_second_message: Json<party_two::PDLSecondMessage>,
 ) -> Json<(party_one::PDLSecondMessage)> {
     let db_pdl_party_one_third_message = db::get(&state.db, &id, &Share::PDLFirstMessage);
     let pdl_party_one_third_message: party_one::PDLFirstMessage =
@@ -167,10 +175,16 @@ pub fn fourth_message(
         None => panic!("No data for such identifier {}", id),
     };
 
+    let db_party_2_pdl_first_message = db::get(&state.db, &id, &Share::Party2PDLFirstMsg);
+    let party_2_pdl_first_message: party_two::PDLFirstMessage = match db_party_2_pdl_first_message {
+        Some(v) => serde_json::from_str(v.to_utf8().unwrap()).unwrap(),
+        None => panic!("No data for such identifier {}", id),
+    };
+
     let res = MasterKey1::key_gen_fourth_message(
         &pdl_party_one_third_message,
-        &request.party_2_pdl_first_message,
-        &request.party_2_pdl_second_message,
+        &party_2_pdl_first_message,
+        &party_two_pdl_second_message.0,
         party_one_private,
         party_one_pdl_decommit,
     );
@@ -217,19 +231,16 @@ pub fn chain_code_second_message(
         cc_comm_witness,
         &cc_party_two_first_message_d_log_proof.0,
     );
+    let party2_pub = &cc_party_two_first_message_d_log_proof.pk;
+    chain_code_compute_message(state, id, party2_pub);
 
     Json(party1_cc)
 }
 
-#[post(
-    "/ecdsa/keygen/<id>/chaincode/compute",
-    format = "json",
-    data = "<cc_party_two_first_message_public_share>"
-)]
 pub fn chain_code_compute_message(
     state: State<Config>,
     id: String,
-    cc_party_two_first_message_public_share: Json<GE>,
+    cc_party2_public: &GE,
 ) -> Json<()> {
     let cc_ec_key_pair = db::get(&state.db, &id, &Share::CCEcKeyPair);
     let cc_ec_key_pair_party1: EcKeyPair = match cc_ec_key_pair {
@@ -239,24 +250,21 @@ pub fn chain_code_compute_message(
 
     let party1_cc = chain_code::party1::ChainCode1::compute_chain_code(
         &cc_ec_key_pair_party1,
-        &cc_party_two_first_message_public_share.0,
+        cc_party2_public,
     );
 
     db::insert(&state.db, &id, &Share::CC, &party1_cc);
-
+    master_key(state, id);
     Json(())
 }
 
-#[post(
-    "/ecdsa/keygen/<id>/master_key",
-    format = "json",
-    data = "<kg_party_two_first_message_public_share>"
-)]
-pub fn master_key(
-    state: State<Config>,
-    id: String,
-    kg_party_two_first_message_public_share: Json<GE>,
-) -> Json<()> {
+pub fn master_key(state: State<Config>, id: String) {
+    let db_party2_public = db::get(&state.db, &id, &Share::Party2Public);
+    let party2_public: GE = match db_party2_public {
+        Some(v) => serde_json::from_str(v.to_utf8().unwrap()).unwrap(),
+        None => panic!("No data for such identifier {}", id),
+    };
+
     let db_paillier_key_pair = db::get(&state.db, &id, &Share::PaillierKeyPair);
     let paillier_key_pair: party_one::PaillierKeyPair = match db_paillier_key_pair {
         Some(v) => serde_json::from_str(v.to_utf8().unwrap()).unwrap(),
@@ -285,13 +293,11 @@ pub fn master_key(
         &party1_cc.chain_code,
         party_one_private,
         &comm_witness.public_share,
-        &kg_party_two_first_message_public_share.0,
+        &party2_public,
         paillier_key_pair,
     );
 
     db::insert(&state.db, &id, &Share::MasterKey, &masterKey);
-
-    Json(())
 }
 
 #[post(
