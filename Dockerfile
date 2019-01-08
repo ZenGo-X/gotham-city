@@ -1,13 +1,7 @@
-FROM liuchong/rustup
-
-ENV rocket_address=0.0.0.0
-ENV rocket_port=8080
-
-ADD gotham-server /app
-WORKDIR /app
-
-RUN rustup default nightly
-RUN cargo build --release
+FROM 542401451332.dkr.ecr.us-west-2.amazonaws.com/gothambuild:latest
 
 EXPOSE 8080
-CMD ["cargo", "run", "--release"]
+CMD ["$HOME/.cargo/bin/cargo", "run", "--release"]
+
+
+
