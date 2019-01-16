@@ -60,8 +60,8 @@ The comparison was done on an Intel i9-8950HK (2.9GHz) using localhost for serve
 
 |        Implementation         |   Gotham city (this repo)    |    [Unbound](https://github.com/unbound-tech/blockchain-crypto-mpc)       | 
 |-------------------------------|------------------------|------------------------|
-| 2P-ECDSA KeyGen                      |        **1.05** s           |      3.32 s           |
-|    2P-ECDSA Signing    |      **0.153** s        |      0.193 s     |
+| 2P-ECDSA KeyGen                      |        1.05 s           |      **0.813** s           |
+|    2P-ECDSA Signing    |      **0.153** s        |      0.206 s     |
 
 
 Disclaimer
