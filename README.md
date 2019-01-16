@@ -56,7 +56,7 @@ Bitcoin is utilizing ECDSA as the signing scheme. There is an active line of res
 **For more information, see our [white paper](white-paper/white-paper.pdf)**.
 
 ### Comperative Performance
-The comparison was done on an Intel i9-8950HK (2.9GHz) using localhost for server (no real network). The numbers are mean for 20 runs of 2P-ECDSA KeyGen and 50 runs for 2P-ECDSA Signing. Standard deviation is not stable but for both implementations it is order of magnitude smaller than mean value.
+The comparison was done on an Intel i9-8950HK (2.9GHz) using localhost for server (no real network). The numbers are mean for 20 runs of 2P-ECDSA KeyGen and 50 runs for 2P-ECDSA Signing. Standard deviation is not consistant but for both implementations it is order of magnitude smaller than mean value.
 
 |        Implementation         |   Gotham city (this repo)    |    [Unbound](https://github.com/unbound-tech/blockchain-crypto-mpc)       | 
 |-------------------------------|------------------------|------------------------|
