@@ -102,7 +102,6 @@ impl Share {
 use rusoto_dynamodb::DynamoDbClient;
 
 pub struct Config {
-//    pub db: Box<DB + Send + Sync>,
     pub db: DB
 }
 
