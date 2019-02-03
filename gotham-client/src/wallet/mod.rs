@@ -17,7 +17,6 @@ use curv::{BigInt, GE};
 use electrumx_client::{electrumx_client::ElectrumxClient, interface::Electrumx};
 use kms::ecdsa::two_party::MasterKey2;
 use kms::ecdsa::two_party::*;
-use multi_party_ecdsa::protocols::two_party_ecdsa::lindell_2017::*;
 use reqwest;
 use serde_json;
 use std::fs;
@@ -27,13 +26,14 @@ use centipede::juggling::proof_system::{Helgamalsegmented, Proof};
 use centipede::juggling::segmentation::Msegmentation;
 use kms::chain_code::two_party::party2::ChainCode2;
 
-use super::ecdsa::{keygen, rotate};
+use super::ecdsa::rotate;
 use super::escrow;
 use super::utilities::requests;
+use super::api;
+use super::api::PrivateShare;
 use curv::arithmetic::traits::Converter;
 use hex;
 use itertools::Itertools;
-use secp256k1::Secp256k1;
 use secp256k1::Signature;
 use std::collections::HashMap;
 use std::str::FromStr;
@@ -74,12 +74,6 @@ pub struct GetWalletBalanceResponse {
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct PrivateShares {
-    pub id: String,
-    pub master_key: MasterKey2,
-}
-
-#[derive(Serialize, Deserialize)]
 pub struct AddressDerivation {
     pub pos: u32,
     pub mk: MasterKey2,
@@ -89,15 +83,15 @@ pub struct AddressDerivation {
 pub struct Wallet {
     pub id: String,
     pub network: String,
-    pub private_shares: PrivateShares,
+    pub private_share: PrivateShare,
     pub last_derived_pos: u32,
     pub addresses_derivation_map: HashMap<String, AddressDerivation>,
 }
 
 impl Wallet {
-    pub fn new(client: &reqwest::Client, net: &String) -> Wallet {
+    pub fn new(net: &String) -> Wallet {
         let id = Uuid::new_v4().to_string();
-        let private_shares = keygen::get_master_key(client);
+        let private_share = api::get_master_key();
         let last_derived_pos = 0;
         let addresses_derivation_map = HashMap::new();
         let network = net.clone();
@@ -105,7 +99,7 @@ impl Wallet {
         Wallet {
             id,
             network,
-            private_shares,
+            private_share,
             last_derived_pos,
             addresses_derivation_map,
         }
@@ -118,7 +112,7 @@ impl Wallet {
     pub fn backup(&self, escrow_service: escrow::Escrow) {
         let g: GE = ECPoint::generator();
         let y = escrow_service.get_public_key();
-        let (segments, encryptions) = self.private_shares.master_key.private.to_encrypted_segment(
+        let (segments, encryptions) = self.private_share.master_key.private.to_encrypted_segment(
             &escrow::SEGMENT_SIZE,
             escrow::NUM_SEGMENTS,
             &y,
@@ -130,9 +124,9 @@ impl Wallet {
         let client_backup_json = serde_json::to_string(&(
             encryptions,
             proof,
-            self.private_shares.master_key.public.clone(),
-            self.private_shares.master_key.chain_code.clone(),
-            self.private_shares.id.clone(),
+            self.private_share.master_key.public.clone(),
+            self.private_share.master_key.chain_code.clone(),
+            self.private_share.id.clone(),
         ))
         .unwrap();
 
@@ -166,7 +160,7 @@ impl Wallet {
         }
     }
 
-    pub fn recover_and_save_shares(
+    pub fn recover_and_save_share(
         escrow_service: escrow::Escrow,
         net: &String,
         client: &reqwest::Client,
@@ -201,7 +195,7 @@ impl Wallet {
         let new_wallet = Wallet {
             id,
             network,
-            private_shares: PrivateShares {
+            private_share: PrivateShare {
                 master_key: client_master_key_recovered,
                 id: key_id,
             },
@@ -235,7 +229,6 @@ impl Wallet {
 
     pub fn send(
         &mut self,
-        client: &reqwest::Client,
         to_address: String,
         amount_btc: f32,
     ) -> String {
@@ -307,22 +300,14 @@ impl Wallet {
                 (selected[i].value as u32).into(),
             );
 
-            let party_two_sign_message = self.sign(client, sig_hash, &mk);
+            let signature = api::sign(sig_hash, &mk, address_derivation.pos, &self.private_share.id);
 
-            let signatures = self.get_signature(
-                client,
-                sig_hash,
-                party_two_sign_message,
-                address_derivation.pos,
-            );
+            let mut v = BigInt::to_vec(&signature.r);
+            v.extend(BigInt::to_vec(&signature.s));
 
-            let mut v = BigInt::to_vec(&signatures.r);
-            v.extend(BigInt::to_vec(&signatures.s));
-
-            let context = Secp256k1::new();
-            let mut sig = Signature::from_compact(&context, &v[..])
+            let mut sig = Signature::from_compact(&v[..])
                 .unwrap()
-                .serialize_der(&context);
+                .serialize_der();
 
             sig.push(01);
             let mut witness = Vec::new();
@@ -340,63 +325,8 @@ impl Wallet {
         txid.unwrap()
     }
 
-    fn sign(
-        &self,
-        client: &reqwest::Client,
-        message: bitcoin::util::hash::Sha256dHash,
-        mk: &MasterKey2,
-    ) -> party2::SignMessage {
-        let (eph_key_gen_first_message_party_two, eph_comm_witness, eph_ec_key_pair_party2) =
-            MasterKey2::sign_first_message();
-
-        let request: party_two::EphKeyGenFirstMsg = eph_key_gen_first_message_party_two;
-        let res_body = requests::postb(
-            client,
-            &format!("/ecdsa/sign/{}/first", self.private_shares.id),
-            &request,
-        )
-        .unwrap();
-
-        let sign_party_one_first_message: party_one::EphKeyGenFirstMsg =
-            serde_json::from_str(&res_body).unwrap();
-
-        let party_two_sign_message = mk.sign_second_message(
-            &eph_ec_key_pair_party2,
-            eph_comm_witness.clone(),
-            &sign_party_one_first_message,
-            &BigInt::from_hex(&message.le_hex_string()),
-        );
-
-        party_two_sign_message
-    }
-
-    fn get_signature(
-        &self,
-        client: &reqwest::Client,
-        message: bitcoin::util::hash::Sha256dHash,
-        party_two_sign_message: party2::SignMessage,
-        pos_child_key: u32,
-    ) -> party_one::Signature {
-        let request: SignSecondMsgRequest = SignSecondMsgRequest {
-            message: BigInt::from_hex(&message.le_hex_string()),
-            party_two_sign_message,
-            pos_child_key,
-        };
-
-        let res_body = requests::postb(
-            client,
-            &format!("/ecdsa/sign/{}/second", self.private_shares.id),
-            &request,
-        )
-        .unwrap();
-
-        let signature: party_one::Signature = serde_json::from_str(&res_body).unwrap();
-
-        signature
-    }
-
     pub fn get_new_bitcoin_address(&mut self) -> bitcoin::Address {
-        let (pos, mk) = Self::derive_new_key(&self.private_shares, self.last_derived_pos);
+        let (pos, mk) = Self::derive_new_key(&self.private_share, self.last_derived_pos);
         let pk = mk.public.q.get_element();
         let address = bitcoin::Address::p2wpkh(&pk, self.get_bitcoin_network());
 
@@ -410,7 +340,7 @@ impl Wallet {
 
     pub fn derived(&mut self) {
         for i in 0..self.last_derived_pos {
-            let (pos, mk) = Self::derive_new_key(&self.private_shares, i);
+            let (pos, mk) = Self::derive_new_key(&self.private_share, i);
 
             let address =
                 bitcoin::Address::p2wpkh(&mk.public.q.get_element(), self.get_bitcoin_network());
@@ -520,7 +450,7 @@ impl Wallet {
 
         for n in init..=last_pos {
             let mk = self
-                .private_shares
+                .private_share
                 .master_key
                 .get_child(vec![BigInt::from(n)]);
             let bitcoin_address = Self::to_bitcoin_address(&mk, self.get_bitcoin_network());
@@ -531,10 +461,10 @@ impl Wallet {
         response
     }
 
-    fn derive_new_key(private_shares: &PrivateShares, pos: u32) -> (u32, MasterKey2) {
+    fn derive_new_key(private_share: &PrivateShare, pos: u32) -> (u32, MasterKey2) {
         let last_pos: u32 = pos + 1;
 
-        let last_child_master_key = private_shares
+        let last_child_master_key = private_share
             .master_key
             .get_child(vec![BigInt::from(last_pos)]);
 

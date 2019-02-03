@@ -12,6 +12,7 @@ use serde_json;
 
 use super::super::utilities::requests;
 use super::super::wallet;
+use super::super::api::PrivateShare;
 use curv::cryptographic_primitives::twoparty::coin_flip_optimal_rounds;
 use kms::ecdsa::two_party::MasterKey2;
 use kms::ecdsa::two_party::*;
@@ -21,7 +22,7 @@ use multi_party_ecdsa::protocols::two_party_ecdsa::lindell_2017::*;
 const ROT_PATH_PRE: &str = "ecdsa/rotate";
 
 pub fn rotate_master_key(wallet: wallet::Wallet, client: &reqwest::Client) -> wallet::Wallet {
-    let id = &wallet.private_shares.id.clone();
+    let id = &wallet.private_share.id.clone();
     let res_body = requests::post(client, &format!("{}/{}/first", ROT_PATH_PRE, id)).unwrap();
 
     let coin_flip_party1_first_message: coin_flip_optimal_rounds::Party1FirstMessage =
@@ -51,7 +52,7 @@ pub fn rotate_master_key(wallet: wallet::Wallet, client: &reqwest::Client) -> wa
     );
 
     let result_rotate_party_one_first_message = wallet
-        .private_shares
+        .private_share
         .master_key
         .rotate_first_message(&random2, &rotation_party1_first_message);
     if result_rotate_party_one_first_message.is_err() {
@@ -88,7 +89,7 @@ pub fn rotate_master_key(wallet: wallet::Wallet, client: &reqwest::Client) -> wa
         serde_json::from_str(&res_body).unwrap();
 
     let result_rotate_party_one_third_message =
-        wallet.private_shares.master_key.rotate_third_message(
+        wallet.private_share.master_key.rotate_third_message(
             &random2,
             &party_two_paillier,
             &party_two_pdl_chal,
@@ -101,14 +102,14 @@ pub fn rotate_master_key(wallet: wallet::Wallet, client: &reqwest::Client) -> wa
 
     let party_two_master_key_rotated = result_rotate_party_one_third_message.unwrap();
 
-    let private_shares = wallet::PrivateShares {
-        id: wallet.private_shares.id.clone(),
+    let private_share = PrivateShare {
+        id: wallet.private_share.id.clone(),
         master_key: party_two_master_key_rotated,
     };
     wallet::Wallet {
         id: wallet.id.clone(),
         network: wallet.network.clone(),
-        private_shares,
+        private_share,
         last_derived_pos: wallet.last_derived_pos.clone(),
         addresses_derivation_map: wallet.addresses_derivation_map,
     }

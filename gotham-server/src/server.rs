@@ -9,9 +9,15 @@
 
 use rocket;
 use rocket::{Request, Rocket};
-use rocksdb::DB;
+use rocksdb;
 
+use rusoto_core::Region;
+use rusoto_dynamodb::DynamoDbClient;
+
+use super::storage::db;
 use super::routes::ecdsa;
+
+use std::env;
 
 #[catch(500)]
 fn internal_error() -> &'static str {
@@ -30,8 +36,10 @@ fn not_found(req: &Request) -> String {
 
 pub fn get_server() -> Rocket {
     let config = ecdsa::Config {
-        db: DB::open_default("./db").unwrap(),
+        db: get_db(),
     };
+
+    db::init(&config.db);
 
     rocket::ignite()
         .register(catchers![internal_error, not_found, bad_request])
@@ -54,4 +62,16 @@ pub fn get_server() -> Rocket {
             ],
         )
         .manage(config)
+}
+
+fn get_db() -> db::DB {
+    let is_aws_db = match env::var("DB") {
+        Ok(v) => v == "AWS",
+        _ => false,
+    };
+    if is_aws_db {
+        db::DB::AWS(DynamoDbClient::new(Region::UsWest2))
+    } else {
+        db::DB::Local(rocksdb::DB::open_default("./db").unwrap())
+    }
 }

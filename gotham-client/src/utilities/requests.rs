@@ -15,7 +15,7 @@ pub fn post(client: &reqwest::Client, path: &str) -> Option<String> {
     let start = PreciseTime::now();
 
     let res = client
-        .post(&format!("http://127.0.0.1:8000/{}", path))
+        .post(&format!("http://localhost:8000/{}", path))
         .json("{}")
         .send();
 
@@ -33,7 +33,7 @@ where
     let start = PreciseTime::now();
 
     let res = client
-        .post(&format!("http://127.0.0.1:8000/{}", path))
+        .post(&format!("http://localhost:8000/{}", path))
         .json(&body)
         .send();
 

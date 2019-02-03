@@ -25,7 +25,7 @@ fn main() {
 
     if let Some(_matches) = matches.subcommand_matches("create-wallet") {
         println!("Network: [{}], Creating wallet", network);
-        let wallet = wallet::Wallet::new(&client, &network);
+        let wallet = wallet::Wallet::new(&network);
         wallet.save();
         println!("Network: [{}], Wallet saved to disk", &network);
 
@@ -79,7 +79,7 @@ fn main() {
             println!("backup recovery in process 📲 (it can take some time)...");
 
             let start = PreciseTime::now();
-            wallet::Wallet::recover_and_save_shares(escrow, &network, &client);
+            wallet::Wallet::recover_and_save_share(escrow, &network, &client);
             let end = PreciseTime::now();
 
             println!(" Backup recovered 💾(Took: {})", start.to(end));
@@ -97,7 +97,6 @@ fn main() {
                 let to: &str = matches.value_of("to").unwrap();
                 let amount_btc: &str = matches.value_of("amount").unwrap();
                 let txid = wallet.send(
-                    &client,
                     to.to_string(),
                     amount_btc.to_string().parse::<f32>().unwrap(),
                 );

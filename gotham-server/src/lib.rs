@@ -6,9 +6,9 @@
 // License as published by the Free Software Foundation, either
 // version 3 of the License, or (at your option) any later version.
 //
-
-#![feature(proc_macro_hygiene, decl_macro)]
-
+#![recursion_limit="128"]
+#![feature(proc_macro_hygiene)]
+#![feature(decl_macro)]
 #[macro_use]
 extern crate rocket;
 extern crate curv;
@@ -18,6 +18,9 @@ extern crate rocket_contrib;
 extern crate rocksdb;
 extern crate uuid;
 extern crate zk_paillier;
+
+#[macro_use]
+extern crate error_chain;
 
 #[macro_use]
 extern crate serde_derive;
@@ -36,7 +39,10 @@ extern crate log;
 extern crate time_test;
 extern crate time;
 
+extern crate rusoto_dynamodb;
+extern crate serde_dynamodb;
+
 pub mod routes;
 pub mod server;
 pub mod tests;
-pub mod utilities;
+pub mod storage;
