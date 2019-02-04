@@ -17,7 +17,6 @@ use curv::{BigInt, GE};
 use electrumx_client::{electrumx_client::ElectrumxClient, interface::Electrumx};
 use kms::ecdsa::two_party::MasterKey2;
 use kms::ecdsa::two_party::*;
-use reqwest;
 use serde_json;
 use std::fs;
 use uuid::Uuid;
@@ -89,9 +88,9 @@ pub struct Wallet {
 }
 
 impl Wallet {
-    pub fn new(net: &String) -> Wallet {
+    pub fn new(client_shim: &api::ClientShim, net: &String) -> Wallet {
         let id = Uuid::new_v4().to_string();
-        let private_share = api::get_master_key();
+        let private_share = api::get_master_key(client_shim);
         let last_derived_pos = 0;
         let addresses_derivation_map = HashMap::new();
         let network = net.clone();
@@ -105,8 +104,8 @@ impl Wallet {
         }
     }
 
-    pub fn rotate(self, client: &reqwest::Client) -> Self {
-        rotate::rotate_master_key(self, client)
+    pub fn rotate(self, client_shim: &api::ClientShim) -> Self {
+        rotate::rotate_master_key(self, client_shim)
     }
 
     pub fn backup(&self, escrow_service: escrow::Escrow) {
@@ -163,7 +162,7 @@ impl Wallet {
     pub fn recover_and_save_share(
         escrow_service: escrow::Escrow,
         net: &String,
-        client: &reqwest::Client,
+        client_shim: &api::ClientShim,
     ) -> Wallet {
         let g: GE = ECPoint::generator();
         let y_priv = escrow_service.get_private_key();
@@ -182,7 +181,7 @@ impl Wallet {
 
         let client_master_key_recovered =
             MasterKey2::recover_master_key(sk, public_data, chain_code2);
-        let res_body = requests::post(client, &format!("ecdsa/{}/recover", key_id)).unwrap();
+        let res_body = requests::post(client_shim, &format!("ecdsa/{}/recover", key_id)).unwrap();
 
         let pos_old: u32 = serde_json::from_str(&res_body).unwrap();
         let pos_old = if pos_old < 10 { 10 } else { pos_old };
@@ -231,6 +230,7 @@ impl Wallet {
         &mut self,
         to_address: String,
         amount_btc: f32,
+        client_shim: &api::ClientShim,
     ) -> String {
         let selected = self.select_tx_in(amount_btc);
         if selected.is_empty() {
@@ -300,7 +300,7 @@ impl Wallet {
                 (selected[i].value as u32).into(),
             );
 
-            let signature = api::sign(sig_hash, &mk, address_derivation.pos, &self.private_share.id);
+            let signature = api::sign(client_shim, sig_hash, &mk, address_derivation.pos, &self.private_share.id);
 
             let mut v = BigInt::to_vec(&signature.r);
             v.extend(BigInt::to_vec(&signature.s));

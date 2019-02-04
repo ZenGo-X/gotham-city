@@ -13,19 +13,20 @@ use clap::App;
 
 use client_lib::escrow;
 use client_lib::wallet;
-use reqwest;
+use client_lib::api;
 use time::PreciseTime;
 
 fn main() {
     let yaml = load_yaml!("../cli.yml");
     let matches = App::from_yaml(yaml).get_matches();
 
-    let client = reqwest::Client::new();
+    let client_shim = api::ClientShim::new("http://localhost:8000".to_string());
+
     let network = "testnet".to_string();
 
     if let Some(_matches) = matches.subcommand_matches("create-wallet") {
         println!("Network: [{}], Creating wallet", network);
-        let wallet = wallet::Wallet::new(&network);
+        let wallet = wallet::Wallet::new(&client_shim, &network);
         wallet.save();
         println!("Network: [{}], Wallet saved to disk", &network);
 
@@ -79,7 +80,7 @@ fn main() {
             println!("backup recovery in process 📲 (it can take some time)...");
 
             let start = PreciseTime::now();
-            wallet::Wallet::recover_and_save_share(escrow, &network, &client);
+            wallet::Wallet::recover_and_save_share(escrow, &network, &client_shim);
             let end = PreciseTime::now();
 
             println!(" Backup recovered 💾(Took: {})", start.to(end));
@@ -87,7 +88,7 @@ fn main() {
             println!("Rotating secret shares");
 
             let start = PreciseTime::now();
-            let wallet = wallet.rotate(&client);
+            let wallet = wallet.rotate(&client_shim);
             wallet.save();
             let end = PreciseTime::now();
 
@@ -99,6 +100,7 @@ fn main() {
                 let txid = wallet.send(
                     to.to_string(),
                     amount_btc.to_string().parse::<f32>().unwrap(),
+                    &client_shim
                 );
                 wallet.save();
                 println!(

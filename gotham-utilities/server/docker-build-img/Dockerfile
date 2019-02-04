@@ -14,7 +14,7 @@ ARG CHANNEL="nightly"
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain ${CHANNEL}
 
 ENV rocket_address=0.0.0.0
-ENV rocket_port=8080
+ENV rocket_port=8000
 
 ADD gotham-server /app
 WORKDIR /app

@@ -7,15 +7,15 @@
 // version 3 of the License, or (at your option) any later version.
 //
 
-use reqwest;
 use serde;
 use time::PreciseTime;
+use super::super::api;
 
-pub fn post(client: &reqwest::Client, path: &str) -> Option<String> {
+pub fn post(client_shim: &api::ClientShim, path: &str) -> Option<String> {
     let start = PreciseTime::now();
 
-    let res = client
-        .post(&format!("http://localhost:8000/{}", path))
+    let res = client_shim.client
+        .post(&format!("{}/{}", client_shim.endpoint, path))
         .json("{}")
         .send();
 
@@ -26,14 +26,14 @@ pub fn post(client: &reqwest::Client, path: &str) -> Option<String> {
     Some(res.unwrap().text().unwrap())
 }
 
-pub fn postb<T>(client: &reqwest::Client, path: &str, body: T) -> Option<String>
+pub fn postb<T>(client_shim: &api::ClientShim, path: &str, body: T) -> Option<String>
 where
     T: serde::ser::Serialize,
 {
     let start = PreciseTime::now();
 
-    let res = client
-        .post(&format!("http://localhost:8000/{}", path))
+    let res = client_shim.client
+        .post(&format!("{}/{}", client_shim.endpoint, path))
         .json(&body)
         .send();
 
