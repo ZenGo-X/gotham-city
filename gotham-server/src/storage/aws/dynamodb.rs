@@ -3,13 +3,13 @@ use std::time::Duration;
 use std::default::Default;
 use serde_json;
 use serde;
-use rusoto_core::{ProvideAwsCredentials, DispatchSignedRequest};
 use rusoto_dynamodb::*;
 use super::error::*;
 use super::*;
 use std::string::*;
 use std::collections::HashMap;
-use std::fmt::Debug;
+use failure;
+use std;
 
 #[derive(Serialize, Deserialize)]
 struct DBItem<T> {
@@ -17,7 +17,8 @@ struct DBItem<T> {
     v: T,
 }
 
-pub fn insert<T>(dynamodb_client: &DynamoDbClient, id: &str, table_name: &str, v: T) where T: serde::ser::Serialize {
+pub fn insert<T>(dynamodb_client: &DynamoDbClient, id: &str, table_name: &str, v: T)
+    -> std::result::Result<PutItemOutput, failure::Error> where T: serde::ser::Serialize {
     let wrapper_item = DBItem {id: id.to_string(), v};
     let item = serde_dynamodb::to_hashmap(&wrapper_item).unwrap();
     let put_item_input = PutItemInput {
@@ -26,11 +27,13 @@ pub fn insert<T>(dynamodb_client: &DynamoDbClient, id: &str, table_name: &str, v
         ..Default::default()
     };
     // Put item
-    let put_item_result = dynamodb_client.put_item(put_item_input).sync();
+    dynamodb_client.put_item(put_item_input)
+        .sync()
+        .map_err(|e| format_err!("DynamoDB error while inserting item: {}", e))
 }
 
 pub fn get<'a, T>(dynamodb_client: &rusoto_dynamodb::DynamoDbClient, id: &str, table_name: String)
-              -> Option<T> where T: serde::de::Deserialize<'a> {
+    -> std::result::Result<Option<T>, failure::Error> where T: serde::de::Deserialize<'a> {
     let mut query_key: HashMap<String, AttributeValue> = HashMap::new();
     query_key.insert(
         "id".to_string(),
@@ -50,16 +53,16 @@ pub fn get<'a, T>(dynamodb_client: &rusoto_dynamodb::DynamoDbClient, id: &str, t
             match item_from_dynamo.item {
                 None => {
                     println!("nothing received from Dynamo, item may not exist");
-                    None
+                    Ok(None)
                 },
                 Some(attributes_map) => {
                     let raw_item: serde_dynamodb::error::Result<DBItem<T>> = serde_dynamodb::from_hashmap(attributes_map);
                     match raw_item {
                         Ok(s) => {
-                            Some(s.v)
+                            Ok(Some(s.v))
                         },
-                        Err(e) => {
-                            None
+                        Err(_e) => {
+                            Ok(None)
                         }
                     }
                 },
@@ -67,7 +70,7 @@ pub fn get<'a, T>(dynamodb_client: &rusoto_dynamodb::DynamoDbClient, id: &str, t
         },
         Err(err) => {
             println!("Error retrieving object: {:?}", err);
-            None
+            Err(failure::err_msg(format!("{:?}", err)))
         }
     }
 }
@@ -85,7 +88,6 @@ pub fn list_tables(client: &DynamoDbClient) ->Result<Vec<String>> {
 }
 
 pub fn wait_for_table(client: &DynamoDbClient, name: &str) -> Result<TableDescription> {
-
     loop {
         let table_desc = describe_table(client, name)?;
 
@@ -137,7 +139,6 @@ pub fn create_table_if_needed(client: &DynamoDbClient, name: &str, read_capacity
 }
 
 pub fn describe_table(client: &DynamoDbClient, name: &str) -> Result<TableDescription> {
-
     let describe_table_input = DescribeTableInput {
         table_name: name.to_owned(),
         ..Default::default()
@@ -192,7 +193,6 @@ macro_rules! key_schema {
 }
 
 pub fn create_table(client: &DynamoDbClient, name: &str, read_capacity: i64, write_capacity: i64) -> Result<()> {
-
     let create_table_input = CreateTableInput {
         table_name: name.to_string(),
         attribute_definitions: attributes!("id" => "S"),

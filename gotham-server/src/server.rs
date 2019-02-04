@@ -39,7 +39,10 @@ pub fn get_server() -> Rocket {
         db: get_db(),
     };
 
-    db::init(&config.db);
+    match db::init(&config.db) {
+        Err(_e) => panic!("Error while initializing DB."),
+        _ => {}
+    };
 
     rocket::ignite()
         .register(catchers![internal_error, not_found, bad_request])

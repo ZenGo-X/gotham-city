@@ -12,8 +12,6 @@ Cargo.lock
 db/
 *.priv
 wallet/wallet.data
-wallet/backup.data
-wallet/wallet.data
 escrow/client.backup
 escrow/escrow-sk.json
 escrow/sk-recovered.json

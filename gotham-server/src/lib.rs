@@ -18,6 +18,8 @@ extern crate rocket_contrib;
 extern crate rocksdb;
 extern crate uuid;
 extern crate zk_paillier;
+#[macro_use]
+extern crate failure;
 
 #[macro_use]
 extern crate error_chain;
@@ -35,6 +37,7 @@ extern crate strum_macros;
 #[macro_use]
 extern crate log;
 
+#[cfg(test)]
 #[macro_use]
 extern crate time_test;
 extern crate time;
@@ -46,3 +49,5 @@ pub mod routes;
 pub mod server;
 pub mod tests;
 pub mod storage;
+
+type Result<T> = std::result::Result<T, failure::Error>;
