@@ -9,7 +9,8 @@ RUN apt-get update && apt-get install -y \
     curl \
     clang \
     libgmp3-dev \
-    libssl-dev
+    libssl-dev \
+    pkg-config
 
 ARG CHANNEL="nightly"
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain ${CHANNEL}
