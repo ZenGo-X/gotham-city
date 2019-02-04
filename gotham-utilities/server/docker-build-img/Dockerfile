@@ -19,8 +19,11 @@ ENV rocket_address=0.0.0.0
 ENV rocket_port=8000
 ENV db=AWS
 
+EXPOSE 8000
 ADD gotham-server /app
 WORKDIR /app
 RUN ["/root/.cargo/bin/cargo", "update"]
 RUN ["/root/.cargo/bin/cargo", "build", "--release"]
+CMD ["/root/.cargo/bin/cargo", "run", "--release"]
+
 
