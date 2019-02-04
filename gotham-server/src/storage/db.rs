@@ -27,7 +27,7 @@ pub fn init(db: &DB) -> Result<()> {
     match db {
         // Create tables
         DB::AWS(dynamodb_client) => {
-            println!("Creating tables if necessary...");
+            info!("Creating tables if necessary...");
             for share_field in ecdsa::Share::iterator() {
                 let name = format!("{}", share_field.to_string());
                 let table_name = calculate_table_name(&name.to_string());

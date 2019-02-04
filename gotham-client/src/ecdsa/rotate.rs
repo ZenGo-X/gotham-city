@@ -7,12 +7,12 @@
 // version 3 of the License, or (at your option) any later version.
 //
 
-use reqwest;
 use serde_json;
 
 use super::super::utilities::requests;
 use super::super::wallet;
 use super::super::api::PrivateShare;
+use super::super::api;
 use curv::cryptographic_primitives::twoparty::coin_flip_optimal_rounds;
 use kms::ecdsa::two_party::MasterKey2;
 use kms::ecdsa::two_party::*;
@@ -21,9 +21,9 @@ use multi_party_ecdsa::protocols::two_party_ecdsa::lindell_2017::*;
 
 const ROT_PATH_PRE: &str = "ecdsa/rotate";
 
-pub fn rotate_master_key(wallet: wallet::Wallet, client: &reqwest::Client) -> wallet::Wallet {
+pub fn rotate_master_key(wallet: wallet::Wallet, client_shim: &api::ClientShim) -> wallet::Wallet {
     let id = &wallet.private_share.id.clone();
-    let res_body = requests::post(client, &format!("{}/{}/first", ROT_PATH_PRE, id)).unwrap();
+    let res_body = requests::post(client_shim, &format!("{}/{}/first", ROT_PATH_PRE, id)).unwrap();
 
     let coin_flip_party1_first_message: coin_flip_optimal_rounds::Party1FirstMessage =
         serde_json::from_str(&res_body).unwrap();
@@ -34,7 +34,7 @@ pub fn rotate_master_key(wallet: wallet::Wallet, client: &reqwest::Client) -> wa
     let body = &coin_flip_party2_first_message;
 
     let res_body = requests::postb(
-        client,
+        client_shim,
         &format!("{}/{}/second", ROT_PATH_PRE, id.clone()),
         body,
     )
@@ -65,7 +65,7 @@ pub fn rotate_master_key(wallet: wallet::Wallet, client: &reqwest::Client) -> wa
     let body = &rotation_party_two_first_message;
 
     let res_body = requests::postb(
-        client,
+        client_shim,
         &format!("{}/{}/third", ROT_PATH_PRE, id.clone()),
         body,
     )
@@ -79,7 +79,7 @@ pub fn rotate_master_key(wallet: wallet::Wallet, client: &reqwest::Client) -> wa
     let body = &rotation_party_two_second_message;
 
     let res_body = requests::postb(
-        client,
+        client_shim,
         &format!("{}/{}/fourth", ROT_PATH_PRE, id.clone()),
         body,
     )
@@ -106,6 +106,7 @@ pub fn rotate_master_key(wallet: wallet::Wallet, client: &reqwest::Client) -> wa
         id: wallet.private_share.id.clone(),
         master_key: party_two_master_key_rotated,
     };
+
     wallet::Wallet {
         id: wallet.id.clone(),
         network: wallet.network.clone(),

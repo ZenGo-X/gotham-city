@@ -7,7 +7,6 @@
 // version 3 of the License, or (at your option) any later version.
 //
 
-use reqwest;
 use serde_json;
 use time::PreciseTime;
 
@@ -21,10 +20,10 @@ use super::super::api;
 
 const KG_PATH_PRE: &str = "ecdsa/keygen";
 
-pub fn get_master_key(client: &reqwest::Client) -> api::PrivateShare {
+pub fn get_master_key(client_shim: &api::ClientShim) -> api::PrivateShare {
     let start = PreciseTime::now();
 
-    let res_body = requests::post(client, &format!("{}/first", KG_PATH_PRE)).unwrap();
+    let res_body = requests::post(client_shim, &format!("{}/first", KG_PATH_PRE)).unwrap();
 
     let (id, kg_party_one_first_message): (String, party_one::KeyGenFirstMsg) =
         serde_json::from_str(&res_body).unwrap();
@@ -34,7 +33,7 @@ pub fn get_master_key(client: &reqwest::Client) -> api::PrivateShare {
     let body = &kg_party_two_first_message.d_log_proof;
 
     let res_body =
-        requests::postb(client, &format!("{}/{}/second", KG_PATH_PRE, id), body).unwrap();
+        requests::postb(client_shim, &format!("{}/{}/second", KG_PATH_PRE, id), body).unwrap();
 
     let kg_party_one_second_message: party1::KeyGenParty1Message2 =
         serde_json::from_str(&res_body).unwrap();
@@ -49,7 +48,7 @@ pub fn get_master_key(client: &reqwest::Client) -> api::PrivateShare {
 
     let body = &party_two_second_message.pdl_first_message;
 
-    let res_body = requests::postb(client, &format!("{}/{}/third", KG_PATH_PRE, id), body).unwrap();
+    let res_body = requests::postb(client_shim, &format!("{}/{}/third", KG_PATH_PRE, id), body).unwrap();
 
     let party_one_third_message: party_one::PDLFirstMessage =
         serde_json::from_str(&res_body).unwrap();
@@ -61,7 +60,7 @@ pub fn get_master_key(client: &reqwest::Client) -> api::PrivateShare {
     let body = &party_2_pdl_second_message;
 
     let res_body =
-        requests::postb(client, &format!("{}/{}/fourth", KG_PATH_PRE, id), body).unwrap();
+        requests::postb(client_shim, &format!("{}/{}/fourth", KG_PATH_PRE, id), body).unwrap();
 
     let party_one_pdl_second_message: party_one::PDLSecondMessage =
         serde_json::from_str(&res_body).unwrap();
@@ -74,7 +73,7 @@ pub fn get_master_key(client: &reqwest::Client) -> api::PrivateShare {
     .expect("pdl error party1");
 
     let res_body =
-        requests::post(client, &format!("{}/{}/chaincode/first", KG_PATH_PRE, id)).unwrap();
+        requests::post(client_shim, &format!("{}/{}/chaincode/first", KG_PATH_PRE, id)).unwrap();
 
     let cc_party_one_first_message: Party1FirstMessage = serde_json::from_str(&res_body).unwrap();
 
@@ -84,7 +83,7 @@ pub fn get_master_key(client: &reqwest::Client) -> api::PrivateShare {
     let body = &cc_party_two_first_message.d_log_proof;
 
     let res_body = requests::postb(
-        client,
+        client_shim,
         &format!("{}/{}/chaincode/second", KG_PATH_PRE, id),
         body,
     )

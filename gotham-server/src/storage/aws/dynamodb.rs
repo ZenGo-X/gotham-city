@@ -52,7 +52,7 @@ pub fn get<'a, T>(dynamodb_client: &rusoto_dynamodb::DynamoDbClient, id: &str, t
         Ok(item_from_dynamo) => {
             match item_from_dynamo.item {
                 None => {
-                    println!("nothing received from Dynamo, item may not exist");
+                    info!("nothing received from Dynamo, item may not exist");
                     Ok(None)
                 },
                 Some(attributes_map) => {
@@ -69,7 +69,7 @@ pub fn get<'a, T>(dynamodb_client: &rusoto_dynamodb::DynamoDbClient, id: &str, t
             }
         },
         Err(err) => {
-            println!("Error retrieving object: {:?}", err);
+            info!("Error retrieving object: {:?}", err);
             Err(failure::err_msg(format!("{:?}", err)))
         }
     }
@@ -123,7 +123,7 @@ pub fn create_table_if_needed(client: &DynamoDbClient, name: &str, read_capacity
         }
 
 
-        println!("Continuing to create...");
+        info!("Continuing to create...");
         match create_table(client, name, read_capacity, write_capacity) {
             Err(Error(ErrorKind::TableAlreadyExists(_), _)) => {
                 info!("table {} already exists. getting info..", name);

@@ -1,11 +1,11 @@
 use bitcoin;
-use reqwest;
 use kms::ecdsa::two_party::party2;
 use kms::ecdsa::two_party::MasterKey2;
 use multi_party_ecdsa::protocols::two_party_ecdsa::lindell_2017::party_two;
 use multi_party_ecdsa::protocols::two_party_ecdsa::lindell_2017::party_one;
 use curv::BigInt;
 
+use super::super::api;
 use super::super::utilities::requests;
 use curv::arithmetic::traits::Converter;
 
@@ -17,7 +17,7 @@ pub struct SignSecondMsgRequest {
 }
 
 pub fn sign(
-    client: &reqwest::Client,
+    client_shim: &api::ClientShim,
     message: bitcoin::util::hash::Sha256dHash,
     mk: &MasterKey2,
     pos: u32,
@@ -28,7 +28,7 @@ pub fn sign(
 
     let request: party_two::EphKeyGenFirstMsg = eph_key_gen_first_message_party_two;
     let res_body = requests::postb(
-        client,
+        client_shim,
         &format!("/ecdsa/sign/{}/first", id),
         &request,
     ).unwrap();
@@ -43,13 +43,13 @@ pub fn sign(
         &BigInt::from_hex(&message.le_hex_string()),
     );
 
-    let signature: party_one::Signature = get_signature(client, message, party_two_sign_message, pos, &id);
+    let signature: party_one::Signature = get_signature(client_shim, message, party_two_sign_message, pos, &id);
 
     signature
 }
 
 fn get_signature(
-    client: &reqwest::Client,
+    client_shim: &api::ClientShim,
     message: bitcoin::util::hash::Sha256dHash,
     party_two_sign_message: party2::SignMessage,
     pos_child_key: u32,
@@ -62,7 +62,7 @@ fn get_signature(
     };
 
     let res_body = requests::postb(
-        client,
+        client_shim,
         &format!("/ecdsa/sign/{}/second", id),
         &request,
     ).unwrap();
