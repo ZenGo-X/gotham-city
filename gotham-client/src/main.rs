@@ -28,7 +28,7 @@ fn main() {
         .merge(config::File::with_name("Settings")).unwrap()
         // Add in settings from the environment (with prefix "APP")
         // Eg.. `APP_DEBUG=1 ./target/app` would set the `debug` key
-        .merge(config::Environment::with_prefix("APP")).unwrap();
+        .merge(config::Environment::new()).unwrap();
     let hm = settings.try_into::<HashMap<String, String>>().unwrap();
     let endpoint = hm.get("endpoint").unwrap();
     let client_shim = api::ClientShim::new(endpoint.to_string());

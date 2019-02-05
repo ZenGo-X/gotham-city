@@ -11,6 +11,7 @@
 #![feature(decl_macro)]
 #[macro_use]
 extern crate rocket;
+extern crate config;
 extern crate curv;
 extern crate kms;
 extern crate multi_party_ecdsa;

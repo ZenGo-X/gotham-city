@@ -16,7 +16,7 @@ use super::aws;
 
 pub enum DB {
     Local(rocksdb::DB),
-    AWS(rusoto_dynamodb::DynamoDbClient),
+    AWS(rusoto_dynamodb::DynamoDbClient, String),
 }
 
 fn idify(id: &str, name: &ecdsa::Share) -> String {
@@ -26,11 +26,11 @@ fn idify(id: &str, name: &ecdsa::Share) -> String {
 pub fn init(db: &DB) -> Result<()> {
     match db {
         // Create tables
-        DB::AWS(dynamodb_client) => {
-            info!("Creating tables if necessary...");
+        DB::AWS(dynamodb_client, env) => {
+            println!("Creating tables if necessary...");
             for share_field in ecdsa::Share::iterator() {
                 let name = format!("{}", share_field.to_string());
-                let table_name = calculate_table_name(&name.to_string());
+                let table_name = calculate_table_name(&name.to_string(), &env);
                 match aws::dynamodb::create_table_if_needed(&dynamodb_client, &table_name, 1, 1) {
                     Err(e) => return Err(format_err!("{}", e)),
                     _ => {}
@@ -51,8 +51,8 @@ where
     T: serde::ser::Serialize,
 {
     match db {
-        DB::AWS(dynamodb_client) => {
-            let table_name = calculate_table_name(&name.to_string());
+        DB::AWS(dynamodb_client, env) => {
+            let table_name = calculate_table_name(&name.to_string(), &env);
             aws::dynamodb::insert(&dynamodb_client, id, &table_name, v)?;
             Ok(())
         }
@@ -70,8 +70,8 @@ where
     T: serde::de::DeserializeOwned,
 {
     match db {
-        DB::AWS(dynamodb_client) => {
-            let table_name = calculate_table_name(&name.to_string());
+        DB::AWS(dynamodb_client, env) => {
+            let table_name = calculate_table_name(&name.to_string(), &env);
             let res: Option<T> = aws::dynamodb::get(&dynamodb_client, id, table_name)?;
             Ok(res)
         }
@@ -89,11 +89,6 @@ where
     }
 }
 
-fn calculate_table_name(name: &str) -> String {
-    let env_res = std::env::var("ENV");
-    let env = match env_res {
-        Ok(v) => v.to_string(),
-        _ => "dev".to_string(),
-    };
+fn calculate_table_name(name: &str, env: &str) -> String {
     format!("{}-gotham-{}", env, name)
 }

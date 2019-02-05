@@ -20,7 +20,6 @@ use kms::rotation::two_party::party1::Rotation1;
 use multi_party_ecdsa::protocols::two_party_ecdsa::lindell_2017::*;
 use rocket::State;
 use rocket_contrib::json::Json;
-use serde_json;
 use std::string::ToString;
 use uuid::Uuid;
 
