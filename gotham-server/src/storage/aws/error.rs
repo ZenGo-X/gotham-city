@@ -1,6 +1,6 @@
 use rusoto_dynamodb;
-use std::num;
 use serde_json;
+use std::num;
 
 error_chain! {
     foreign_links {

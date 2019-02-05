@@ -30,8 +30,8 @@ extern crate secp256k1;
 extern crate time;
 extern crate uuid;
 
+pub mod api;
 pub mod ecdsa;
 pub mod escrow;
 pub mod utilities;
 pub mod wallet;
-pub mod api;

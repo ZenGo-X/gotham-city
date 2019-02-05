@@ -1,9 +1,9 @@
 use bitcoin;
+use curv::BigInt;
 use kms::ecdsa::two_party::party2;
 use kms::ecdsa::two_party::MasterKey2;
-use multi_party_ecdsa::protocols::two_party_ecdsa::lindell_2017::party_two;
 use multi_party_ecdsa::protocols::two_party_ecdsa::lindell_2017::party_one;
-use curv::BigInt;
+use multi_party_ecdsa::protocols::two_party_ecdsa::lindell_2017::party_two;
 
 use super::super::api;
 use super::super::utilities::requests;
@@ -21,17 +21,14 @@ pub fn sign(
     message: bitcoin::util::hash::Sha256dHash,
     mk: &MasterKey2,
     pos: u32,
-    id: &String
+    id: &String,
 ) -> party_one::Signature {
     let (eph_key_gen_first_message_party_two, eph_comm_witness, eph_ec_key_pair_party2) =
         MasterKey2::sign_first_message();
 
     let request: party_two::EphKeyGenFirstMsg = eph_key_gen_first_message_party_two;
-    let res_body = requests::postb(
-        client_shim,
-        &format!("/ecdsa/sign/{}/first", id),
-        &request,
-    ).unwrap();
+    let res_body =
+        requests::postb(client_shim, &format!("/ecdsa/sign/{}/first", id), &request).unwrap();
 
     let sign_party_one_first_message: party_one::EphKeyGenFirstMsg =
         serde_json::from_str(&res_body).unwrap();
@@ -43,7 +40,8 @@ pub fn sign(
         &BigInt::from_hex(&message.le_hex_string()),
     );
 
-    let signature: party_one::Signature = get_signature(client_shim, message, party_two_sign_message, pos, &id);
+    let signature: party_one::Signature =
+        get_signature(client_shim, message, party_two_sign_message, pos, &id);
 
     signature
 }
@@ -53,7 +51,7 @@ fn get_signature(
     message: bitcoin::util::hash::Sha256dHash,
     party_two_sign_message: party2::SignMessage,
     pos_child_key: u32,
-    id: &String
+    id: &String,
 ) -> party_one::Signature {
     let request: SignSecondMsgRequest = SignSecondMsgRequest {
         message: BigInt::from_hex(&message.le_hex_string()),
@@ -61,11 +59,8 @@ fn get_signature(
         pos_child_key,
     };
 
-    let res_body = requests::postb(
-        client_shim,
-        &format!("/ecdsa/sign/{}/second", id),
-        &request,
-    ).unwrap();
+    let res_body =
+        requests::postb(client_shim, &format!("/ecdsa/sign/{}/second", id), &request).unwrap();
 
     let signature: party_one::Signature = serde_json::from_str(&res_body).unwrap();
     signature

@@ -9,10 +9,10 @@
 
 use serde_json;
 
+use super::super::api;
+use super::super::api::PrivateShare;
 use super::super::utilities::requests;
 use super::super::wallet;
-use super::super::api::PrivateShare;
-use super::super::api;
 use curv::cryptographic_primitives::twoparty::coin_flip_optimal_rounds;
 use kms::ecdsa::two_party::MasterKey2;
 use kms::ecdsa::two_party::*;

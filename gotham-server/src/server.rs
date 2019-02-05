@@ -14,8 +14,8 @@ use rocksdb;
 use rusoto_core::Region;
 use rusoto_dynamodb::DynamoDbClient;
 
-use super::storage::db;
 use super::routes::ecdsa;
+use super::storage::db;
 
 use std::env;
 
@@ -35,9 +35,7 @@ fn not_found(req: &Request) -> String {
 }
 
 pub fn get_server() -> Rocket {
-    let config = ecdsa::Config {
-        db: get_db(),
-    };
+    let config = ecdsa::Config { db: get_db() };
 
     match db::init(&config.db) {
         Err(_e) => panic!("Error while initializing DB."),

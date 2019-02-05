@@ -25,11 +25,11 @@ use centipede::juggling::proof_system::{Helgamalsegmented, Proof};
 use centipede::juggling::segmentation::Msegmentation;
 use kms::chain_code::two_party::party2::ChainCode2;
 
+use super::api;
+use super::api::PrivateShare;
 use super::ecdsa::rotate;
 use super::escrow;
 use super::utilities::requests;
-use super::api;
-use super::api::PrivateShare;
 use curv::arithmetic::traits::Converter;
 use hex;
 use itertools::Itertools;
@@ -300,14 +300,18 @@ impl Wallet {
                 (selected[i].value as u32).into(),
             );
 
-            let signature = api::sign(client_shim, sig_hash, &mk, address_derivation.pos, &self.private_share.id);
+            let signature = api::sign(
+                client_shim,
+                sig_hash,
+                &mk,
+                address_derivation.pos,
+                &self.private_share.id,
+            );
 
             let mut v = BigInt::to_vec(&signature.r);
             v.extend(BigInt::to_vec(&signature.s));
 
-            let mut sig = Signature::from_compact(&v[..])
-                .unwrap()
-                .serialize_der();
+            let mut sig = Signature::from_compact(&v[..]).unwrap().serialize_der();
 
             sig.push(01);
             let mut witness = Vec::new();

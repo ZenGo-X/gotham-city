@@ -6,7 +6,7 @@
 // License as published by the Free Software Foundation, either
 // version 3 of the License, or (at your option) any later version.
 //
-#![recursion_limit="128"]
+#![recursion_limit = "128"]
 #![feature(proc_macro_hygiene)]
 #![feature(decl_macro)]
 #[macro_use]
@@ -47,7 +47,7 @@ extern crate serde_dynamodb;
 
 pub mod routes;
 pub mod server;
-pub mod tests;
 pub mod storage;
+pub mod tests;
 
 type Result<T> = std::result::Result<T, failure::Error>;

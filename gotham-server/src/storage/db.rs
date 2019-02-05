@@ -16,7 +16,7 @@ use super::aws;
 
 pub enum DB {
     Local(rocksdb::DB),
-    AWS(rusoto_dynamodb::DynamoDbClient)
+    AWS(rusoto_dynamodb::DynamoDbClient),
 }
 
 fn idify(id: &str, name: &ecdsa::Share) -> String {
@@ -41,18 +41,21 @@ pub fn init(db: &DB) -> Result<()> {
                 }
             }
             Ok(())
-        },
-        _ => Ok(())
+        }
+        _ => Ok(()),
     }
 }
 
-pub fn insert<T>(db: &DB, id: &str, name: &ecdsa::Share, v: T) -> Result<()> where T: serde::ser::Serialize {
+pub fn insert<T>(db: &DB, id: &str, name: &ecdsa::Share, v: T) -> Result<()>
+where
+    T: serde::ser::Serialize,
+{
     match db {
         DB::AWS(dynamodb_client) => {
             let table_name = calculate_table_name(&name.to_string());
             aws::dynamodb::insert(&dynamodb_client, id, &table_name, v)?;
             Ok(())
-        },
+        }
         DB::Local(rocksdb_client) => {
             let identifier = idify(id, name);
             let v_string = serde_json::to_string(&v).unwrap();
@@ -62,22 +65,25 @@ pub fn insert<T>(db: &DB, id: &str, name: &ecdsa::Share, v: T) -> Result<()> whe
     }
 }
 
-pub fn get<T>(db: &DB, id: &str, name: &ecdsa::Share) -> Result<Option<T>> where T: serde::de::DeserializeOwned {
+pub fn get<T>(db: &DB, id: &str, name: &ecdsa::Share) -> Result<Option<T>>
+where
+    T: serde::de::DeserializeOwned,
+{
     match db {
         DB::AWS(dynamodb_client) => {
             let table_name = calculate_table_name(&name.to_string());
             let res: Option<T> = aws::dynamodb::get(&dynamodb_client, id, table_name)?;
             Ok(res)
-        },
+        }
         DB::Local(rocksdb_client) => {
             let identifier = idify(id, name);
             info!("Getting from db ({})", identifier);
 
-            let db_option= rocksdb_client.get(identifier.as_ref())?;
+            let db_option = rocksdb_client.get(identifier.as_ref())?;
             let vec_option: Option<Vec<u8>> = db_option.map(|v| v.to_vec());
             match vec_option {
                 Some(vec) => Ok(serde_json::from_slice(&vec).unwrap()),
-                None => Ok(None)
+                None => Ok(None),
             }
         }
     }
@@ -87,8 +93,7 @@ fn calculate_table_name(name: &str) -> String {
     let env_res = std::env::var("ENV");
     let env = match env_res {
         Ok(v) => v.to_string(),
-        _ => "dev".to_string()
+        _ => "dev".to_string(),
     };
     format!("{}-gotham-{}", env, name)
 }
-

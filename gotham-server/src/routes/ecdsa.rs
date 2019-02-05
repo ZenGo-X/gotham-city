@@ -8,6 +8,7 @@
 // version 3 of the License, or (at your option) any later version.
 //
 
+use super::super::Result;
 use curv::cryptographic_primitives::proofs::dlog_zk_protocol::*;
 use curv::cryptographic_primitives::twoparty::coin_flip_optimal_rounds;
 use curv::cryptographic_primitives::twoparty::dh_key_exchange::*;
@@ -22,7 +23,6 @@ use rocket_contrib::json::Json;
 use serde_json;
 use std::string::ToString;
 use uuid::Uuid;
-use super::super::Result;
 
 use super::super::storage::db;
 use super::super::storage::db::DB;
@@ -94,14 +94,15 @@ impl Share {
             RotatePdlDecom,
             RotateParty2First,
             RotateParty1Second,
-            POS];
+            POS,
+        ];
 
         FIELDS.iter()
     }
 }
 
 pub struct Config {
-    pub db: DB
+    pub db: DB,
 }
 
 #[post("/ecdsa/keygen/first", format = "json")]
@@ -153,8 +154,9 @@ pub fn third_message(
     id: String,
     party_2_pdl_first_message: Json<party_two::PDLFirstMessage>,
 ) -> Result<Json<(party_one::PDLFirstMessage)>> {
-    let party_one_private: party_one::Party1Private = db::get(&state.db, &id, &Share::Party1Private)?
-        .ok_or(format_err!("No data for such identifier {}", id))?;
+    let party_one_private: party_one::Party1Private =
+        db::get(&state.db, &id, &Share::Party1Private)?
+            .ok_or(format_err!("No data for such identifier {}", id))?;
 
     let (party_one_third_message, party_one_pdl_decommit) =
         MasterKey1::key_gen_third_message(&party_2_pdl_first_message.0, &party_one_private);
@@ -187,17 +189,21 @@ pub fn fourth_message(
     id: String,
     party_two_pdl_second_message: Json<party_two::PDLSecondMessage>,
 ) -> Result<Json<(party_one::PDLSecondMessage)>> {
-    let pdl_party_one_third_message: party_one::PDLFirstMessage = db::get(&state.db, &id, &Share::PDLFirstMessage)?
-        .ok_or(format_err!("No data for such identifier {}", id))?;
+    let pdl_party_one_third_message: party_one::PDLFirstMessage =
+        db::get(&state.db, &id, &Share::PDLFirstMessage)?
+            .ok_or(format_err!("No data for such identifier {}", id))?;
 
-    let party_one_private: party_one::Party1Private = db::get(&state.db, &id, &Share::Party1Private)?
-        .ok_or(format_err!("No data for such identifier {}", id))?;
+    let party_one_private: party_one::Party1Private =
+        db::get(&state.db, &id, &Share::Party1Private)?
+            .ok_or(format_err!("No data for such identifier {}", id))?;
 
-    let party_one_pdl_decommit: party_one::PDLdecommit = db::get(&state.db, &id, &Share::PDLDecommit)?
-        .ok_or(format_err!("No data for such identifier {}", id))?;
+    let party_one_pdl_decommit: party_one::PDLdecommit =
+        db::get(&state.db, &id, &Share::PDLDecommit)?
+            .ok_or(format_err!("No data for such identifier {}", id))?;
 
-    let party_2_pdl_first_message: party_two::PDLFirstMessage = db::get(&state.db, &id, &Share::Party2PDLFirstMsg)?
-        .ok_or(format_err!("No data for such identifier {}", id))?;
+    let party_2_pdl_first_message: party_two::PDLFirstMessage =
+        db::get(&state.db, &id, &Share::Party2PDLFirstMsg)?
+            .ok_or(format_err!("No data for such identifier {}", id))?;
 
     let res = MasterKey1::key_gen_fourth_message(
         &pdl_party_one_third_message,
@@ -213,7 +219,10 @@ pub fn fourth_message(
 }
 
 #[post("/ecdsa/keygen/<id>/chaincode/first", format = "json")]
-pub fn chain_code_first_message(state: State<Config>, id: String) -> Result<Json<(Party1FirstMessage)>> {
+pub fn chain_code_first_message(
+    state: State<Config>,
+    id: String,
+) -> Result<Json<(Party1FirstMessage)>> {
     let (cc_party_one_first_message, cc_comm_witness, cc_ec_key_pair1) =
         chain_code::party1::ChainCode1::chain_code_first_message();
 
@@ -240,7 +249,8 @@ pub fn chain_code_second_message(
     cc_party_two_first_message_d_log_proof: Json<DLogProof>,
 ) -> Result<Json<(Party1SecondMessage)>> {
     let cc_comm_witness: curv::cryptographic_primitives::twoparty::dh_key_exchange::CommWitness =
-        db::get(&state.db, &id, &Share::CCCommWitness)?.ok_or(format_err!("No data for such identifier {}", id))?;
+        db::get(&state.db, &id, &Share::CCCommWitness)?
+            .ok_or(format_err!("No data for such identifier {}", id))?;
 
     let party1_cc = chain_code::party1::ChainCode1::chain_code_second_message(
         cc_comm_witness,
@@ -274,13 +284,15 @@ pub fn master_key(state: State<Config>, id: String) -> Result<()> {
     let party2_public: GE = db::get(&state.db, &id, &Share::Party2Public)?
         .ok_or(format_err!("No data for such identifier {}", id))?;
 
-    let paillier_key_pair: party_one::PaillierKeyPair = db::get(&state.db, &id, &Share::PaillierKeyPair)?
-        .ok_or(format_err!("No data for such identifier {}", id))?;
+    let paillier_key_pair: party_one::PaillierKeyPair =
+        db::get(&state.db, &id, &Share::PaillierKeyPair)?
+            .ok_or(format_err!("No data for such identifier {}", id))?;
     let party1_cc: chain_code::party1::ChainCode1 = db::get(&state.db, &id, &Share::CC)?
         .ok_or(format_err!("No data for such identifier {}", id))?;
 
-    let party_one_private: party_one::Party1Private = db::get(&state.db, &id, &Share::Party1Private)?
-        .ok_or(format_err!("No data for such identifier {}", id))?;
+    let party_one_private: party_one::Party1Private =
+        db::get(&state.db, &id, &Share::Party1Private)?
+            .ok_or(format_err!("No data for such identifier {}", id))?;
 
     let comm_witness: party_one::CommWitness = db::get(&state.db, &id, &Share::CommWitness)?
         .ok_or(format_err!("No data for such identifier {}", id))?;
@@ -344,11 +356,13 @@ pub fn sign_second(
 
     let child_master_key = master_key.get_child(vec![BigInt::from(request.pos_child_key)]);
 
-    let eph_ec_key_pair_party1: party_one::EphEcKeyPair = db::get(&state.db, &id, &Share::EphEcKeyPair)?
-        .ok_or(format_err!("No data for such identifier {}", id))?;
+    let eph_ec_key_pair_party1: party_one::EphEcKeyPair =
+        db::get(&state.db, &id, &Share::EphEcKeyPair)?
+            .ok_or(format_err!("No data for such identifier {}", id))?;
 
-    let eph_key_gen_first_message_party_two: party_two::EphKeyGenFirstMsg = db::get(&state.db, &id, &Share::EphKeyGenFirstMsg)?
-        .ok_or(format_err!("No data for such identifier {}", id))?;
+    let eph_key_gen_first_message_party_two: party_two::EphKeyGenFirstMsg =
+        db::get(&state.db, &id, &Share::EphKeyGenFirstMsg)?
+            .ok_or(format_err!("No data for such identifier {}", id))?;
 
     let signatures = child_master_key.sign_second_message(
         &request.party_two_sign_message,
@@ -389,12 +403,14 @@ pub fn rotate_second(
     state: State<Config>,
     id: String,
     party2_first_message: Json<coin_flip_optimal_rounds::Party2FirstMessage>,
-) -> Result<Json<
-    ((
-        coin_flip_optimal_rounds::Party1SecondMessage,
-        party1::RotationParty1Message1,
-    )),
->> {
+) -> Result<
+    Json<
+        ((
+            coin_flip_optimal_rounds::Party1SecondMessage,
+            party1::RotationParty1Message1,
+        )),
+    >,
+> {
     let party_one_master_key = get_mk(&state, &id)?;
 
     let m1: Secp256k1Scalar = db::get(&state.db, &id, &Share::RotateCommitMessage1M)?
@@ -422,7 +438,10 @@ pub fn rotate_second(
         &Share::RotatePrivateNew,
         &party_one_private_new,
     )?;
-    Ok(Json((party1_second_message, rotation_party_one_first_message)))
+    Ok(Json((
+        party1_second_message,
+        rotation_party_one_first_message,
+    )))
 }
 
 #[post(
@@ -435,8 +454,9 @@ pub fn rotate_third(
     id: String,
     rotation_party_two_first_message: Json<party_two::PDLFirstMessage>,
 ) -> Result<Json<(party_one::PDLFirstMessage)>> {
-    let party_one_private_new: party_one::Party1Private = db::get(&state.db, &id, &Share::RotatePrivateNew)?
-        .ok_or(format_err!("No data for such identifier {}", id))?;
+    let party_one_private_new: party_one::Party1Private =
+        db::get(&state.db, &id, &Share::RotatePrivateNew)?
+            .ok_or(format_err!("No data for such identifier {}", id))?;
 
     let (rotation_party_one_second_message, party_one_pdl_decommit) =
         MasterKey1::rotation_second_message(
@@ -477,23 +497,29 @@ pub fn rotate_fourth(
 ) -> Result<Json<(party_one::PDLSecondMessage)>> {
     let party_one_master_key = get_mk(&state, &id)?;
 
-    let rotation_party_one_first_message: party1::RotationParty1Message1 = db::get(&state.db, &id, &Share::RotateFirstMsg)?
-        .ok_or(format_err!("No data for such identifier {}", id))?;
+    let rotation_party_one_first_message: party1::RotationParty1Message1 =
+        db::get(&state.db, &id, &Share::RotateFirstMsg)?
+            .ok_or(format_err!("No data for such identifier {}", id))?;
 
-    let party_one_private_new: party_one::Party1Private = db::get(&state.db, &id, &Share::RotatePrivateNew)?
-        .ok_or(format_err!("No data for such identifier {}", id))?;
+    let party_one_private_new: party_one::Party1Private =
+        db::get(&state.db, &id, &Share::RotatePrivateNew)?
+            .ok_or(format_err!("No data for such identifier {}", id))?;
 
-    let random1: kms::rotation::two_party::Rotation = db::get(&state.db, &id, &Share::RotateRandom1)?
-        .ok_or(format_err!("No data for such identifier {}", id))?;
+    let random1: kms::rotation::two_party::Rotation =
+        db::get(&state.db, &id, &Share::RotateRandom1)?
+            .ok_or(format_err!("No data for such identifier {}", id))?;
 
-    let rotation_party_one_second_message: party_one::PDLFirstMessage = db::get(&state.db, &id, &Share::RotateParty1Second)?
-        .ok_or(format_err!("No data for such identifier {}", id))?;
+    let rotation_party_one_second_message: party_one::PDLFirstMessage =
+        db::get(&state.db, &id, &Share::RotateParty1Second)?
+            .ok_or(format_err!("No data for such identifier {}", id))?;
 
-    let rotation_party_two_first_message: party_two::PDLFirstMessage = db::get(&state.db, &id, &Share::RotateParty2First)?
-        .ok_or(format_err!("No data for such identifier {}", id))?;
+    let rotation_party_two_first_message: party_two::PDLFirstMessage =
+        db::get(&state.db, &id, &Share::RotateParty2First)?
+            .ok_or(format_err!("No data for such identifier {}", id))?;
 
-    let party_one_pdl_decommit: party_one::PDLdecommit = db::get(&state.db, &id, &Share::RotatePdlDecom)?
-        .ok_or(format_err!("No data for such identifier {}", id))?;
+    let party_one_pdl_decommit: party_one::PDLdecommit =
+        db::get(&state.db, &id, &Share::RotatePdlDecom)?
+            .ok_or(format_err!("No data for such identifier {}", id))?;
 
     let result_rotate_party_two_second_message = party_one_master_key.rotation_third_message(
         &rotation_party_one_first_message,

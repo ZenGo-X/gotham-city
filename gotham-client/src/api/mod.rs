@@ -5,7 +5,7 @@ use reqwest;
 
 pub struct ClientShim {
     pub client: reqwest::Client,
-    pub endpoint: String
+    pub endpoint: String,
 }
 
 impl ClientShim {
@@ -25,6 +25,12 @@ pub fn get_master_key(client_shim: &ClientShim) -> PrivateShare {
     keygen::get_master_key(&client_shim)
 }
 
-pub fn sign(client_shim: &ClientShim, message: bitcoin::util::hash::Sha256dHash, mk: &MasterKey2, pos: u32, id: &String) -> party_one::Signature {
+pub fn sign(
+    client_shim: &ClientShim,
+    message: bitcoin::util::hash::Sha256dHash,
+    mk: &MasterKey2,
+    pos: u32,
+    id: &String,
+) -> party_one::Signature {
     sign::sign(&client_shim, message, mk, pos, id)
 }

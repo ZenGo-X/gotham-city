@@ -46,7 +46,8 @@ mod tests {
 
         let start = PreciseTime::now();
 
-        let (kg_party_two_first_message, kg_ec_key_pair_party2) = MasterKey2::key_gen_first_message();
+        let (kg_party_two_first_message, kg_ec_key_pair_party2) =
+            MasterKey2::key_gen_first_message();
 
         let end = PreciseTime::now();
         println!("{} Client: party2 first message", start.to(end));
@@ -142,7 +143,7 @@ mod tests {
             &party_one_third_message,
             &party_one_pdl_second_message,
         )
-            .expect("pdl error party1");
+        .expect("pdl error party1");
 
         let end = PreciseTime::now();
         println!("{} Client: party2 fourth message", start.to(end));
@@ -164,7 +165,8 @@ mod tests {
         );
 
         let res_body = response.body_string().unwrap();
-        let cc_party_one_first_message: Party1FirstMessage = serde_json::from_str(&res_body).unwrap();
+        let cc_party_one_first_message: Party1FirstMessage =
+            serde_json::from_str(&res_body).unwrap();
 
         let start = PreciseTime::now();
         let (cc_party_two_first_message, cc_ec_key_pair2) =
@@ -192,13 +194,15 @@ mod tests {
         );
 
         let res_body = response.body_string().unwrap();
-        let cc_party_one_second_message: Party1SecondMessage = serde_json::from_str(&res_body).unwrap();
+        let cc_party_one_second_message: Party1SecondMessage =
+            serde_json::from_str(&res_body).unwrap();
 
         let start = PreciseTime::now();
-        let _cc_party_two_second_message = chain_code::party2::ChainCode2::chain_code_second_message(
-            &cc_party_one_first_message,
-            &cc_party_one_second_message,
-        );
+        let _cc_party_two_second_message =
+            chain_code::party2::ChainCode2::chain_code_second_message(
+                &cc_party_one_first_message,
+                &cc_party_one_second_message,
+            );
 
         let end = PreciseTime::now();
         println!("{} Client: party2 chain code second message", start.to(end));

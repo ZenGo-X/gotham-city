@@ -15,8 +15,8 @@ use kms::chain_code::two_party as chain_code;
 use kms::ecdsa::two_party::*;
 use multi_party_ecdsa::protocols::two_party_ecdsa::lindell_2017::*;
 
-use super::super::utilities::requests;
 use super::super::api;
+use super::super::utilities::requests;
 
 const KG_PATH_PRE: &str = "ecdsa/keygen";
 
@@ -48,7 +48,8 @@ pub fn get_master_key(client_shim: &api::ClientShim) -> api::PrivateShare {
 
     let body = &party_two_second_message.pdl_first_message;
 
-    let res_body = requests::postb(client_shim, &format!("{}/{}/third", KG_PATH_PRE, id), body).unwrap();
+    let res_body =
+        requests::postb(client_shim, &format!("{}/{}/third", KG_PATH_PRE, id), body).unwrap();
 
     let party_one_third_message: party_one::PDLFirstMessage =
         serde_json::from_str(&res_body).unwrap();
@@ -72,8 +73,11 @@ pub fn get_master_key(client_shim: &api::ClientShim) -> api::PrivateShare {
     )
     .expect("pdl error party1");
 
-    let res_body =
-        requests::post(client_shim, &format!("{}/{}/chaincode/first", KG_PATH_PRE, id)).unwrap();
+    let res_body = requests::post(
+        client_shim,
+        &format!("{}/{}/chaincode/first", KG_PATH_PRE, id),
+    )
+    .unwrap();
 
     let cc_party_one_first_message: Party1FirstMessage = serde_json::from_str(&res_body).unwrap();
 

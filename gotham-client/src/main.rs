@@ -11,9 +11,9 @@
 extern crate clap;
 use clap::App;
 
+use client_lib::api;
 use client_lib::escrow;
 use client_lib::wallet;
-use client_lib::api;
 use time::PreciseTime;
 
 fn main() {
@@ -100,7 +100,7 @@ fn main() {
                 let txid = wallet.send(
                     to.to_string(),
                     amount_btc.to_string().parse::<f32>().unwrap(),
-                    &client_shim
+                    &client_shim,
                 );
                 wallet.save();
                 println!(

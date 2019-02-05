@@ -7,5 +7,5 @@
 // version 3 of the License, or (at your option) any later version.
 //
 pub mod keygen;
-pub mod sign;
 pub mod rotate;
+pub mod sign;

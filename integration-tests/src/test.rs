@@ -1,10 +1,10 @@
-extern crate server_lib;
-extern crate client_lib;
 extern crate bitcoin;
+extern crate client_lib;
 extern crate kms;
+extern crate server_lib;
 
-use client_lib::api::{PrivateShare, ClientShim};
 use bitcoin::util::hash::Sha256dHash;
+use client_lib::api::{ClientShim, PrivateShare};
 use curv::BigInt;
 use server_lib::server;
 use std::{thread, time};
@@ -24,11 +24,9 @@ fn test_api() {
     let ps: PrivateShare = client_lib::api::get_master_key(&client_shim);
 
     let pos = 0;
-    let child_master_key = ps
-        .master_key
-        .get_child(vec![BigInt::from(pos)]);
+    let child_master_key = ps.master_key.get_child(vec![BigInt::from(pos)]);
 
-    let data : &[u8] = &[];
-    let hash : Sha256dHash = Sha256dHash::from_data(data);
+    let data: &[u8] = &[];
+    let hash: Sha256dHash = Sha256dHash::from_data(data);
     let signature = client_lib::api::sign(&client_shim, hash, &child_master_key, pos, &ps.id);
 }
