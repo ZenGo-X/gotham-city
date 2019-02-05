@@ -25,4 +25,4 @@ phases:
     - echo Writing image definitions file...
     - printf '{"AWSEBDockerrunVersion":"1","Ports":[{"ContainerPort":8000}],"Image":{"Name":"%s","Update":"true"}}' $REPOSITORY_URI:$IMAGE_TAG > Dockerrun.aws.json
 artifacts:
-  files: imagedefinitions.json
+  files: Dockerrun.aws.json
