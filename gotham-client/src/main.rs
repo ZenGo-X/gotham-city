@@ -16,11 +16,22 @@ use client_lib::escrow;
 use client_lib::wallet;
 use time::PreciseTime;
 
+use std::collections::HashMap;
+
 fn main() {
     let yaml = load_yaml!("../cli.yml");
     let matches = App::from_yaml(yaml).get_matches();
 
-    let client_shim = api::ClientShim::new("http://localhost:8000".to_string());
+    let mut settings = config::Config::default();
+    settings
+        // Add in `./Settings.toml`
+        .merge(config::File::with_name("Settings")).unwrap()
+        // Add in settings from the environment (with prefix "APP")
+        // Eg.. `APP_DEBUG=1 ./target/app` would set the `debug` key
+        .merge(config::Environment::with_prefix("APP")).unwrap();
+    let hm = settings.try_into::<HashMap<String, String>>().unwrap();
+    let endpoint = hm.get("endpoint").unwrap();
+    let client_shim = api::ClientShim::new(endpoint.to_string());
 
     let network = "testnet".to_string();
 

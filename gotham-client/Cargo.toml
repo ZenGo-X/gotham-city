@@ -25,6 +25,7 @@ electrumx_client = { git = "https://github.com/evgeniy-scherbina/rust-electrumx-
 itertools = "0.8.0"
 hex = "0.3.2"
 bitcoin = "0.16.0"
+config = "0.9"
 
 [dependencies.secp256k1]
 version = "0.12"
