@@ -45,9 +45,12 @@ extern crate time;
 
 extern crate rusoto_dynamodb;
 extern crate serde_dynamodb;
+extern crate jsonwebtoken as jwt;
+extern crate crypto;
 
 pub mod routes;
 pub mod server;
+pub mod auth;
 pub mod storage;
 pub mod tests;
 
