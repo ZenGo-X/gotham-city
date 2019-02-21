@@ -22,7 +22,7 @@ where
 {
     let identifier = idify(id, name);
     let v: String = serde_json::to_string(&v).unwrap();
-    info!("Inserting into db ({}, {})", identifier, v);
+    debug!("Inserting into db ({}, {})", identifier, v);
 
     let r = db.put(identifier.as_ref(), v.as_ref());
     if r.is_err() {
@@ -32,7 +32,7 @@ where
 
 pub fn get(db: &DB, id: &String, name: &ecdsa::Share) -> Option<DBVector> {
     let identifier = idify(id, name);
-    info!("Getting from db ({})", identifier);
+    debug!("Getting from db ({})", identifier);
 
     let r = db.get(identifier.as_ref());
     if r.is_err() {

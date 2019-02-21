@@ -33,7 +33,6 @@ use super::utilities::requests;
 use curv::arithmetic::traits::Converter;
 use hex;
 use itertools::Itertools;
-use secp256k1::Secp256k1;
 use secp256k1::Signature;
 use std::collections::HashMap;
 use std::str::FromStr;
@@ -319,10 +318,7 @@ impl Wallet {
             let mut v = BigInt::to_vec(&signatures.r);
             v.extend(BigInt::to_vec(&signatures.s));
 
-            let context = Secp256k1::new();
-            let mut sig = Signature::from_compact(&context, &v[..])
-                .unwrap()
-                .serialize_der(&context);
+            let mut sig = Signature::from_compact(&v[..]).unwrap().serialize_der();
 
             sig.push(01);
             let mut witness = Vec::new();
