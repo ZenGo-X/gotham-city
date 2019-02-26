@@ -48,6 +48,8 @@ extern crate serde_dynamodb;
 extern crate jsonwebtoken as jwt;
 extern crate crypto;
 
+extern crate hex;
+
 pub mod routes;
 pub mod server;
 pub mod auth;

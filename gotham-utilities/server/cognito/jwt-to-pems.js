@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 "use strict";
 
+const RSAKey = require('rsa-key');
 const argv = require('yargs').argv;
 const fetch = require('node-fetch');
 const _ = require('lodash');
@@ -20,9 +21,14 @@ async function initJsonWebKeySet(url) {
 
     return  _(jwk.keys)
         .map(k => {
+            const key = new RSAKey(jwkToPem(k))
+
             return {
                 kid: k.kid,
-                pem: jwkToPem(k)
+                pem: key.exportKey(),
+                der: key.exportKey('der').toString('hex'),
+                alg: k.alg,
+                kty: k.kty
             };
         })
         .keyBy(k => k.kid)
@@ -40,7 +46,7 @@ console.log(`Getting jwt tokens from ${url}`);
 (async () => {
     try {
         const kidTojwk = await initJsonWebKeySet(url);
-        console.log(kidTojwk);
+        console.log(JSON.stringify(kidTojwk));
     } catch (e) {
         console.error(e);
     }

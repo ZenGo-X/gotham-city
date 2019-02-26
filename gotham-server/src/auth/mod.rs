@@ -7,10 +7,5 @@
 // version 3 of the License, or (at your option) any later version.
 //
 
-trait AuthClient {
-    fn connect(&self);
-    fn get_user_id(&self) -> String;
-}
-
 pub mod cognito;
 pub mod jwt;
