@@ -19,8 +19,8 @@ pub enum DB {
     AWS(rusoto_dynamodb::DynamoDbClient, String),
 }
 
-fn idify(id: &str, name: &ecdsa::Share) -> String {
-    format!("{}_{}", id, name.to_string())
+fn idify(user_id: &str, id: &str, name: &ecdsa::Share) -> String {
+    format!("{}_{}_{}", user_id, id, name.to_string())
 }
 
 pub fn init(db: &DB) -> Result<()> {
@@ -46,18 +46,18 @@ pub fn init(db: &DB) -> Result<()> {
     }
 }
 
-pub fn insert<T>(db: &DB, id: &str, name: &ecdsa::Share, v: T) -> Result<()>
+pub fn insert<T>(db: &DB, user_id: &str, id: &str, name: &ecdsa::Share, v: T) -> Result<()>
 where
     T: serde::ser::Serialize,
 {
     match db {
         DB::AWS(dynamodb_client, env) => {
             let table_name = calculate_table_name(&name.to_string(), &env);
-            aws::dynamodb::insert(&dynamodb_client, id, &table_name, v)?;
+            aws::dynamodb::insert(&dynamodb_client, user_id, id, &table_name, v)?;
             Ok(())
         }
         DB::Local(rocksdb_client) => {
-            let identifier = idify(id, name);
+            let identifier = idify(user_id, id, name);
             let v_string = serde_json::to_string(&v).unwrap();
             rocksdb_client.put(identifier.as_ref(), v_string.as_ref())?;
             Ok(())
@@ -65,18 +65,18 @@ where
     }
 }
 
-pub fn get<T>(db: &DB, id: &str, name: &ecdsa::Share) -> Result<Option<T>>
+pub fn get<T>(db: &DB, user_id: &str, id: &str, name: &ecdsa::Share) -> Result<Option<T>>
 where
     T: serde::de::DeserializeOwned,
 {
     match db {
         DB::AWS(dynamodb_client, env) => {
             let table_name = calculate_table_name(&name.to_string(), &env);
-            let res: Option<T> = aws::dynamodb::get(&dynamodb_client, id, table_name)?;
+            let res: Option<T> = aws::dynamodb::get(&dynamodb_client, user_id, id, table_name)?;
             Ok(res)
         }
         DB::Local(rocksdb_client) => {
-            let identifier = idify(id, name);
+            let identifier = idify(user_id, id, name);
             info!("Getting from db ({})", identifier);
 
             let db_option = rocksdb_client.get(identifier.as_ref())?;

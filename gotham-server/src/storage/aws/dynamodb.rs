@@ -13,12 +13,14 @@ use std::time::Duration;
 
 #[derive(Serialize, Deserialize)]
 struct DBItem<T> {
+    user_id: String,
     id: String,
     v: T,
 }
 
 pub fn insert<T>(
     dynamodb_client: &DynamoDbClient,
+    user_id: &str,
     id: &str,
     table_name: &str,
     v: T,
@@ -27,6 +29,7 @@ where
     T: serde::ser::Serialize,
 {
     let wrapper_item = DBItem {
+        user_id: user_id.to_string(),
         id: id.to_string(),
         v,
     };
@@ -45,6 +48,7 @@ where
 
 pub fn get<'a, T>(
     dynamodb_client: &rusoto_dynamodb::DynamoDbClient,
+    user_id: &str,
     id: &str,
     table_name: String,
 ) -> std::result::Result<Option<T>, failure::Error>

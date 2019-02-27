@@ -7,15 +7,11 @@
 // version 3 of the License, or (at your option) any later version.
 //
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct PublicKey {
-    pub kid: String,
-    pub pem: String,
-    pub der: String,
-    pub alg: String,
-    pub kty: String
-}
+use super::jwt::{Claims};
 
-pub mod cognito;
-pub mod passthrough;
-pub mod jwt;
+pub fn get_empty_claim() -> Claims {
+    Claims {
+        sub: "pass_through_guest_user".to_string(),
+        exp: 0
+    }
+}

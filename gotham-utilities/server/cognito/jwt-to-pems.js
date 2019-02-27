@@ -26,7 +26,7 @@ async function initJsonWebKeySet(url) {
             return {
                 kid: k.kid,
                 pem: key.exportKey(),
-                der: key.exportKey('der').toString('hex'),
+                der: key.exportKey('der', 'pkcs1', 'public').toString('hex'),
                 alg: k.alg,
                 kty: k.kty
             };
@@ -41,7 +41,6 @@ if (!argv.region && !argv.poolid) {
 }
 
 const url = `https://cognito-idp.${argv.region}.amazonaws.com/${argv.poolid}/.well-known/jwks.json`;
-console.log(`Getting jwt tokens from ${url}`);
 
 (async () => {
     try {

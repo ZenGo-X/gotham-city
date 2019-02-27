@@ -22,6 +22,25 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::str::FromStr;
 
+#[derive(Deserialize)]
+pub struct AuthConfig {
+    pub issuer: String,
+    pub audience: String,
+    pub region: String,
+    pub pool_id: String
+}
+
+impl AuthConfig {
+    pub fn load(settings : HashMap<String, String>) -> AuthConfig {
+        let issuer = settings.get("issuer").unwrap_or(&"".to_string()).to_owned();
+        let audience = settings.get("region").unwrap_or(&"".to_string()).to_owned();
+        let region = settings.get("pool_id").unwrap_or(&"".to_string()).to_owned();
+        let pool_id = settings.get("audience").unwrap_or(&"".to_string()).to_owned();
+
+        AuthConfig { issuer, audience, region, pool_id }
+    }
+}
+
 #[catch(500)]
 fn internal_error() -> &'static str {
     "Internal server error"
@@ -38,12 +57,15 @@ fn not_found(req: &Request) -> String {
 }
 
 pub fn get_server() -> Rocket {
-    let config = ecdsa::Config { db: get_db() };
+    let settings = get_settings_as_map();
+    let db_config = ecdsa::Config { db: get_db(settings.clone()) };
 
-    match db::init(&config.db) {
+    match db::init(&db_config.db) {
         Err(_e) => panic!("Error while initializing DB."),
         _ => {}
     };
+
+    let auth_config = AuthConfig::load(settings.clone());
 
     rocket::ignite()
         .register(catchers![internal_error, not_found, bad_request])
@@ -65,42 +87,42 @@ pub fn get_server() -> Rocket {
                 ecdsa::recover,
             ],
         )
-        .manage(config)
+        .manage(db_config)
+        .manage(auth_config)
 }
 
-fn get_db() -> db::DB {
-    println!("exists? {}", Path::new("../Settings.toml").exists());
-    println!("exists? {}", Path::new("Settings.toml").exists());
+fn get_settings_as_map() -> HashMap<String, String> {
+    assert!(Path::new("Settings.toml").exists());
 
-    if !Path::new("Settings.toml").exists() {
-        // ignore settings file if no settings file found (e.g. when running integration tests)
-        db::DB::Local(rocksdb::DB::open_default("./db").unwrap())
-    } else {
-        let mut settings = config::Config::default();
-        settings
-            .merge(config::File::with_name("Settings"))
-            .unwrap()
-            .merge(config::Environment::new())
-            .unwrap();
-        let hm = settings.try_into::<HashMap<String, String>>().unwrap();
-        let db_type_string = hm.get("db").unwrap_or(&"local".to_string()).to_uppercase();
-        let db_type = db_type_string.as_str();
-        let env = hm.get("env").unwrap_or(&"dev".to_string()).to_string();
-        match db_type {
-            "AWS" => {
-                let region_option = hm.get("aws_region");
-                match region_option {
-                    Some(s) => {
-                        let region_res = Region::from_str(&s);
-                        match region_res {
-                            Ok(region) => db::DB::AWS(DynamoDbClient::new(region), env),
-                            Err(_e) => panic!("Set 'DB = AWS' but 'region' is not a valid value"),
-                        }
+    let mut settings = config::Config::default();
+    settings
+        .merge(config::File::with_name("Settings"))
+        .unwrap()
+        .merge(config::Environment::new())
+        .unwrap();
+
+    settings.try_into::<HashMap<String, String>>().unwrap()
+}
+
+fn get_db(settings : HashMap<String, String>) -> db::DB {
+    let db_type_string = settings.get("db").unwrap_or(&"local".to_string()).to_uppercase();
+    let db_type = db_type_string.as_str();
+    let env = settings.get("env").unwrap_or(&"dev".to_string()).to_string();
+
+    match db_type {
+        "AWS" => {
+            let region_option = settings.get("aws_region");
+            match region_option {
+                Some(s) => {
+                    let region_res = Region::from_str(&s);
+                    match region_res {
+                        Ok(region) => db::DB::AWS(DynamoDbClient::new(region), env),
+                        Err(_e) => panic!("Set 'DB = AWS' but 'region' is not a valid value"),
                     }
-                    None => panic!("Set 'DB = AWS' but 'region' is empty"),
                 }
+                None => panic!("Set 'DB = AWS' but 'region' is empty"),
             }
-            _ => db::DB::Local(rocksdb::DB::open_default("./db").unwrap()),
         }
+        _ => db::DB::Local(rocksdb::DB::open_default("./db").unwrap()),
     }
 }
