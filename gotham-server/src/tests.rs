@@ -11,6 +11,7 @@ mod tests {
 
     use super::super::routes::ecdsa;
     use super::super::server;
+    use std::env;
     use rocket;
     use rocket::http::ContentType;
     use rocket::http::Status;
@@ -320,6 +321,13 @@ mod tests {
 
     #[test]
     fn key_gen_and_sign() {
+        // Passthrough mode
+        env::set_var("region", "");
+        env::set_var("pool_id", "");
+        env::set_var("issuer", "");
+        env::set_var("audience", "");
+
+
         time_test!();
 
         let client = Client::new(server::get_server()).expect("valid rocket instance");
@@ -339,6 +347,11 @@ mod tests {
 
     #[test]
     fn authentication_test_invalid_token() {
+        env::set_var("region", "region");
+        env::set_var("pool_id", "pool_id");
+        env::set_var("issuer", "issuer");
+        env::set_var("audience", "audience");
+
         let client = Client::new(server::get_server()).expect("valid rocket instance");
 
         let auth_header = Header::new("Authorization", "Bearer a");
@@ -353,6 +366,11 @@ mod tests {
 
     #[test]
     fn authentication_test_expired_token() {
+        env::set_var("region", "region");
+        env::set_var("pool_id", "pool_id");
+        env::set_var("issuer", "issuer");
+        env::set_var("audience", "audience");
+
         let client = Client::new(server::get_server()).expect("valid rocket instance");
 
         let token : String = "Bearer eyJraWQiOiJZeEdoUlhsTytZSWpjU2xWZFdVUFA1dHhWd\

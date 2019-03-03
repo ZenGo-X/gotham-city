@@ -21,12 +21,12 @@ by setting the environment variable `DB` to the value `AWS`, and the AWS credent
 ### Running tests
 #### Without timing output
 ```bash
-cargo test --release
+RUST_TEST_THREADS=1 cargo test --release
 ```
 
 #### With timing output
 ```bash
-cargo test --release -- --nocapture
+RUST_TEST_THREADS=1  cargo test --release -- --nocapture
 ```
 
 Example:
