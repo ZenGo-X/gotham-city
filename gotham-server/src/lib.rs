@@ -43,16 +43,16 @@ extern crate log;
 extern crate time_test;
 extern crate time;
 
+extern crate crypto;
+extern crate jsonwebtoken as jwt;
 extern crate rusoto_dynamodb;
 extern crate serde_dynamodb;
-extern crate jsonwebtoken as jwt;
-extern crate crypto;
 
 extern crate hex;
 
+pub mod auth;
 pub mod routes;
 pub mod server;
-pub mod auth;
 pub mod storage;
 pub mod tests;
 

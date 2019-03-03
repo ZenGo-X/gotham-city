@@ -1,5 +1,5 @@
-// Gotham-city 
-// 
+// Gotham-city
+//
 // Copyright 2018 by Kzen Networks (kzencorp.com)
 // Gotham city is free software: you can redistribute
 // it and/or modify it under the terms of the GNU General Public
@@ -13,9 +13,9 @@ pub struct PublicKey {
     pub pem: String,
     pub der: String,
     pub alg: String,
-    pub kty: String
+    pub kty: String,
 }
 
 pub mod cognito;
-pub mod passthrough;
 pub mod jwt;
+pub mod passthrough;

@@ -12,13 +12,13 @@ use std::thread;
 use std::time::Duration;
 
 const CUSTOMER_ID_IDENTIFIER: &str = "customerId";
-const ID_IDENTIFIER : &str = "id";
+const ID_IDENTIFIER: &str = "id";
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 #[allow(non_snake_case)]
 struct DBItemIdentifier {
     customerId: String,
-    id: String
+    id: String,
 }
 
 pub fn insert<T>(
@@ -31,7 +31,6 @@ pub fn insert<T>(
 where
     T: serde::ser::Serialize,
 {
-
     let identifier = DBItemIdentifier {
         customerId: user_id.to_string(),
         id: id.to_string(),

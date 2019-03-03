@@ -27,17 +27,28 @@ pub struct AuthConfig {
     pub issuer: String,
     pub audience: String,
     pub region: String,
-    pub pool_id: String
+    pub pool_id: String,
 }
 
 impl AuthConfig {
-    pub fn load(settings : HashMap<String, String>) -> AuthConfig {
+    pub fn load(settings: HashMap<String, String>) -> AuthConfig {
         let issuer = settings.get("issuer").unwrap_or(&"".to_string()).to_owned();
         let audience = settings.get("region").unwrap_or(&"".to_string()).to_owned();
-        let region = settings.get("pool_id").unwrap_or(&"".to_string()).to_owned();
-        let pool_id = settings.get("audience").unwrap_or(&"".to_string()).to_owned();
+        let region = settings
+            .get("pool_id")
+            .unwrap_or(&"".to_string())
+            .to_owned();
+        let pool_id = settings
+            .get("audience")
+            .unwrap_or(&"".to_string())
+            .to_owned();
 
-        AuthConfig { issuer, audience, region, pool_id }
+        AuthConfig {
+            issuer,
+            audience,
+            region,
+            pool_id,
+        }
     }
 }
 
@@ -58,7 +69,9 @@ fn not_found(req: &Request) -> String {
 
 pub fn get_server() -> Rocket {
     let settings = get_settings_as_map();
-    let db_config = ecdsa::Config { db: get_db(settings.clone()) };
+    let db_config = ecdsa::Config {
+        db: get_db(settings.clone()),
+    };
 
     match db::init(&db_config.db) {
         Err(_e) => panic!("Error while initializing DB."),
@@ -104,10 +117,16 @@ fn get_settings_as_map() -> HashMap<String, String> {
     settings.try_into::<HashMap<String, String>>().unwrap()
 }
 
-fn get_db(settings : HashMap<String, String>) -> db::DB {
-    let db_type_string = settings.get("db").unwrap_or(&"local".to_string()).to_uppercase();
+fn get_db(settings: HashMap<String, String>) -> db::DB {
+    let db_type_string = settings
+        .get("db")
+        .unwrap_or(&"local".to_string())
+        .to_uppercase();
     let db_type = db_type_string.as_str();
-    let env = settings.get("env").unwrap_or(&"dev".to_string()).to_string();
+    let env = settings
+        .get("env")
+        .unwrap_or(&"dev".to_string())
+        .to_string();
 
     match db_type {
         "AWS" => {
