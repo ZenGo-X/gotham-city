@@ -18,6 +18,7 @@ use kms::ecdsa::two_party::MasterKey2;
 use kms::ecdsa::two_party::*;
 use kms::rotation::two_party::party2::Rotation2;
 use multi_party_ecdsa::protocols::two_party_ecdsa::lindell_2017::*;
+use std::collections::HashMap;
 
 const ROT_PATH_PRE: &str = "ecdsa/rotate";
 
@@ -107,11 +108,15 @@ pub fn rotate_master_key(wallet: wallet::Wallet, client_shim: &api::ClientShim) 
         master_key: party_two_master_key_rotated,
     };
 
-    wallet::Wallet {
+    let addresses_derivation_map = HashMap::new();
+    let mut wallet_after_rotate = wallet::Wallet {
         id: wallet.id.clone(),
         network: wallet.network.clone(),
         private_share,
         last_derived_pos: wallet.last_derived_pos.clone(),
-        addresses_derivation_map: wallet.addresses_derivation_map,
-    }
+        addresses_derivation_map,
+    };
+    wallet_after_rotate.derived();
+
+    wallet_after_rotate
 }
