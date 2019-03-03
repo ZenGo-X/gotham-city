@@ -11,11 +11,14 @@ use std::string::*;
 use std::thread;
 use std::time::Duration;
 
-#[derive(Serialize, Deserialize)]
-struct DBItem<T> {
-    user_id: String,
-    id: String,
-    v: T,
+const CUSTOMER_ID_IDENTIFIER: &str = "customerId";
+const ID_IDENTIFIER : &str = "id";
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+#[allow(non_snake_case)]
+struct DBItemIdentifier {
+    customerId: String,
+    id: String
 }
 
 pub fn insert<T>(
@@ -28,17 +31,21 @@ pub fn insert<T>(
 where
     T: serde::ser::Serialize,
 {
-    let wrapper_item = DBItem {
-        user_id: user_id.to_string(),
+
+    let identifier = DBItemIdentifier {
+        customerId: user_id.to_string(),
         id: id.to_string(),
-        v,
     };
-    let item = serde_dynamodb::to_hashmap(&wrapper_item).unwrap();
+
+    let mut item = serde_dynamodb::to_hashmap(&identifier).unwrap();
+    item.extend(serde_dynamodb::to_hashmap(&v).unwrap());
+
     let put_item_input = PutItemInput {
         item: item,
         table_name: table_name.to_string(),
         ..Default::default()
     };
+
     // Put item
     dynamodb_client
         .put_item(put_item_input)
@@ -48,7 +55,7 @@ where
 
 pub fn get<'a, T>(
     dynamodb_client: &rusoto_dynamodb::DynamoDbClient,
-    user_id: &str,
+    _user_id: &str,
     id: &str,
     table_name: String,
 ) -> std::result::Result<Option<T>, failure::Error>
@@ -75,11 +82,18 @@ where
                 info!("nothing received from Dynamo, item may not exist");
                 Ok(None)
             }
-            Some(attributes_map) => {
-                let raw_item: serde_dynamodb::error::Result<DBItem<T>> =
+            Some(mut attributes_map) => {
+                // This is not the best we can do but if you look at the DBItemIdentifier above
+                // we augment it with the ser/de of the actual object, so we remove extra fields
+                // here. TODO: Is there something cleaner?
+                attributes_map.remove(CUSTOMER_ID_IDENTIFIER);
+                attributes_map.remove(ID_IDENTIFIER);
+
+                let raw_item: serde_dynamodb::error::Result<T> =
                     serde_dynamodb::from_hashmap(attributes_map);
+
                 match raw_item {
-                    Ok(s) => Ok(Some(s.v)),
+                    Ok(s) => Ok(Some(s)),
                     Err(_e) => Ok(None),
                 }
             }

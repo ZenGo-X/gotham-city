@@ -29,14 +29,19 @@ pub fn get_claims(issuer: &String, audience: &String, token: &String, secret: &[
     Ok(token_data.claims)
 }
 
-pub fn decode_token(token: String) -> Header {
-    decode_header(&token).unwrap()
+pub fn decode_header_from_token(token: String) -> Result<Header, ()> {
+    let  header = match decode_header(&token) {
+        Ok(h) => h,
+        Err(_) => return Err(()),
+    };
+
+    Ok(header)
 }
 
 #[cfg(test)]
 mod tests {
     use jwt::{ Algorithm, Header };
-    use super::{ get_claims, decode_token };
+    use super::{ get_claims, decode_header_from_token };
     use hex;
     use std::str;
 
@@ -94,7 +99,7 @@ mod tests {
         rt76DEkAntM0KIFODS6o6PBZw2IP4P7x21IgcDrTO3yotcc-RVEq0X1N3wI8clr8\
         DaVVZgolenGlERVMfD5i0YWIM1j7GgQ1fuQ8J_LYiQ".to_string();
 
-        let header : Header = decode_token(token);
+        let header : Header = decode_header_from_token(token).unwrap();
         assert_eq!(header.kid.unwrap(), "YxGhRXlO+YIjcSlVdWUPP5txVtTRM3fNwMe3xC5g/Xg=");
     }
 }
