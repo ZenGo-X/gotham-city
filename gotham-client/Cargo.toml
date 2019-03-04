@@ -42,7 +42,7 @@ git = "https://github.com/KZen-networks/multi-party-ecdsa"
 
 [dependencies.curv]
 git = "https://github.com/KZen-networks/curv"
-features =  ["curvesecp256k1"]
+features =  ["ec_secp256k1"]
 
 [patch.crates-io]
 rust-gmp = { version = "0.5.0", features = ["serde_support"], git = "https://github.com/KZen-networks/rust-gmp" }

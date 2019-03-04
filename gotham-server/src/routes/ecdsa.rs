@@ -8,9 +8,9 @@
 // version 3 of the License, or (at your option) any later version.
 //
 
-use curv::cryptographic_primitives::proofs::dlog_zk_protocol::*;
+use curv::cryptographic_primitives::proofs::sigma_dlog::*;
 use curv::cryptographic_primitives::twoparty::coin_flip_optimal_rounds;
-use curv::cryptographic_primitives::twoparty::dh_key_exchange::*;
+use curv::cryptographic_primitives::twoparty::dh_key_exchange_variant_with_pok_comm::*;
 use curv::{BigInt, GE};
 use kms::chain_code::two_party as chain_code;
 use kms::ecdsa::two_party::*;
