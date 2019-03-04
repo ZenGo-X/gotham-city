@@ -12,15 +12,21 @@ cd gotham-city/gotham-server
 cargo run --release
 ```
 
+* By default, the server will use a local [RocksDB](https://rocksdb.org/).<br> 
+Optionally, it can use a remote [AWS DynamoDB](https://aws.amazon.com/dynamodb/), 
+by setting the environment variable `DB` to the value `AWS`, and the AWS credentials `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`. 
+
+
+
 ### Running tests
 #### Without timing output
 ```bash
-cargo test --release
+RUST_TEST_THREADS=1 cargo test --release
 ```
 
 #### With timing output
 ```bash
-cargo test --release -- --nocapture
+RUST_TEST_THREADS=1  cargo test --release -- --nocapture
 ```
 
 Example:
@@ -60,3 +66,8 @@ PT0.000002242S Client: party2 fourth message
 `
 * `#[post("/keygen/<id>/fourth", format = "json", data = "<request>")]
 `
+* `#[post("/ecdsa/sign/<id>/first",
+       format = "json",
+       data = "<eph_key_gen_first_message_party_two>")]`
+* `#[post("/ecdsa/sign/<id>/second", format = "json", data = "<request>")]`
+

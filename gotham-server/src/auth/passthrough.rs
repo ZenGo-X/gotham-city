@@ -7,4 +7,11 @@
 // version 3 of the License, or (at your option) any later version.
 //
 
-pub mod db;
+use super::jwt::Claims;
+
+pub fn get_empty_claim() -> Claims {
+    Claims {
+        sub: "pass_through_guest_user".to_string(),
+        exp: 0,
+    }
+}

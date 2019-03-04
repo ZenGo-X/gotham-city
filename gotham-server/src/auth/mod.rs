@@ -6,6 +6,16 @@
 // License as published by the Free Software Foundation, either
 // version 3 of the License, or (at your option) any later version.
 //
-pub mod keygen;
-pub mod rotate;
-pub mod sign;
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct PublicKey {
+    pub kid: String,
+    pub pem: String,
+    pub der: String,
+    pub alg: String,
+    pub kty: String,
+}
+
+pub mod cognito;
+pub mod jwt;
+pub mod passthrough;

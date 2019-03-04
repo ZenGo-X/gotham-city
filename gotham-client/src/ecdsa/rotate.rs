@@ -7,9 +7,10 @@
 // version 3 of the License, or (at your option) any later version.
 //
 
-use reqwest;
 use serde_json;
 
+use super::super::api;
+use super::super::api::PrivateShare;
 use super::super::utilities::requests;
 use super::super::wallet;
 use curv::cryptographic_primitives::twoparty::coin_flip_optimal_rounds;
@@ -21,9 +22,9 @@ use std::collections::HashMap;
 
 const ROT_PATH_PRE: &str = "ecdsa/rotate";
 
-pub fn rotate_master_key(wallet: wallet::Wallet, client: &reqwest::Client) -> wallet::Wallet {
-    let id = &wallet.private_shares.id.clone();
-    let res_body = requests::post(client, &format!("{}/{}/first", ROT_PATH_PRE, id)).unwrap();
+pub fn rotate_master_key(wallet: wallet::Wallet, client_shim: &api::ClientShim) -> wallet::Wallet {
+    let id = &wallet.private_share.id.clone();
+    let res_body = requests::post(client_shim, &format!("{}/{}/first", ROT_PATH_PRE, id)).unwrap();
 
     let coin_flip_party1_first_message: coin_flip_optimal_rounds::Party1FirstMessage =
         serde_json::from_str(&res_body).unwrap();
@@ -34,7 +35,7 @@ pub fn rotate_master_key(wallet: wallet::Wallet, client: &reqwest::Client) -> wa
     let body = &coin_flip_party2_first_message;
 
     let res_body = requests::postb(
-        client,
+        client_shim,
         &format!("{}/{}/second", ROT_PATH_PRE, id.clone()),
         body,
     )
@@ -52,7 +53,7 @@ pub fn rotate_master_key(wallet: wallet::Wallet, client: &reqwest::Client) -> wa
     );
 
     let result_rotate_party_one_first_message = wallet
-        .private_shares
+        .private_share
         .master_key
         .rotate_first_message(&random2, &rotation_party1_first_message);
     if result_rotate_party_one_first_message.is_err() {
@@ -65,7 +66,7 @@ pub fn rotate_master_key(wallet: wallet::Wallet, client: &reqwest::Client) -> wa
     let body = &rotation_party_two_first_message;
 
     let res_body = requests::postb(
-        client,
+        client_shim,
         &format!("{}/{}/third", ROT_PATH_PRE, id.clone()),
         body,
     )
@@ -79,7 +80,7 @@ pub fn rotate_master_key(wallet: wallet::Wallet, client: &reqwest::Client) -> wa
     let body = &rotation_party_two_second_message;
 
     let res_body = requests::postb(
-        client,
+        client_shim,
         &format!("{}/{}/fourth", ROT_PATH_PRE, id.clone()),
         body,
     )
@@ -89,7 +90,7 @@ pub fn rotate_master_key(wallet: wallet::Wallet, client: &reqwest::Client) -> wa
         serde_json::from_str(&res_body).unwrap();
 
     let result_rotate_party_one_third_message =
-        wallet.private_shares.master_key.rotate_third_message(
+        wallet.private_share.master_key.rotate_third_message(
             &random2,
             &party_two_paillier,
             &party_two_pdl_chal,
@@ -102,15 +103,16 @@ pub fn rotate_master_key(wallet: wallet::Wallet, client: &reqwest::Client) -> wa
 
     let party_two_master_key_rotated = result_rotate_party_one_third_message.unwrap();
 
-    let private_shares = wallet::PrivateShares {
-        id: wallet.private_shares.id.clone(),
+    let private_share = PrivateShare {
+        id: wallet.private_share.id.clone(),
         master_key: party_two_master_key_rotated,
     };
+
     let addresses_derivation_map = HashMap::new();
     let mut wallet_after_rotate = wallet::Wallet {
         id: wallet.id.clone(),
         network: wallet.network.clone(),
-        private_shares,
+        private_share,
         last_derived_pos: wallet.last_derived_pos.clone(),
         addresses_derivation_map,
     };

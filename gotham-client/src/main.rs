@@ -11,21 +11,33 @@
 extern crate clap;
 use clap::App;
 
+use client_lib::api;
 use client_lib::escrow;
 use client_lib::wallet;
-use reqwest;
 use time::PreciseTime;
+
+use std::collections::HashMap;
 
 fn main() {
     let yaml = load_yaml!("../cli.yml");
     let matches = App::from_yaml(yaml).get_matches();
 
-    let client = reqwest::Client::new();
+    let mut settings = config::Config::default();
+    settings
+        // Add in `./Settings.toml`
+        .merge(config::File::with_name("Settings")).unwrap()
+        // Add in settings from the environment (with prefix "APP")
+        // Eg.. `APP_DEBUG=1 ./target/app` would set the `debug` key
+        .merge(config::Environment::new()).unwrap();
+    let hm = settings.try_into::<HashMap<String, String>>().unwrap();
+    let endpoint = hm.get("endpoint").unwrap();
+    let client_shim = api::ClientShim::new(endpoint.to_string());
+
     let network = "testnet".to_string();
 
     if let Some(_matches) = matches.subcommand_matches("create-wallet") {
         println!("Network: [{}], Creating wallet", network);
-        let wallet = wallet::Wallet::new(&client, &network);
+        let wallet = wallet::Wallet::new(&client_shim, &network);
         wallet.save();
         println!("Network: [{}], Wallet saved to disk", &network);
 
@@ -79,7 +91,7 @@ fn main() {
             println!("backup recovery in process 📲 (it can take some time)...");
 
             let start = PreciseTime::now();
-            wallet::Wallet::recover_and_save_shares(escrow, &network, &client);
+            wallet::Wallet::recover_and_save_share(escrow, &network, &client_shim);
             let end = PreciseTime::now();
 
             println!(" Backup recovered 💾(Took: {})", start.to(end));
@@ -87,7 +99,7 @@ fn main() {
             println!("Rotating secret shares");
 
             let start = PreciseTime::now();
-            let wallet = wallet.rotate(&client);
+            let wallet = wallet.rotate(&client_shim);
             wallet.save();
             let end = PreciseTime::now();
 
@@ -97,9 +109,9 @@ fn main() {
                 let to: &str = matches.value_of("to").unwrap();
                 let amount_btc: &str = matches.value_of("amount").unwrap();
                 let txid = wallet.send(
-                    &client,
                     to.to_string(),
                     amount_btc.to_string().parse::<f32>().unwrap(),
+                    &client_shim,
                 );
                 wallet.save();
                 println!(

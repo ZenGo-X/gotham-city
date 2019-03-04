@@ -2,7 +2,7 @@
 # will have compiled files and executables
 /target/
 
-# Remove Cargo.lock from gitignore if creating an executable, leave it for libraries
+# Remove Cargo.lock from .gitignore if creating an executable, leave it for libraries
 # More information here https://doc.rust-lang.org/cargo/guide/cargo-toml-vs-cargo-lock.html
 Cargo.lock
 
@@ -11,7 +11,7 @@ Cargo.lock
 .idea
 db/
 *.priv
-wallet.data
+wallet/wallet.data
 escrow/client.backup
 escrow/escrow-sk.json
 escrow/sk-recovered.json

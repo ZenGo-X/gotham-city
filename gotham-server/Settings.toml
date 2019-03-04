@@ -1,0 +1,9 @@
+# "local" or "aws"
+db = "local"
+# if db = aws (also set environment variables AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY):
+# aws_region =
+
+region = "" # Override with ENV variable!
+pool_id = "" # Override with ENV variable!
+issuer = "" # Override with ENV variable!
+audience = "" # Override with ENV variable!
