@@ -2,6 +2,11 @@ use super::ecdsa::{keygen, sign};
 use kms::ecdsa::two_party::MasterKey2;
 use multi_party_ecdsa::protocols::two_party_ecdsa::lindell_2017::party_one;
 use reqwest;
+use serde_json;
+
+// iOS bindings
+use std::os::raw::{c_char};
+use std::ffi::{CString, CStr};
 
 pub struct ClientShim {
     pub client: reqwest::Client,
@@ -33,4 +38,23 @@ pub fn sign(
     id: &String,
 ) -> party_one::Signature {
     sign::sign(&client_shim, message, mk, pos, id)
+}
+
+#[no_mangle]
+pub extern fn get_client_master_key(c_endpoint: *const c_char) -> *mut c_char {
+    let raw_endpoint = unsafe { CStr::from_ptr(c_endpoint) };
+    let endpoint = match raw_endpoint.to_str() {
+        Ok(s) => s,
+        Err(_) => panic!("Error while decoding raw endpoint")
+    };
+
+    let client_shim = ClientShim::new(endpoint.to_string());
+    let private_share : PrivateShare = keygen::get_master_key(&client_shim);
+
+    let private_share_json = match serde_json::to_string(&private_share) {
+        Ok(share) => share,
+        Err(_) => panic!("Error while performing keygen to endpoint {}", endpoint)
+    };
+
+    CString::new(private_share_json.to_owned()).unwrap().into_raw()
 }
