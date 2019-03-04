@@ -10,7 +10,7 @@
 use serde_json;
 use time::PreciseTime;
 
-use curv::cryptographic_primitives::twoparty::dh_key_exchange::*;
+use curv::cryptographic_primitives::twoparty::dh_key_exchange_variant_with_pok_comm::*;
 use kms::chain_code::two_party as chain_code;
 use kms::ecdsa::two_party::*;
 use multi_party_ecdsa::protocols::two_party_ecdsa::lindell_2017::*;

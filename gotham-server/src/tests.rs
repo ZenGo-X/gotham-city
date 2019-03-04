@@ -21,7 +21,7 @@ mod tests {
     use time::PreciseTime;
 
     use curv::arithmetic::traits::Converter;
-    use curv::cryptographic_primitives::twoparty::dh_key_exchange::*;
+    use curv::cryptographic_primitives::twoparty::dh_key_exchange_variant_with_pok_comm::*;
     use curv::BigInt;
     use kms::chain_code::two_party as chain_code;
     use kms::ecdsa::two_party::*;

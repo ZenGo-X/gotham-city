@@ -58,3 +58,4 @@ pub extern fn get_client_master_key(c_endpoint: *const c_char) -> *mut c_char {
 
     CString::new(private_share_json.to_owned()).unwrap().into_raw()
 }
+

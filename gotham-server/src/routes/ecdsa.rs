@@ -9,9 +9,11 @@
 //
 
 use super::super::Result;
-use curv::cryptographic_primitives::proofs::dlog_zk_protocol::*;
+use curv::cryptographic_primitives::proofs::sigma_dlog::*;
 use curv::cryptographic_primitives::twoparty::coin_flip_optimal_rounds;
-use curv::cryptographic_primitives::twoparty::dh_key_exchange::*;
+use curv::cryptographic_primitives::twoparty::dh_key_exchange_variant_with_pok_comm::{
+    CommWitness, EcKeyPair, Party1FirstMessage, Party1SecondMessage,
+};
 use curv::elliptic::curves::secp256_k1::Secp256k1Scalar;
 use curv::{BigInt, GE};
 use kms::chain_code::two_party as chain_code;
@@ -319,9 +321,8 @@ pub fn chain_code_second_message(
     id: String,
     cc_party_two_first_message_d_log_proof: Json<DLogProof>,
 ) -> Result<Json<(Party1SecondMessage)>> {
-    let cc_comm_witness: curv::cryptographic_primitives::twoparty::dh_key_exchange::CommWitness =
-        db::get(&state.db, &claim.sub, &id, &Share::CCCommWitness)?
-            .ok_or(format_err!("No data for such identifier {}", id))?;
+    let cc_comm_witness: CommWitness = db::get(&state.db, &claim.sub, &id, &Share::CCCommWitness)?
+        .ok_or(format_err!("No data for such identifier {}", id))?;
 
     let party1_cc = chain_code::party1::ChainCode1::chain_code_second_message(
         cc_comm_witness,
@@ -339,9 +340,9 @@ pub fn chain_code_compute_message(
     id: String,
     cc_party2_public: &GE,
 ) -> Result<Json<()>> {
-    let cc_ec_key_pair_party1: curv::cryptographic_primitives::twoparty::dh_key_exchange::EcKeyPair =
-        db::get(&state.db,&claim.sub, &id, &Share::CCEcKeyPair)?.ok_or(format_err!("No data for such identifier {}", id))?;
-
+    let cc_ec_key_pair_party1: EcKeyPair =
+        db::get(&state.db, &claim.sub, &id, &Share::CCEcKeyPair)?
+            .ok_or(format_err!("No data for such identifier {}", id))?;
     let party1_cc = chain_code::party1::ChainCode1::compute_chain_code(
         &cc_ec_key_pair_party1,
         &cc_party2_public,
