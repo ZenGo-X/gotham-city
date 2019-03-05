@@ -33,13 +33,13 @@ pub struct AuthConfig {
 impl AuthConfig {
     pub fn load(settings: HashMap<String, String>) -> AuthConfig {
         let issuer = settings.get("issuer").unwrap_or(&"".to_string()).to_owned();
-        let audience = settings.get("region").unwrap_or(&"".to_string()).to_owned();
+        let audience = settings.get("audience").unwrap_or(&"".to_string()).to_owned();
         let region = settings
-            .get("pool_id")
+            .get("region")
             .unwrap_or(&"".to_string())
             .to_owned();
         let pool_id = settings
-            .get("audience")
+            .get("pool_id")
             .unwrap_or(&"".to_string())
             .to_owned();
 

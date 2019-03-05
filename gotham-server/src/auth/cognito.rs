@@ -37,6 +37,7 @@ pub fn verify(
     assert_eq!(token_type, Some(TOKEN_TYPE));
 
     let token = header_parts.next().unwrap();
+
     let header = match decode_header_from_token(token.to_string()) {
         Ok(h) => h,
         Err(_) => return Err(()),
@@ -67,6 +68,7 @@ pub fn verify(
 }
 
 fn get_jwt_to_pems(region: &String, pool_id: &String) -> Result<String, ()> {
+
     match Command::new("node")
         .arg("jwt-to-pems.js")
         .arg(format!("--region={}", region))

@@ -10,13 +10,14 @@ use std::ffi::{CString, CStr};
 
 pub struct ClientShim {
     pub client: reqwest::Client,
+    pub auth_token: Option<String>,
     pub endpoint: String,
 }
 
 impl ClientShim {
-    pub fn new(endpoint: String) -> ClientShim {
+    pub fn new(endpoint: String, auth_token: Option<String>) -> ClientShim {
         let client = reqwest::Client::new();
-        ClientShim { client, endpoint }
+        ClientShim { client, auth_token, endpoint }
     }
 }
 
@@ -41,14 +42,22 @@ pub fn sign(
 }
 
 #[no_mangle]
-pub extern fn get_client_master_key(c_endpoint: *const c_char) -> *mut c_char {
+pub extern fn get_client_master_key(c_endpoint: *const c_char, auth_token: *const c_char) -> *mut c_char {
     let raw_endpoint = unsafe { CStr::from_ptr(c_endpoint) };
     let endpoint = match raw_endpoint.to_str() {
         Ok(s) => s,
         Err(_) => panic!("Error while decoding raw endpoint")
     };
 
-    let client_shim = ClientShim::new(endpoint.to_string());
+    let raw_auth_token = unsafe { CStr::from_ptr(auth_token) };
+    let auth_token = match raw_auth_token.to_str() {
+        Ok(s) => s,
+        Err(_) => panic!("Error while decoding auth token")
+    };
+
+    let client_shim = ClientShim::new(
+        endpoint.to_string(), Some(auth_token.to_string()));
+
     let private_share : PrivateShare = keygen::get_master_key(&client_shim);
 
     let private_share_json = match serde_json::to_string(&private_share) {

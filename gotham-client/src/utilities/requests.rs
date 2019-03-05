@@ -14,11 +14,14 @@ use time::PreciseTime;
 pub fn post(client_shim: &api::ClientShim, path: &str) -> Option<String> {
     let start = PreciseTime::now();
 
-    let res = client_shim
-        .client
-        .post(&format!("{}/{}", client_shim.endpoint, path))
-        .json("{}")
-        .send();
+    let mut b = client_shim.client
+        .post(&format!("{}/{}", client_shim.endpoint, path));
+
+    if client_shim.auth_token.is_some() {
+        b = b.bearer_auth(client_shim.auth_token.clone().unwrap());
+    }
+
+    let res = b.json("{}").send();
 
     let end = PreciseTime::now();
 
@@ -33,11 +36,14 @@ where
 {
     let start = PreciseTime::now();
 
-    let res = client_shim
-        .client
-        .post(&format!("{}/{}", client_shim.endpoint, path))
-        .json(&body)
-        .send();
+    let mut b = client_shim.client
+        .post(&format!("{}/{}", client_shim.endpoint, path));
+
+    if client_shim.auth_token.is_some() {
+        b = b.bearer_auth(client_shim.auth_token.clone().unwrap());
+    }
+
+    let res = b.json(&body).send();
 
     let end = PreciseTime::now();
 
