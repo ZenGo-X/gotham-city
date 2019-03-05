@@ -7,6 +7,7 @@ edition = "2018"
 [lib]
 name = "client_lib"
 path = "src/lib.rs"
+#crate-type = ["staticlib", "cdylib"]
 
 [[bin]]
 name = "cli"
@@ -21,7 +22,7 @@ time = "*"
 clap = { version = "2.32", features = ["yaml"] }
 reqwest = "0.9.5"
 uuid = { version = "0.7", features = ["v4"] }
-electrumx_client = { git = "https://github.com/evgeniy-scherbina/rust-electrumx-client" }
+electrumx_client = { git = "https://github.com/KZen-networks/rust-electrumx-client" }
 itertools = "0.8.0"
 hex = "0.3.2"
 bitcoin = "0.16.0"

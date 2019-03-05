@@ -25,12 +25,17 @@ fn idify(user_id: &str, id: &str, name: &ecdsa::Share) -> String {
 
 pub fn init(db: &DB) -> Result<()> {
     match db {
-        // Create tables
         DB::AWS(dynamodb_client, env) => {
+            // !!! Keep this code commented unless you are willing to risk an implicit table
+            // creation which can lead to data corruption. This needs disciplines and tables
+            // Schema would better live in a cloud formation !!!
+
+            /*
             println!("Creating tables if necessary...");
             for share_field in ecdsa::Share::iterator() {
                 let name = format!("{}", share_field.to_string());
                 let table_name = calculate_table_name(&name.to_string(), &env);
+
                 match aws::dynamodb::create_table_if_needed(&dynamodb_client, &table_name, 1, 1) {
                     Err(e) => return Err(format_err!("{}", e)),
                     _ => {}
@@ -40,6 +45,7 @@ pub fn init(db: &DB) -> Result<()> {
                     _ => {}
                 }
             }
+            */
             Ok(())
         }
         _ => Ok(()),

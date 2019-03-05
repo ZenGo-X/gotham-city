@@ -343,7 +343,6 @@ pub fn chain_code_compute_message(
     let cc_ec_key_pair_party1: EcKeyPair =
         db::get(&state.db, &claim.sub, &id, &Share::CCEcKeyPair)?
             .ok_or(format_err!("No data for such identifier {}", id))?;
-
     let party1_cc = chain_code::party1::ChainCode1::compute_chain_code(
         &cc_ec_key_pair_party1,
         &cc_party2_public,

@@ -69,6 +69,7 @@ where
             ..Default::default()
         },
     );
+
     let query_item = GetItemInput {
         key: query_key,
         table_name: table_name.to_string(),
