@@ -11,8 +11,10 @@ RUN apt-get update && apt-get install -y \
     libgmp3-dev \
     libssl-dev \
     pkg-config \
-    nodejs \
     npm
+
+RUN curl -sL https://deb.nodesource.com/setup_11.x | bash -
+RUN apt-get install -y nodejs
 
 # Adding utilities for JWT and Cognito auth
 ADD gotham-utilities /gotham-utilities
