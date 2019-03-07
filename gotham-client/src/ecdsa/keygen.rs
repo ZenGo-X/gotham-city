@@ -105,10 +105,10 @@ pub fn get_master_key(client_shim: &api::ClientShim) -> api::PrivateShare {
     let party2_cc = chain_code::party2::ChainCode2::compute_chain_code(
         &cc_ec_key_pair2,
         &cc_party_one_second_message.comm_witness.public_share,
-    );
+    ).chain_code;
 
     let master_key = MasterKey2::set_master_key(
-        &party2_cc.chain_code,
+        &party2_cc,
         &kg_ec_key_pair_party2,
         &kg_party_one_second_message
             .ecdh_second_message

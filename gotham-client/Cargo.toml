@@ -37,6 +37,7 @@ git = "https://github.com/KZen-networks/zk-paillier"
 
 [dependencies.kms]
 git = "https://github.com/KZen-networks/kms"
+branch = "backward-compatibility"
 
 [dependencies.multi-party-ecdsa]
 git = "https://github.com/KZen-networks/multi-party-ecdsa"
