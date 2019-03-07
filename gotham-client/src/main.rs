@@ -31,6 +31,7 @@ fn main() {
         .merge(config::Environment::new()).unwrap();
     let hm = settings.try_into::<HashMap<String, String>>().unwrap();
     let endpoint = hm.get("endpoint").unwrap();
+
     let client_shim = api::ClientShim::new(endpoint.to_string(), None);
 
     let network = "testnet".to_string();

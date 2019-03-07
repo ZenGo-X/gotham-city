@@ -10,11 +10,22 @@ RUN apt-get update && apt-get install -y \
     clang \
     libgmp3-dev \
     libssl-dev \
-    pkg-config
+    pkg-config \
+    nodejs \
+    npm
 
+# Adding utilities for JWT and Cognito auth
+ADD gotham-utilities /gotham-utilities
+WORKDIR /gotham-utilities/server/cognito
+RUN ["npm", "install"]
+
+WORKDIR /
+
+# Rust
 ARG CHANNEL="nightly"
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain ${CHANNEL}
 
+# Server
 ENV rocket_address=0.0.0.0
 ENV rocket_port=8000
 ENV db=AWS
