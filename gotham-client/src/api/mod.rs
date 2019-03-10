@@ -8,6 +8,7 @@ use serde_json;
 use std::os::raw::{c_char};
 use std::ffi::{CString, CStr};
 
+#[derive(Debug)]
 pub struct ClientShim {
     pub client: reqwest::Client,
     pub auth_token: Option<String>,
@@ -42,14 +43,14 @@ pub fn sign(
 }
 
 #[no_mangle]
-pub extern fn get_client_master_key(c_endpoint: *const c_char, auth_token: *const c_char) -> *mut c_char {
+pub extern fn get_client_master_key(c_endpoint: *const c_char, c_auth_token: *const c_char) -> *mut c_char {
     let raw_endpoint = unsafe { CStr::from_ptr(c_endpoint) };
     let endpoint = match raw_endpoint.to_str() {
         Ok(s) => s,
         Err(_) => panic!("Error while decoding raw endpoint")
     };
 
-    let raw_auth_token = unsafe { CStr::from_ptr(auth_token) };
+    let raw_auth_token = unsafe { CStr::from_ptr(c_auth_token) };
     let auth_token = match raw_auth_token.to_str() {
         Ok(s) => s,
         Err(_) => panic!("Error while decoding auth token")

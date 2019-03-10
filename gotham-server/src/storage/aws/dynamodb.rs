@@ -10,6 +10,7 @@ use std::default::Default;
 use std::string::*;
 use std::thread;
 use std::time::Duration;
+use super::super::super::routes::ecdsa::Share;
 
 const CUSTOMER_ID_IDENTIFIER: &str = "customerId";
 const ID_IDENTIFIER: &str = "id";
@@ -54,7 +55,7 @@ where
 
 pub fn get<'a, T>(
     dynamodb_client: &rusoto_dynamodb::DynamoDbClient,
-    _user_id: &str,
+    user_id: &str,
     id: &str,
     table_name: String,
 ) -> std::result::Result<Option<T>, failure::Error>
@@ -62,6 +63,17 @@ where
     T: serde::de::Deserialize<'a>,
 {
     let mut query_key: HashMap<String, AttributeValue> = HashMap::new();
+
+    if table_name.contains(&Share::MasterKey.to_string()) {
+        query_key.insert(
+            "customerId".to_string(),
+            AttributeValue {
+                s: Some(user_id.to_string()),
+                ..Default::default()
+            },
+        );
+    }
+
     query_key.insert(
         "id".to_string(),
         AttributeValue {
@@ -69,6 +81,8 @@ where
             ..Default::default()
         },
     );
+
+    info!("Querying table {}, key: {:?}", table_name, query_key);
 
     let query_item = GetItemInput {
         key: query_key,

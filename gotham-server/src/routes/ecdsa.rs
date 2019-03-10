@@ -328,6 +328,7 @@ pub fn chain_code_second_message(
         cc_comm_witness,
         &cc_party_two_first_message_d_log_proof.0,
     );
+
     let party2_pub = &cc_party_two_first_message_d_log_proof.pk;
     chain_code_compute_message(state, claim, id, party2_pub)?;
 
@@ -360,6 +361,7 @@ pub fn master_key(state: State<Config>, claim: Claims, id: String) -> Result<()>
     let paillier_key_pair: party_one::PaillierKeyPair =
         db::get(&state.db, &claim.sub, &id, &Share::PaillierKeyPair)?
             .ok_or(format_err!("No data for such identifier {}", id))?;
+
     let party1_cc: chain_code::party1::ChainCode1 =
         db::get(&state.db, &claim.sub, &id, &Share::CC)?
             .ok_or(format_err!("No data for such identifier {}", id))?;
