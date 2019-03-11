@@ -3,6 +3,8 @@ use kms::ecdsa::two_party::MasterKey2;
 use multi_party_ecdsa::protocols::two_party_ecdsa::lindell_2017::party_one;
 use reqwest;
 use serde_json;
+use curv::{BigInt};
+
 
 // iOS bindings
 use std::os::raw::{c_char};
@@ -34,12 +36,12 @@ pub fn get_master_key(client_shim: &ClientShim) -> PrivateShare {
 
 pub fn sign(
     client_shim: &ClientShim,
-    message: bitcoin::util::hash::Sha256dHash,
+    message_le_hex: &String,
     mk: &MasterKey2,
     pos: u32,
     id: &String,
 ) -> party_one::Signature {
-    sign::sign(&client_shim, message, mk, pos, id)
+    sign::sign(&client_shim, message_le_hex, mk, pos, id)
 }
 
 #[no_mangle]
@@ -69,3 +71,60 @@ pub extern fn get_client_master_key(c_endpoint: *const c_char, c_auth_token: *co
     CString::new(private_share_json.to_owned()).unwrap().into_raw()
 }
 
+#[no_mangle]
+pub extern fn sign_message(
+    c_endpoint: *const c_char,
+    c_auth_token: *const c_char,
+    c_message_le_hex: *const c_char,
+    c_master_key_json: *const c_char,
+    c_pos: i32,
+    c_id: *const c_char,
+) -> *mut c_char
+{
+    let raw_endpoint = unsafe { CStr::from_ptr(c_endpoint) };
+    let endpoint = match raw_endpoint.to_str() {
+        Ok(s) => s,
+        Err(_) => panic!("Error while decoding raw endpoint")
+    };
+
+    let raw_auth_token = unsafe { CStr::from_ptr(c_auth_token) };
+    let auth_token = match raw_auth_token.to_str() {
+        Ok(s) => s,
+        Err(_) => panic!("Error while decoding raw auth_token")
+    };
+
+    let raw_message_hex = unsafe { CStr::from_ptr(c_message_le_hex) };
+    let message_hex = match raw_message_hex.to_str() {
+        Ok(s) => s,
+        Err(_) => panic!("Error while decoding raw message_hex")
+    };
+
+    let raw_master_key_json = unsafe { CStr::from_ptr(c_master_key_json) };
+    let master_key_json = match raw_master_key_json.to_str() {
+        Ok(s) => s,
+        Err(_) => panic!("Error while decoding raw master_key_json")
+    };
+
+    let raw_id = unsafe { CStr::from_ptr(c_id) };
+    let id = match raw_id.to_str() {
+        Ok(s) => s,
+        Err(_) => panic!("Error while decoding raw id")
+    };
+
+    let pos = c_pos as u32;
+
+    let client_shim = ClientShim::new(
+        endpoint.to_string(), Some(auth_token.to_string()));
+
+    let mk : MasterKey2 = serde_json::from_str(master_key_json).unwrap();
+    let mk_child : MasterKey2 = mk.get_child(vec![BigInt::from(pos)]);
+
+    let sig = sign::sign(&client_shim, &message_hex.to_string(), &mk_child, pos, &id.to_string());
+
+    let signature_json = match serde_json::to_string(&sig) {
+        Ok(share) => share,
+        Err(_) => panic!("Error while signing to endpoint {}", endpoint)
+    };
+
+    CString::new(signature_json.to_owned()).unwrap().into_raw()
+}

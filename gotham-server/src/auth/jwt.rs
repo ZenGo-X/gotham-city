@@ -25,6 +25,7 @@ pub fn get_claims(
         iss: Some(issuer.to_string()),
         ..Validation::default()
     };
+
     validation.algorithms = algorithms;
 
     // Setting audience
