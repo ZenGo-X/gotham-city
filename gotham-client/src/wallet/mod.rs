@@ -302,7 +302,7 @@ impl Wallet {
 
             let signature = api::sign(
                 client_shim,
-                &sig_hash.le_hex_string(),
+                BigInt::from_hex(&sig_hash.le_hex_string()),
                 &mk,
                 address_derivation.pos,
                 &self.private_share.id,

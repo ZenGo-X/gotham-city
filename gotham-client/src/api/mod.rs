@@ -36,12 +36,12 @@ pub fn get_master_key(client_shim: &ClientShim) -> PrivateShare {
 
 pub fn sign(
     client_shim: &ClientShim,
-    message_le_hex: &String,
+    message: BigInt,
     mk: &MasterKey2,
     pos: u32,
     id: &String,
 ) -> party_one::Signature {
-    sign::sign(&client_shim, message_le_hex, mk, pos, id)
+    sign::sign(&client_shim, message, mk, pos, id)
 }
 
 #[no_mangle]
@@ -119,7 +119,9 @@ pub extern fn sign_message(
     let mk : MasterKey2 = serde_json::from_str(master_key_json).unwrap();
     let mk_child : MasterKey2 = mk.get_child(vec![BigInt::from(pos)]);
 
-    let sig = sign::sign(&client_shim, &message_hex.to_string(), &mk_child, pos, &id.to_string());
+    let message : BigInt = serde_json::from_str(message_hex).unwrap();
+
+    let sig = sign::sign(&client_shim, message, &mk_child, pos, &id.to_string());
 
     let signature_json = match serde_json::to_string(&sig) {
         Ok(share) => share,
