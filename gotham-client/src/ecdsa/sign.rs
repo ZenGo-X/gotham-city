@@ -11,17 +11,18 @@ use super::super::utilities::requests;
 pub struct SignSecondMsgRequest {
     pub message: BigInt,
     pub party_two_sign_message: party2::SignMessage,
-    pub pos_child_key: u32,
+    pub x_pos_child_key: u32,
+    pub y_pos_child_key: u32,
 }
 
 pub fn sign(
     client_shim: &api::ClientShim,
     message: BigInt,
     mk: &MasterKey2,
-    pos: u32,
+    x_pos: u32,
+    y_pos: u32,
     id: &String,
 ) -> party_one::Signature {
-
     let (eph_key_gen_first_message_party_two, eph_comm_witness, eph_ec_key_pair_party2) =
         MasterKey2::sign_first_message();
 
@@ -36,11 +37,17 @@ pub fn sign(
         &eph_ec_key_pair_party2,
         eph_comm_witness.clone(),
         &sign_party_one_first_message,
-        &message
+        &message,
     );
 
-    let signature: party_one::Signature =
-        get_signature(client_shim, message, party_two_sign_message, pos, &id);
+    let signature: party_one::Signature = get_signature(
+        client_shim,
+        message,
+        party_two_sign_message,
+        x_pos,
+        y_pos,
+        &id,
+    );
 
     signature
 }
@@ -49,13 +56,15 @@ fn get_signature(
     client_shim: &api::ClientShim,
     message: BigInt,
     party_two_sign_message: party2::SignMessage,
-    pos_child_key: u32,
+    x_pos_child_key: u32,
+    y_pos_child_key: u32,
     id: &String,
 ) -> party_one::Signature {
     let request: SignSecondMsgRequest = SignSecondMsgRequest {
         message,
         party_two_sign_message,
-        pos_child_key,
+        x_pos_child_key,
+        y_pos_child_key,
     };
 
     let res_body =

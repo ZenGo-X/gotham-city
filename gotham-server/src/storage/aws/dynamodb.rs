@@ -1,3 +1,4 @@
+use super::super::super::routes::ecdsa::Share;
 use super::error::*;
 use super::*;
 use failure;
@@ -10,7 +11,6 @@ use std::default::Default;
 use std::string::*;
 use std::thread;
 use std::time::Duration;
-use super::super::super::routes::ecdsa::Share;
 
 const CUSTOMER_ID_IDENTIFIER: &str = "customerId";
 const ID_IDENTIFIER: &str = "id";

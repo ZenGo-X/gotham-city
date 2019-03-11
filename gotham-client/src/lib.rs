@@ -8,12 +8,12 @@
 //
 
 extern crate centipede;
+extern crate config;
 extern crate curv;
 extern crate kms;
 extern crate multi_party_ecdsa;
 extern crate reqwest;
 extern crate zk_paillier;
-extern crate config;
 
 #[macro_use]
 extern crate serde_derive;

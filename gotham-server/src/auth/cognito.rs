@@ -68,7 +68,6 @@ pub fn verify(
 }
 
 fn get_jwt_to_pems(region: &String, pool_id: &String) -> Result<String, ()> {
-
     match Command::new("node")
         .arg("jwt-to-pems.js")
         .arg(format!("--region={}", region))

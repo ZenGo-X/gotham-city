@@ -214,7 +214,8 @@ mod tests {
         let party2_cc = chain_code::party2::ChainCode2::compute_chain_code(
             &cc_ec_key_pair2,
             &cc_party_one_second_message.comm_witness.public_share,
-        ).chain_code;
+        )
+        .chain_code;
 
         let end = PreciseTime::now();
         println!("{} Client: party2 chain code second message", start.to(end));
@@ -274,9 +275,11 @@ mod tests {
         let sign_party_one_first_message: party_one::EphKeyGenFirstMsg =
             serde_json::from_str(&res_body).unwrap();
 
-        let pos = 1;
+        let x_pos = 0;
+        let y_pos = 1;
 
-        let child_party_two_master_key = master_key_2.get_child(vec![BigInt::from(pos)]);
+        let child_party_two_master_key =
+            master_key_2.get_child(vec![BigInt::from(x_pos), BigInt::from(y_pos)]);
 
         let start = PreciseTime::now();
 
@@ -293,7 +296,8 @@ mod tests {
         let request: ecdsa::SignSecondMsgRequest = ecdsa::SignSecondMsgRequest {
             message,
             party_two_sign_message,
-            pos_child_key: 1,
+            x_pos_child_key: x_pos,
+            y_pos_child_key: y_pos,
         };
 
         let body = serde_json::to_string(&request).unwrap();

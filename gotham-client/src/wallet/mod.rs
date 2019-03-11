@@ -304,6 +304,7 @@ impl Wallet {
                 client_shim,
                 BigInt::from_hex(&sig_hash.le_hex_string()),
                 &mk,
+                0,
                 address_derivation.pos,
                 &self.private_share.id,
             );
@@ -456,7 +457,7 @@ impl Wallet {
             let mk = self
                 .private_share
                 .master_key
-                .get_child(vec![BigInt::from(n)]);
+                .get_child(vec![BigInt::from(0), BigInt::from(n)]);
             let bitcoin_address = Self::to_bitcoin_address(&mk, self.get_bitcoin_network());
 
             response.push(bitcoin_address);
@@ -470,7 +471,7 @@ impl Wallet {
 
         let last_child_master_key = private_share
             .master_key
-            .get_child(vec![BigInt::from(last_pos)]);
+            .get_child(vec![BigInt::from(0), BigInt::from(last_pos)]);
 
         (last_pos, last_child_master_key)
     }
