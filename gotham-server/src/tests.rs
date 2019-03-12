@@ -275,11 +275,11 @@ mod tests {
         let sign_party_one_first_message: party_one::EphKeyGenFirstMsg =
             serde_json::from_str(&res_body).unwrap();
 
-        let x_pos = 0;
-        let y_pos = 1;
+        let x_pos = BigInt::from(0);
+        let y_pos = BigInt::from(21);
 
         let child_party_two_master_key =
-            master_key_2.get_child(vec![BigInt::from(x_pos), BigInt::from(y_pos)]);
+            master_key_2.get_child(vec![x_pos.clone(), y_pos.clone()]);
 
         let start = PreciseTime::now();
 

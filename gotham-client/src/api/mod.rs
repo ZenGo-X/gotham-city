@@ -41,8 +41,8 @@ pub fn sign(
     client_shim: &ClientShim,
     message: BigInt,
     mk: &MasterKey2,
-    x_pos: u32,
-    y_pos: u32,
+    x_pos: BigInt,
+    y_pos: BigInt,
     id: &String,
 ) -> party_one::Signature {
     sign::sign(&client_shim, message, mk, x_pos, y_pos, id)
@@ -85,8 +85,8 @@ pub extern "C" fn sign_message(
     c_auth_token: *const c_char,
     c_message_le_hex: *const c_char,
     c_master_key_json: *const c_char,
-    c_x_pos: i32,
-    c_y_pos: i32,
+    c_x_pos: *const c_char,
+    c_y_pos: *const c_char,
     c_id: *const c_char,
 ) -> *mut c_char {
     let raw_endpoint = unsafe { CStr::from_ptr(c_endpoint) };
@@ -119,24 +119,32 @@ pub extern "C" fn sign_message(
         Err(_) => panic!("Error while decoding raw id"),
     };
 
-    let x_pos = c_x_pos as u32;
-    let y_pos = c_y_pos as u32;
+    let raw_c_x_pos = unsafe { CStr::from_ptr(c_x_pos) };
+    let x: BigInt = match raw_c_x_pos.to_str() {
+        Ok(s) => serde_json::from_str(s).unwrap(),
+        Err(_) => panic!("Error while decoding x_pos"),
+    };
+
+    let raw_c_y_pos = unsafe { CStr::from_ptr(c_y_pos) };
+    let y: BigInt = match raw_c_y_pos.to_str() {
+        Ok(s) => serde_json::from_str(s).unwrap(),
+        Err(_) => panic!("Error while decoding x_pos"),
+    };
 
     let client_shim = ClientShim::new(endpoint.to_string(), Some(auth_token.to_string()));
 
     let mk: MasterKey2 = serde_json::from_str(master_key_json).unwrap();
-    let mk_child: MasterKey2 = mk.get_child(vec![BigInt::from(x_pos), BigInt::from(y_pos)]);
+
+    let mk_child: MasterKey2 = mk.get_child(vec![x.clone(), y.clone()]);
 
     let message: BigInt = serde_json::from_str(message_hex).unwrap();
-
-    println!("Signing message hex {}, message {}", message_hex, message);
 
     let sig = sign::sign(
         &client_shim,
         message,
         &mk_child,
-        x_pos,
-        y_pos,
+        x,
+        y,
         &id.to_string(),
     );
 

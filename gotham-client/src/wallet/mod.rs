@@ -304,8 +304,8 @@ impl Wallet {
                 client_shim,
                 BigInt::from_hex(&sig_hash.le_hex_string()),
                 &mk,
-                0,
-                address_derivation.pos,
+                BigInt::from(0),
+                BigInt::from(address_derivation.pos),
                 &self.private_share.id,
             );
 

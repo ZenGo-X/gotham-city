@@ -11,16 +11,16 @@ use super::super::utilities::requests;
 pub struct SignSecondMsgRequest {
     pub message: BigInt,
     pub party_two_sign_message: party2::SignMessage,
-    pub x_pos_child_key: u32,
-    pub y_pos_child_key: u32,
+    pub x_pos_child_key: BigInt,
+    pub y_pos_child_key: BigInt,
 }
 
 pub fn sign(
     client_shim: &api::ClientShim,
     message: BigInt,
     mk: &MasterKey2,
-    x_pos: u32,
-    y_pos: u32,
+    x_pos: BigInt,
+    y_pos: BigInt,
     id: &String,
 ) -> party_one::Signature {
     let (eph_key_gen_first_message_party_two, eph_comm_witness, eph_ec_key_pair_party2) =
@@ -56,8 +56,8 @@ fn get_signature(
     client_shim: &api::ClientShim,
     message: BigInt,
     party_two_sign_message: party2::SignMessage,
-    x_pos_child_key: u32,
-    y_pos_child_key: u32,
+    x_pos_child_key: BigInt,
+    y_pos_child_key: BigInt,
     id: &String,
 ) -> party_one::Signature {
     let request: SignSecondMsgRequest = SignSecondMsgRequest {
