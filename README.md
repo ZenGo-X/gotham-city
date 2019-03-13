@@ -1,10 +1,31 @@
 Gotham City
 =====================================
-Gotham city is a fully functional project to demonstrate real-life 
-example of minimalist Bitcoin decentralized HD wallet using 2 party ECDSA.
+Gotham city is a fully functional client/server application of a minimalist decentralized HD wallet using 2 party ECDSA.
+
+Supported Blockchain(s) / Coin(s)
+-------
+### Server
+Gotham **server** is coin / blockchain agnostic but Elliptic Curve specific.
+
+List of supported Curve(s):
+
+ * secp256k1
+
+### Client
+Gotham **client** is coin / blockchain specific.
+
+List of supported Coin(s):
+
+ * BTC
+
+**Extending the client to support more coin(s) is easy as long as the Elliptic Curve and signing scheme of the new blockchain are supported. In the case a blockchain is using secp256k1 together with ECDSA, the same keygen and signing code can be reused.**
 
 | ![Demo](misc/demo.gif) |
 |-----------------------------|
+
+Disclaimer
+-------
+### **USE AT YOUR OWN RISK, we are not responsible for software/hardware and/or any transactional issues that may occur while using Gotham city.**
 
 Project Status
 -------
@@ -35,8 +56,6 @@ Project Description
 * [multi-party-ecdsa](https://github.com/KZen-networks/multi-party-ecdsa): Rust implelemtation of Lindell's Crypto17 paper: [Fast Secure Two-Party ECDSA Signing](https://eprint.iacr.org/2017/552)
 * [kms](https://github.com/KZen-networks/kms): Two party key managament system (master keys, 2p-HD, shares rotation) for secp256k1 based two party digital sigantures 
 
-
-
 ### White paper overview
 #### Abstract
 We demonstrate a Bitcoin wallet that utilizes two party ECDSA (2P-ECDSA).
@@ -63,10 +82,6 @@ The comparison was done on an Intel i9-8950HK (2.9GHz) using localhost for serve
 | 2P-ECDSA KeyGen                      |        1.05 s            |      **0.813** s           |
 |    2P-ECDSA Signing    |      **0.153** s        |      0.206 s     |
 
-
-Disclaimer
--------
-### Gotham city is a **proof of concept**. **DO NOT USE this project for PRODUCTION use! USE AT YOUR OWN RISK, we are not responsible for software/hardware and/or any transactional issues that may occur while using Gotham city.**
 
 License
 -------
