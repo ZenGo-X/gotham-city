@@ -56,7 +56,7 @@ pub enum Share {
     CCEcKeyPair,
     CC,
 
-    MasterKey,
+    Party1MasterKey,
 
     EphEcKeyPair,
     EphKeyGenFirstMsg,
@@ -90,7 +90,7 @@ impl Share {
             CCCommWitness,
             CCEcKeyPair,
             CC,
-            MasterKey,
+            Party1MasterKey,
             EphEcKeyPair,
             EphKeyGenFirstMsg,
             RotateCommitMessage1M,
@@ -382,7 +382,7 @@ pub fn master_key(state: State<Config>, claim: Claims, id: String) -> Result<()>
         paillier_key_pair,
     );
 
-    db::insert(&state.db, &claim.sub, &id, &Share::MasterKey, &masterKey)
+    db::insert(&state.db, &claim.sub, &id, &Share::Party1MasterKey, &masterKey)
 }
 
 #[post(
@@ -432,7 +432,7 @@ pub fn sign_second(
     id: String,
     request: Json<SignSecondMsgRequest>,
 ) -> Result<Json<(party_one::Signature)>> {
-    let master_key: MasterKey1 = db::get(&state.db, &claim.sub, &id, &Share::MasterKey)?
+    let master_key: MasterKey1 = db::get(&state.db, &claim.sub, &id, &Share::Party1MasterKey)?
         .ok_or(format_err!("No data for such identifier {}", id))?;
 
     let x: BigInt = request.x_pos_child_key.clone();
@@ -463,7 +463,7 @@ pub fn sign_second(
 }
 
 pub fn get_mk(state: &State<Config>, claim: Claims, id: &String) -> Result<MasterKey1> {
-    db::get(&state.db, &claim.sub, &id, &Share::MasterKey)?
+    db::get(&state.db, &claim.sub, &id, &Share::Party1MasterKey)?
         .ok_or(format_err!("No data for such identifier {}", id))
 }
 
@@ -645,7 +645,7 @@ pub fn rotate_fourth(
         &state.db,
         &claim.sub,
         &id,
-        &Share::MasterKey,
+        &Share::Party1MasterKey,
         &party_one_master_key_rotated,
     )?;
 

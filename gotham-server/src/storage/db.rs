@@ -96,5 +96,10 @@ where
 }
 
 fn calculate_table_name(name: &str, env: &str) -> String {
-    format!("{}-gotham-{}", env, name)
+    if !name.contains(&ecdsa::Share::Party1MasterKey.to_string()) {
+        return format!("{}-gotham-{}", env, name);
+    }
+
+    // This is ugly, TODO: handle this properly in a configuration (when or not to use 'gotham' in the table name)
+    return format!("{}_{}", env, name);
 }
