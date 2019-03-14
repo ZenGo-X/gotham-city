@@ -208,22 +208,30 @@ impl Wallet {
         new_wallet
     }
 
-    pub fn save(&self) {
+    pub fn save_to(&self, filepath: &str) {
         let wallet_json = serde_json::to_string(self).unwrap();
 
-        fs::write(WALLET_FILENAME, wallet_json).expect("Unable to save wallet!");
+        fs::write(filepath, wallet_json).expect("Unable to save wallet!");
 
         debug!("(wallet id: {}) Saved wallet to disk", self.id);
     }
 
-    pub fn load() -> Wallet {
-        let data = fs::read_to_string(WALLET_FILENAME).expect("Unable to load wallet!");
+    pub fn save(&self) {
+        self.save_to(WALLET_FILENAME)
+    }
+
+    pub fn load_from(filepath: &str) -> Wallet {
+        let data = fs::read_to_string(filepath).expect("Unable to load wallet!");
 
         let wallet: Wallet = serde_json::from_str(&data).unwrap();
 
         debug!("(wallet id: {}) Loaded wallet to memory", wallet.id);
 
         wallet
+    }
+
+    pub fn load() -> Wallet {
+        Wallet::load_from(WALLET_FILENAME)
     }
 
     pub fn send(

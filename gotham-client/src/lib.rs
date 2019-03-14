@@ -36,3 +36,4 @@ pub mod ecdsa;
 pub mod escrow;
 pub mod utilities;
 pub mod wallet;
+pub mod tests;
