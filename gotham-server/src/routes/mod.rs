@@ -8,3 +8,4 @@
 //
 
 pub mod ecdsa;
+pub mod ping;

@@ -16,6 +16,7 @@ use rusoto_core::Region;
 use rusoto_dynamodb::DynamoDbClient;
 
 use super::routes::ecdsa;
+use super::routes::ping;
 use super::storage::db;
 
 use std::collections::HashMap;
@@ -85,6 +86,7 @@ pub fn get_server() -> Rocket {
         .mount(
             "/",
             routes![
+                ping::ping,
                 ecdsa::first_message,
                 ecdsa::second_message,
                 ecdsa::third_message,
