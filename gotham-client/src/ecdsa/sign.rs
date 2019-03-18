@@ -22,7 +22,7 @@ pub fn sign(
     x_pos: BigInt,
     y_pos: BigInt,
     id: &String,
-) -> party_one::Signature {
+) -> party_one::SignatureRecid {
     let (eph_key_gen_first_message_party_two, eph_comm_witness, eph_ec_key_pair_party2) =
         MasterKey2::sign_first_message();
 
@@ -40,7 +40,7 @@ pub fn sign(
         &message,
     );
 
-    let signature: party_one::Signature = get_signature(
+    let signature: party_one::SignatureRecid = get_signature(
         client_shim,
         message,
         party_two_sign_message,
@@ -59,7 +59,7 @@ fn get_signature(
     x_pos_child_key: BigInt,
     y_pos_child_key: BigInt,
     id: &String,
-) -> party_one::Signature {
+) -> party_one::SignatureRecid {
     let request: SignSecondMsgRequest = SignSecondMsgRequest {
         message,
         party_two_sign_message,
@@ -70,6 +70,6 @@ fn get_signature(
     let res_body =
         requests::postb(client_shim, &format!("/ecdsa/sign/{}/second", id), &request).unwrap();
 
-    let signature: party_one::Signature = serde_json::from_str(&res_body).unwrap();
+    let signature: party_one::SignatureRecid = serde_json::from_str(&res_body).unwrap();
     signature
 }
