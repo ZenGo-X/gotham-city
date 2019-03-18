@@ -431,7 +431,7 @@ pub fn sign_second(
     claim: Claims,
     id: String,
     request: Json<SignSecondMsgRequest>,
-) -> Result<Json<(party_one::Signature)>> {
+) -> Result<Json<(party_one::SignatureRecid)>> {
     let master_key: MasterKey1 = db::get(&state.db, &claim.sub, &id, &Share::Party1MasterKey)?
         .ok_or(format_err!("No data for such identifier {}", id))?;
 
@@ -448,18 +448,18 @@ pub fn sign_second(
         db::get(&state.db, &claim.sub, &id, &Share::EphKeyGenFirstMsg)?
             .ok_or(format_err!("No data for such identifier {}", id))?;
 
-    let signatures = child_master_key.sign_second_message(
+    let signature_with_recid = child_master_key.sign_second_message(
         &request.party_two_sign_message,
         &eph_key_gen_first_message_party_two,
         &eph_ec_key_pair_party1,
         &request.message,
     );
 
-    if signatures.is_err() {
+    if signature_with_recid.is_err() {
         panic!("validation failed")
     };
 
-    Ok(Json(signatures.unwrap()))
+    Ok(Json(signature_with_recid.unwrap()))
 }
 
 pub fn get_mk(state: &State<Config>, claim: Claims, id: &String) -> Result<MasterKey1> {

@@ -247,7 +247,7 @@ mod tests {
         id: String,
         master_key_2: MasterKey2,
         message: BigInt,
-    ) -> party_one::Signature {
+    ) -> party_one::SignatureRecid {
         time_test!();
         let (eph_key_gen_first_message_party_two, eph_comm_witness, eph_ec_key_pair_party2) =
             MasterKey2::sign_first_message();
@@ -318,9 +318,9 @@ mod tests {
         );
 
         let res_body = response.body_string().unwrap();
-        let signatures: party_one::Signature = serde_json::from_str(&res_body).unwrap();
+        let signature_recid: party_one::SignatureRecid = serde_json::from_str(&res_body).unwrap();
 
-        signatures
+        signature_recid
     }
 
     #[test]
@@ -339,12 +339,13 @@ mod tests {
 
         let message = BigInt::from(1234);
 
-        let signatures: party_one::Signature = sign(&client, id, master_key_2, message);
+        let signature: party_one::SignatureRecid = sign(&client, id, master_key_2, message);
 
         println!(
-            "s = (r: {}, s: {})",
-            signatures.r.to_hex(),
-            signatures.s.to_hex()
+            "s = (r: {}, s: {}, recid: {})",
+            signature.r.to_hex(),
+            signature.s.to_hex(),
+            signature.recid
         );
     }
 

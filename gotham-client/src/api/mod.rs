@@ -44,7 +44,7 @@ pub fn sign(
     x_pos: BigInt,
     y_pos: BigInt,
     id: &String,
-) -> party_one::Signature {
+) -> party_one::SignatureRecid {
     sign::sign(&client_shim, message, mk, x_pos, y_pos, id)
 }
 
