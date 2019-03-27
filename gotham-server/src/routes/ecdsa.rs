@@ -111,12 +111,17 @@ impl Share {
 pub struct Config {
     pub db: DB,
 }
+#[derive(Serialize, Deserialize)]
+pub struct Party2KeyGenCCFirst {
+    pub kg_party_two_first_message_d_log_proof: DLogProof,
+    pub cc_party_two_first_message_d_log_proof: DLogProof,
+}
 
 #[post("/ecdsa/keygen/first", format = "json")]
 pub fn first_message(
     state: State<Config>,
     claim: Claims,
-) -> Result<Json<(String, party_one::KeyGenFirstMsg)>> {
+) -> Result<Json<(String, party_one::KeyGenFirstMsg, Party1FirstMessage)>> {
     let id = Uuid::new_v4().to_string();
 
     let (key_gen_first_msg, comm_witness, ec_key_pair) = MasterKey1::key_gen_first_message();
@@ -146,17 +151,50 @@ pub fn first_message(
     )?;
     db::insert(&state.db, &claim.sub, &id, &Share::EcKeyPair, &ec_key_pair)?;
 
-    Ok(Json((id, key_gen_first_msg)))
+    // starting chain code protocol in parallel:
+    let (cc_party_one_first_message, cc_comm_witness, cc_ec_key_pair1) =
+        chain_code::party1::ChainCode1::chain_code_first_message();
+
+    db::insert(
+        &state.db,
+        &claim.sub,
+        &id,
+        &Share::CCKeyGenFirstMsg,
+        &cc_party_one_first_message,
+    )?;
+    db::insert(
+        &state.db,
+        &claim.sub,
+        &id,
+        &Share::CCCommWitness,
+        &cc_comm_witness,
+    )?;
+    db::insert(
+        &state.db,
+        &claim.sub,
+        &id,
+        &Share::CCEcKeyPair,
+        &cc_ec_key_pair1,
+    )?;
+
+    Ok(Json((id, key_gen_first_msg, cc_party_one_first_message)))
 }
 
-#[post("/ecdsa/keygen/<id>/second", format = "json", data = "<dlog_proof>")]
+#[post(
+    "/ecdsa/keygen/<id>/second",
+    format = "json",
+    data = "<party2_kg_cc_first>"
+)]
 pub fn second_message(
     state: State<Config>,
     claim: Claims,
     id: String,
-    dlog_proof: Json<DLogProof>,
-) -> Result<Json<party1::KeyGenParty1Message2>> {
-    let party2_public: GE = dlog_proof.0.pk.clone();
+    party2_kg_cc_first: Json<Party2KeyGenCCFirst>,
+) -> Result<Json<(party1::KeyGenParty1Message2, Party1SecondMessage)>> {
+    let party2_public: GE = party2_kg_cc_first
+        .kg_party_two_first_message_d_log_proof
+        .pk
+        .clone();
     db::insert(
         &state.db,
         &claim.sub,
@@ -172,7 +210,11 @@ pub fn second_message(
         .ok_or(format_err!("No data for such identifier {}", id))?;
 
     let (kg_party_one_second_message, paillier_key_pair, party_one_private) =
-        MasterKey1::key_gen_second_message(comm_witness, &ec_key_pair, &dlog_proof.0);
+        MasterKey1::key_gen_second_message(
+            comm_witness,
+            &ec_key_pair,
+            &party2_kg_cc_first.kg_party_two_first_message_d_log_proof,
+        );
 
     db::insert(
         &state.db,
@@ -189,7 +231,18 @@ pub fn second_message(
         &party_one_private,
     )?;
 
-    Ok(Json(kg_party_one_second_message))
+    let cc_comm_witness: CommWitness = db::get(&state.db, &claim.sub, &id, &Share::CCCommWitness)?
+        .ok_or(format_err!("No data for such identifier {}", id))?;
+
+    let party1_cc = chain_code::party1::ChainCode1::chain_code_second_message(
+        cc_comm_witness,
+        &party2_kg_cc_first.cc_party_two_first_message_d_log_proof,
+    );
+
+    let party2_pub = &party2_kg_cc_first.cc_party_two_first_message_d_log_proof.pk;
+    chain_code_compute_message(state, claim, id, party2_pub)?;
+
+    Ok(Json((kg_party_one_second_message, party1_cc)))
 }
 
 #[post(
@@ -276,65 +329,6 @@ pub fn fourth_message(
     Ok(Json(res.unwrap()))
 }
 
-#[post("/ecdsa/keygen/<id>/chaincode/first", format = "json")]
-pub fn chain_code_first_message(
-    state: State<Config>,
-    claim: Claims,
-    id: String,
-) -> Result<Json<(Party1FirstMessage)>> {
-    let (cc_party_one_first_message, cc_comm_witness, cc_ec_key_pair1) =
-        chain_code::party1::ChainCode1::chain_code_first_message();
-
-    db::insert(
-        &state.db,
-        &claim.sub,
-        &id,
-        &Share::CCKeyGenFirstMsg,
-        &cc_party_one_first_message,
-    )?;
-    db::insert(
-        &state.db,
-        &claim.sub,
-        &id,
-        &Share::CCCommWitness,
-        &cc_comm_witness,
-    )?;
-    db::insert(
-        &state.db,
-        &claim.sub,
-        &id,
-        &Share::CCEcKeyPair,
-        &cc_ec_key_pair1,
-    )?;
-
-    Ok(Json(cc_party_one_first_message))
-}
-
-#[post(
-    "/ecdsa/keygen/<id>/chaincode/second",
-    format = "json",
-    data = "<cc_party_two_first_message_d_log_proof>"
-)]
-pub fn chain_code_second_message(
-    state: State<Config>,
-    claim: Claims,
-    id: String,
-    cc_party_two_first_message_d_log_proof: Json<DLogProof>,
-) -> Result<Json<(Party1SecondMessage)>> {
-    let cc_comm_witness: CommWitness = db::get(&state.db, &claim.sub, &id, &Share::CCCommWitness)?
-        .ok_or(format_err!("No data for such identifier {}", id))?;
-
-    let party1_cc = chain_code::party1::ChainCode1::chain_code_second_message(
-        cc_comm_witness,
-        &cc_party_two_first_message_d_log_proof.0,
-    );
-
-    let party2_pub = &cc_party_two_first_message_d_log_proof.pk;
-    chain_code_compute_message(state, claim, id, party2_pub)?;
-
-    Ok(Json(party1_cc))
-}
-
 pub fn chain_code_compute_message(
     state: State<Config>,
     claim: Claims,
@@ -382,7 +376,13 @@ pub fn master_key(state: State<Config>, claim: Claims, id: String) -> Result<()>
         paillier_key_pair,
     );
 
-    db::insert(&state.db, &claim.sub, &id, &Share::Party1MasterKey, &masterKey)
+    db::insert(
+        &state.db,
+        &claim.sub,
+        &id,
+        &Share::Party1MasterKey,
+        &masterKey,
+    )
 }
 
 #[post(
