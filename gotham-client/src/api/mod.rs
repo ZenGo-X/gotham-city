@@ -131,14 +131,7 @@ pub extern "C" fn sign_message(
 
     let message: BigInt = serde_json::from_str(message_hex).unwrap();
 
-    let sig = sign::sign(
-        &client_shim,
-        message,
-        &mk_child,
-        x,
-        y,
-        &id.to_string(),
-    );
+    let sig = sign::sign(&client_shim, message, &mk_child, x, y, &id.to_string());
 
     let signature_json = match serde_json::to_string(&sig) {
         Ok(share) => share,
