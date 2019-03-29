@@ -13,10 +13,15 @@ use rocksdb;
 use serde;
 
 use super::aws;
+use std::collections::HashMap;
+use serde_json::{Value};
+use rusoto_dynamodb::AttributeValue;
+use std::collections::hash_map::RandomState;
 
 pub enum DB {
     Local(rocksdb::DB),
     AWS(rusoto_dynamodb::DynamoDbClient, String),
+    Redis(redis::Client),
 }
 
 fn idify(user_id: &str, id: &str, name: &ecdsa::Share) -> String {
@@ -68,6 +73,13 @@ where
             rocksdb_client.put(identifier.as_ref(), v_string.as_ref())?;
             Ok(())
         }
+        DB::Redis(redis_client) => {
+            let identifier = idify(user_id, id, name);
+            let v_string = serde_json::to_string(&v).unwrap();
+            let connect = redis_client.get_connection()?;
+            let _: () = redis::cmd("SET").arg(identifier).arg(v_string).query(&connect)?;
+            Ok(())
+        }
     }
 }
 
@@ -91,6 +103,13 @@ where
                 Some(vec) => Ok(serde_json::from_slice(&vec).unwrap()),
                 None => Ok(None),
             }
+        }
+        DB::Redis(redis_client) => {
+            let identifier = idify(user_id, id, name);
+            let connect = redis_client.get_connection()?;
+            let old_val: String = redis::cmd("GET").arg(identifier).query(&connect)?;
+            let c: Value = serde_json::from_str(&old_val)?;
+            Ok(serde_json::from_value(c).unwrap())
         }
     }
 }
