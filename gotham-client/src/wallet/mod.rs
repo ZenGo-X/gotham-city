@@ -124,7 +124,7 @@ impl Wallet {
             encryptions,
             proof,
             self.private_share.master_key.public.clone(),
-            self.private_share.master_key.chain_code.clone(),
+            ChainCode2 { chain_code: self.private_share.master_key.chain_code.clone() },
             self.private_share.id.clone(),
         ))
         .unwrap();
