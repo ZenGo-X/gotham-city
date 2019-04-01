@@ -124,7 +124,7 @@ impl Wallet {
             encryptions,
             proof,
             self.private_share.master_key.public.clone(),
-            ChainCode2 { chain_code: self.private_share.master_key.chain_code.clone() },
+            self.private_share.master_key.chain_code.clone(),
             self.private_share.id.clone(),
         ))
         .unwrap();
@@ -143,7 +143,7 @@ impl Wallet {
             Helgamalsegmented,
             Proof,
             Party2Public,
-            ChainCode2,
+            BigInt,
             String,
         ) = serde_json::from_str(&data).unwrap();
         let verify = proof.verify(
