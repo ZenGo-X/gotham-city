@@ -146,8 +146,14 @@ fn get_db(settings: HashMap<String, String>) -> db::DB {
             }
         }
         "redis" => {
-            let client = redis::Client::open("redis://127.0.0.1/").unwrap();
-            db::DB::Redis(client)
+            let redis_url = settings.get("redis_url");
+            match redis_url{
+                Some(s) => {
+                    let client = redis::Client::open(s as &str).unwrap();
+                    db::DB::Redis(client)
+                }
+                None => panic!("Set 'DB = Redis' but 'redis_url' is empty"),
+            }
         }
         _ => db::DB::Local(rocksdb::DB::open_default("./db").unwrap()),
     }
