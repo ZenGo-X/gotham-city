@@ -580,8 +580,8 @@ pub fn rotate_third(
     )?;
     db::insert(
         &state.db,
-        &id,
         &claim.sub,
+        &id,
         &Share::RotateParty1Second,
         &rotation_party_one_second_message,
     )?;
@@ -654,7 +654,9 @@ pub fn rotate_fourth(
 
 #[post("/ecdsa/<id>/recover", format = "json")]
 pub fn recover(state: State<Config>, claim: Claims, id: String) -> Result<Json<(u32)>> {
-    let pos_old: u32 = db::get(&state.db, &claim.sub, &id, &Share::POS)?
+    let pos_map: HDPos = db::get(&state.db, &claim.sub, &id, &Share::POS)?
         .ok_or(format_err!("No data for such identifier {}", id))?;
+    let pos_old = pos_map.pos;
     Ok(Json(pos_old))
 }
+

@@ -11,6 +11,7 @@ use config;
 use rocket;
 use rocket::{Request, Rocket};
 use rocksdb;
+use redis;
 
 use rusoto_core::Region;
 use rusoto_dynamodb::DynamoDbClient;
@@ -140,6 +141,16 @@ fn get_db(settings: HashMap<String, String>) -> db::DB {
                     }
                 }
                 None => panic!("Set 'DB = AWS' but 'region' is empty"),
+            }
+        }
+        "redis" => {
+            let redis_url = settings.get("redis_url");
+            match redis_url{
+                Some(s) => {
+                    let client = redis::Client::open(s as &str).unwrap();
+                    db::DB::Redis(client)
+                }
+                None => panic!("Set 'DB = Redis' but 'redis_url' is empty"),
             }
         }
         _ => db::DB::Local(rocksdb::DB::open_default("./db").unwrap()),
