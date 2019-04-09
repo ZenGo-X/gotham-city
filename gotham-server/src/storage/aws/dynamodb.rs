@@ -64,7 +64,7 @@ where
 {
     let mut query_key: HashMap<String, AttributeValue> = HashMap::new();
 
-    if table_name.contains(&Share::Party1MasterKey.to_string()) {
+    if table_name.contains(&Share::PartyMasterKey.to_string()) {
         query_key.insert(
             "customerId".to_string(),
             AttributeValue {

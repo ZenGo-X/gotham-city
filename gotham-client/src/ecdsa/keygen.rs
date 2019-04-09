@@ -10,116 +10,115 @@
 use serde_json;
 use time::PreciseTime;
 
-use curv::cryptographic_primitives::twoparty::dh_key_exchange_variant_with_pok_comm::*;
+use curv::cryptographic_primitives::twoparty::dh_key_exchange_variant_with_pok_comm::Party1FirstMessage as CCParty1FirstMessage;
+use curv::cryptographic_primitives::twoparty::dh_key_exchange_variant_with_pok_comm::Party1SecondMessage as CCParty1SecondMessage;
+use curv::cryptographic_primitives::twoparty::dh_key_exchange_variant_with_pok_comm::Party2FirstMessage as CCParty2FirstMessage;
+use curv::FE;
 use kms::chain_code::two_party as chain_code;
-use kms::ecdsa::two_party::*;
-use multi_party_ecdsa::protocols::two_party_ecdsa::lindell_2017::*;
+use kms::ecdsa::two_party_gg18::*;
 
 use super::super::api;
 use super::super::utilities::requests;
 
+#[derive(Serialize, Deserialize)]
+pub struct Party1KeyGenCCFirst {
+    pub party1_message1: KeyGenMessage1,
+    pub cc_party1_message1: CCParty1FirstMessage,
+    pub id: String,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct Party1KeyGenCCSecond {
+    pub party1_message2: KeyGenMessage2,
+    pub cc_party1_message2: CCParty1SecondMessage,
+}
+
 const KG_PATH_PRE: &str = "ecdsa/keygen";
 
-pub fn get_master_key(client_shim: &api::ClientShim) -> api::PrivateShare {
+pub fn get_master_key_new(id: String, u: FE, client_shim: &api::ClientShim) -> api::PrivateShareGG {
     let start = PreciseTime::now();
+    let (party1_message1, party1_additive_key, party1_decom1) =
+        MasterKey1::key_gen_first_message(u);
 
-    let res_body = requests::post(client_shim, &format!("{}/first", KG_PATH_PRE)).unwrap();
+    // starting chain code protocol in parallel:
+    let (cc_party1_message1, cc_comm_witness, cc_ec_key_pair1) =
+        chain_code::party1::ChainCode1::chain_code_first_message();
 
-    let (id, kg_party_one_first_message): (String, party_one::KeyGenFirstMsg) =
+    let body = &Party1KeyGenCCFirst {
+        party1_message1: party1_message1.clone(),
+        cc_party1_message1,
+        id,
+    };
+    let res_body = requests::postb(client_shim, &format!("{}/first", KG_PATH_PRE), body).unwrap();
+
+    let (id, party2_message1, cc_party2_message1): (String, KeyGenMessage1, CCParty2FirstMessage) =
         serde_json::from_str(&res_body).unwrap();
+    let party1_message2 = MasterKey1::keygen_second_message(party1_decom1);
 
-    let (kg_party_two_first_message, kg_ec_key_pair_party2) = MasterKey2::key_gen_first_message();
+    // adding chain code
+    let cc_party1_message2 = chain_code::party1::ChainCode1::chain_code_second_message(
+        cc_comm_witness,
+        &cc_party2_message1.d_log_proof,
+    );
 
-    let body = &kg_party_two_first_message.d_log_proof;
+    let party1_message2 = Party1KeyGenCCSecond {
+        party1_message2,
+        cc_party1_message2,
+    };
+    let body = &party1_message2;
 
+    let cc_party2_pub = &cc_party2_message1.public_share;
+
+    let party1_cc =
+        chain_code::party1::ChainCode1::compute_chain_code(&cc_ec_key_pair1, &cc_party2_pub);
     let res_body =
         requests::postb(client_shim, &format!("{}/{}/second", KG_PATH_PRE, id), body).unwrap();
 
-    let kg_party_one_second_message: party1::KeyGenParty1Message2 =
-        serde_json::from_str(&res_body).unwrap();
+    let party2_message2: KeyGenMessage2 = serde_json::from_str(&res_body).unwrap();
+    let (party1_message3, ss1_to_self, party1_y_vec, party1_ek_vec) =
+        MasterKey1::key_gen_third_message(
+            &party1_additive_key,
+            party1_message1,
+            party2_message1,
+            party1_message2.party1_message2,
+            party2_message2,
+        );
 
-    let key_gen_second_message = MasterKey2::key_gen_second_message(
-        &kg_party_one_first_message,
-        &kg_party_one_second_message,
-    );
-
-    let (party_two_second_message, party_two_paillier, party_two_pdl_chal) =
-        key_gen_second_message.unwrap();
-
-    let body = &party_two_second_message.pdl_first_message;
+    let body = &party1_message3;
 
     let res_body =
         requests::postb(client_shim, &format!("{}/{}/third", KG_PATH_PRE, id), body).unwrap();
 
-    let party_one_third_message: party_one::PDLFirstMessage =
-        serde_json::from_str(&res_body).unwrap();
+    let party2_message3: KeyGenMessage3 = serde_json::from_str(&res_body).unwrap();
 
-    let pdl_decom_party2 = MasterKey2::key_gen_third_message(&party_two_pdl_chal);
+    let (party1_message4, party1_linear_key, party1_vss_vec) = MasterKey1::key_gen_fourth_message(
+        &party1_additive_key,
+        party1_message3,
+        party2_message3,
+        ss1_to_self,
+        &party1_y_vec,
+    );
 
-    let party_2_pdl_second_message = pdl_decom_party2;
-
-    let body = &party_2_pdl_second_message;
+    let body = &party1_message4;
 
     let res_body =
         requests::postb(client_shim, &format!("{}/{}/fourth", KG_PATH_PRE, id), body).unwrap();
 
-    let party_one_pdl_second_message: party_one::PDLSecondMessage =
-        serde_json::from_str(&res_body).unwrap();
+    let party2_message4: KeyGenMessage4 = serde_json::from_str(&res_body).unwrap();
 
-    MasterKey2::key_gen_fourth_message(
-        &party_two_pdl_chal,
-        &party_one_third_message,
-        &party_one_pdl_second_message,
-    )
-    .expect("pdl error party1");
-
-    let res_body = requests::post(
-        client_shim,
-        &format!("{}/{}/chaincode/first", KG_PATH_PRE, id),
-    )
-    .unwrap();
-
-    let cc_party_one_first_message: Party1FirstMessage = serde_json::from_str(&res_body).unwrap();
-
-    let (cc_party_two_first_message, cc_ec_key_pair2) =
-        chain_code::party2::ChainCode2::chain_code_first_message();
-
-    let body = &cc_party_two_first_message.d_log_proof;
-
-    let res_body = requests::postb(
-        client_shim,
-        &format!("{}/{}/chaincode/second", KG_PATH_PRE, id),
-        body,
-    )
-    .unwrap();
-
-    let cc_party_one_second_message: Party1SecondMessage = serde_json::from_str(&res_body).unwrap();
-
-    let cc_party_two_second_message = chain_code::party2::ChainCode2::chain_code_second_message(
-        &cc_party_one_first_message,
-        &cc_party_one_second_message,
-    );
-
-    assert!(cc_party_two_second_message.is_ok());
-
-    let party2_cc = chain_code::party2::ChainCode2::compute_chain_code(
-        &cc_ec_key_pair2,
-        &cc_party_one_second_message.comm_witness.public_share,
-    )
-    .chain_code;
-
-    let master_key = MasterKey2::set_master_key(
-        &party2_cc,
-        &kg_ec_key_pair_party2,
-        &kg_party_one_second_message
-            .ecdh_second_message
-            .comm_witness
-            .public_share,
-        &party_two_paillier,
+    let master_key = MasterKey1::set_master_key(
+        party1_message4,
+        party2_message4,
+        party1_y_vec.clone(),
+        party1_additive_key,
+        party1_linear_key,
+        party1_vss_vec,
+        party1_ek_vec,
+        &party1_cc.chain_code,
     );
 
     let end = PreciseTime::now();
     println!("(id: {}) Took: {}", id, start.to(end));
 
-    api::PrivateShare { id, master_key }
+    api::PrivateShareGG { id, master_key }
 }

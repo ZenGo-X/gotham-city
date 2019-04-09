@@ -9,6 +9,9 @@
 
 #[macro_use]
 extern crate clap;
+extern crate client_lib;
+extern crate time;
+
 use clap::App;
 
 use client_lib::api;
@@ -40,14 +43,14 @@ fn main() {
 
     if let Some(_matches) = matches.subcommand_matches("create-wallet") {
         println!("Network: [{}], Creating wallet", network);
-        let wallet = wallet::Wallet::new(&client_shim, &network);
+        let wallet = wallet::WalletNew::new(&client_shim, &network);
         wallet.save();
         println!("Network: [{}], Wallet saved to disk", &network);
 
         let _escrow = escrow::Escrow::new();
         println!("Network: [{}], Escrow initiated", &network);
     } else if let Some(matches) = matches.subcommand_matches("wallet") {
-        let mut wallet: wallet::Wallet = wallet::Wallet::load();
+        let mut wallet: wallet::WalletNew = wallet::WalletNew::load();
 
         if matches.is_present("new-address") {
             let address = wallet.get_new_bitcoin_address();
@@ -94,7 +97,7 @@ fn main() {
             println!("backup recovery in process 📲 (it can take some time)...");
 
             let start = PreciseTime::now();
-            wallet::Wallet::recover_and_save_share(escrow, &network, &client_shim);
+            wallet::WalletNew::recover_and_save_share(escrow, &network, &client_shim);
             let end = PreciseTime::now();
 
             println!(" Backup recovered 💾(Took: {})", start.to(end));
@@ -109,6 +112,93 @@ fn main() {
             println!("key rotation complete, (Took: {})", start.to(end));
         } else if matches.is_present("send") {
             if let Some(matches) = matches.subcommand_matches("send") {
+                let to: &str = matches.value_of("to").unwrap();
+                let amount_btc: &str = matches.value_of("amount").unwrap();
+                let txid = wallet.send(
+                    to.to_string(),
+                    amount_btc.to_string().parse::<f32>().unwrap(),
+                    &client_shim,
+                );
+                wallet.save();
+                println!(
+                    "Network: [{}], Sent {} BTC to address {}. Transaction ID: {}",
+                    network, amount_btc, to, txid
+                );
+            }
+        }
+    }
+
+    if let Some(_matches) = matches.subcommand_matches("create-wallet-legacy") {
+        println!("Network: [{}], Creating wallet", network);
+        let wallet = wallet::Wallet::new(&client_shim, &network);
+        wallet.save();
+        println!("Network: [{}], Wallet saved to disk", &network);
+
+        let _escrow = escrow::Escrow::new();
+        println!("Network: [{}], Escrow initiated", &network);
+    } else if let Some(matches) = matches.subcommand_matches("wallet-legacy") {
+        let mut wallet = wallet::Wallet::load();
+
+        if matches.is_present("new-address-legacy") {
+            let address = wallet.get_new_bitcoin_address();
+            println!("Network: [{}], Address: [{}]", network, address.to_string());
+            wallet.save();
+        } else if matches.is_present("get-balance-legacy") {
+            let balance = wallet.get_balance();
+            println!(
+                "Network: [{}], Balance: [balance: {}, pending: {}]",
+                network, balance.confirmed, balance.unconfirmed
+            );
+        } else if matches.is_present("list-unspent-legacy") {
+            let unspent = wallet.list_unspent();
+            let hashes: Vec<String> = unspent.into_iter().map(|u| u.tx_hash).collect();
+
+            println!(
+                "Network: [{}], Unspent tx hashes: [\n{}\n]",
+                network,
+                hashes.join("\n")
+            );
+        } else if matches.is_present("backup-legacy") {
+            let escrow = escrow::Escrow::load();
+
+            println!("Backup private share pending (it can take some time)...");
+
+            let start = PreciseTime::now();
+            wallet.backup(escrow);
+            let end = PreciseTime::now();
+
+            println!("Backup key saved in escrow (Took: {})", start.to(end));
+        } else if matches.is_present("verify-legacy") {
+            let escrow = escrow::Escrow::load();
+
+            println!("verify encrypted backup (it can take some time)...");
+
+            let start = PreciseTime::now();
+            wallet.verify_backup(escrow);
+            let end = PreciseTime::now();
+
+            println!(" (Took: {})", start.to(end));
+        } else if matches.is_present("restore-legacy") {
+            let escrow = escrow::Escrow::load();
+
+            println!("backup recovery in process 📲 (it can take some time)...");
+
+            let start = PreciseTime::now();
+            wallet::Wallet::recover_and_save_share(escrow, &network, &client_shim);
+            let end = PreciseTime::now();
+
+            println!(" Backup recovered 💾(Took: {})", start.to(end));
+        } else if matches.is_present("rotate-legacy") {
+            println!("Rotating secret shares");
+
+            let start = PreciseTime::now();
+            let wallet = wallet.rotate(&client_shim);
+            wallet.save();
+            let end = PreciseTime::now();
+
+            println!("key rotation complete, (Took: {})", start.to(end));
+        } else if matches.is_present("send-legacy") {
+            if let Some(matches) = matches.subcommand_matches("send-legacy") {
                 let to: &str = matches.value_of("to").unwrap();
                 let amount_btc: &str = matches.value_of("amount").unwrap();
                 let txid = wallet.send(

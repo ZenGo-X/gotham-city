@@ -33,12 +33,14 @@ failure = "0.1.5"
 jsonwebtoken = "5"
 rust-crypto = "0.2"
 hex = "0.3.2"
+paillier = { git = "https://github.com/KZen-networks/rust-paillier"}
 
 [dependencies.zk-paillier]
 git = "https://github.com/KZen-networks/zk-paillier"
 
 [dependencies.kms]
 git = "https://github.com/KZen-networks/kms"
+branch = "gg18_support"
 
 [dependencies.multi-party-ecdsa]
 git = "https://github.com/KZen-networks/multi-party-ecdsa"

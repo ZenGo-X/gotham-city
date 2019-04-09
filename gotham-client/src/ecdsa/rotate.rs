@@ -10,106 +10,134 @@
 use serde_json;
 
 use super::super::api;
-use super::super::api::PrivateShare;
 use super::super::utilities::requests;
 use super::super::wallet;
-use curv::cryptographic_primitives::twoparty::coin_flip_optimal_rounds;
-use kms::ecdsa::two_party::MasterKey2;
-use kms::ecdsa::two_party::*;
-use kms::rotation::two_party::party2::Rotation2;
-use multi_party_ecdsa::protocols::two_party_ecdsa::lindell_2017::*;
+use curv::cryptographic_primitives::twoparty::coin_flip_optimal_rounds::Party1SecondMessage as RotParty1SecondMessage;
+use curv::cryptographic_primitives::twoparty::coin_flip_optimal_rounds::Party2FirstMessage as RotParty2FirstMessage;
+
+use api::PrivateShareGG;
+use kms::ecdsa::two_party_gg18::*;
+use kms::rotation::two_party::party1::Rotation1;
 use std::collections::HashMap;
+
+#[derive(Serialize, Deserialize)]
+pub struct RotCfParty1 {
+    pub party1_message1: KeyGenMessage1,
+    pub cf_party1_message2: RotParty1SecondMessage,
+}
 
 const ROT_PATH_PRE: &str = "ecdsa/rotate";
 
-pub fn rotate_master_key(wallet: wallet::Wallet, client_shim: &api::ClientShim) -> wallet::Wallet {
+pub fn rotate_master_key(
+    wallet: wallet::WalletNew,
+    client_shim: &api::ClientShim,
+) -> wallet::WalletNew {
     let id = &wallet.private_share.id.clone();
-    let res_body = requests::post(client_shim, &format!("{}/{}/first", ROT_PATH_PRE, id)).unwrap();
+    let master_key1: MasterKey1 = wallet.private_share.master_key;
 
-    let coin_flip_party1_first_message: coin_flip_optimal_rounds::Party1FirstMessage =
-        serde_json::from_str(&res_body).unwrap();
+    let (cf_party1_message1, m1, r1) = Rotation1::key_rotate_first_message();
 
-    let coin_flip_party2_first_message =
-        Rotation2::key_rotate_first_message(&coin_flip_party1_first_message);
+    let body = &cf_party1_message1;
 
-    let body = &coin_flip_party2_first_message;
+    let res_body =
+        requests::postb(client_shim, &format!("{}/{}/zero", ROT_PATH_PRE, id), body).unwrap();
+
+    let cf_party2_message1: RotParty2FirstMessage = serde_json::from_str(&res_body).unwrap();
+
+    let (cf_party1_message2, random1) =
+        Rotation1::key_rotate_second_message(&cf_party2_message1, &m1, &r1);
+
+    let (party1_message1, party1_additive_key, party1_decom1) =
+        master_key1.rotation_first_message(&random1);
+
+    let party1_message1 = RotCfParty1 {
+        party1_message1,
+        cf_party1_message2,
+    };
+
+    ////
+    let body = &party1_message1;
+
+    let res_body =
+        requests::postb(client_shim, &format!("{}/{}/first", ROT_PATH_PRE, id), body).unwrap();
+
+    let party2_message1: KeyGenMessage1 = serde_json::from_str(&res_body).unwrap();
+
+    /////
+    let party1_message2 = MasterKey1::rotation_second_message(party1_decom1);
+
+    ////
+    let body = &party1_message2;
 
     let res_body = requests::postb(
         client_shim,
-        &format!("{}/{}/second", ROT_PATH_PRE, id.clone()),
+        &format!("{}/{}/second", ROT_PATH_PRE, id),
         body,
     )
     .unwrap();
 
-    let (coin_flip_party1_second_message, rotation_party1_first_message): (
-        coin_flip_optimal_rounds::Party1SecondMessage,
-        party1::RotationParty1Message1,
-    ) = serde_json::from_str(&res_body).unwrap();
+    let party2_message2: KeyGenMessage2 = serde_json::from_str(&res_body).unwrap();
 
-    let random2 = Rotation2::key_rotate_second_message(
-        &coin_flip_party1_second_message,
-        &coin_flip_party2_first_message,
-        &coin_flip_party1_first_message,
+    /////
+
+    let (party1_message3, ss1_to_self, party1_y_vec, party1_ek_vec) = master_key1
+        .rotation_third_message(
+            &party1_additive_key,
+            party1_message1.party1_message1,
+            party2_message1.clone(),
+            party1_message2.clone(),
+            party2_message2.clone(),
+        );
+
+    ////
+    let body = &party1_message3;
+
+    let res_body =
+        requests::postb(client_shim, &format!("{}/{}/third", ROT_PATH_PRE, id), body).unwrap();
+
+    let party2_message3: KeyGenMessage3 = serde_json::from_str(&res_body).unwrap();
+
+    /////
+
+    let (party1_message4, party1_linear_key, party1_vss_vec) = MasterKey1::rotation_fourth_message(
+        &party1_additive_key,
+        party1_message3.clone(),
+        party2_message3.clone(),
+        ss1_to_self,
+        &party1_y_vec,
     );
 
-    let result_rotate_party_one_first_message = wallet
-        .private_share
-        .master_key
-        .rotate_first_message(&random2, &rotation_party1_first_message);
-    if result_rotate_party_one_first_message.is_err() {
-        panic!("rotation failed");
-    }
-
-    let (rotation_party_two_first_message, party_two_pdl_chal, party_two_paillier) =
-        result_rotate_party_one_first_message.unwrap();
-
-    let body = &rotation_party_two_first_message;
+    ////
+    let body = &party1_message4;
 
     let res_body = requests::postb(
         client_shim,
-        &format!("{}/{}/third", ROT_PATH_PRE, id.clone()),
+        &format!("{}/{}/fourth", ROT_PATH_PRE, id),
         body,
     )
     .unwrap();
 
-    let rotation_party1_second_message: party_one::PDLFirstMessage =
-        serde_json::from_str(&res_body).unwrap();
+    let party2_message4: KeyGenMessage4 = serde_json::from_str(&res_body).unwrap();
 
-    let rotation_party_two_second_message = MasterKey2::rotate_second_message(&party_two_pdl_chal);
+    /////
 
-    let body = &rotation_party_two_second_message;
+    let master_key1_rotated = master_key1.rotate_master_key(
+        party1_message4,
+        party2_message4,
+        party1_y_vec.clone(),
+        party1_additive_key,
+        party1_linear_key,
+        party1_vss_vec,
+        party1_ek_vec,
+    );
 
-    let res_body = requests::postb(
-        client_shim,
-        &format!("{}/{}/fourth", ROT_PATH_PRE, id.clone()),
-        body,
-    )
-    .unwrap();
-
-    let rotation_party1_third_message: party_one::PDLSecondMessage =
-        serde_json::from_str(&res_body).unwrap();
-
-    let result_rotate_party_one_third_message =
-        wallet.private_share.master_key.rotate_third_message(
-            &random2,
-            &party_two_paillier,
-            &party_two_pdl_chal,
-            &rotation_party1_second_message,
-            &rotation_party1_third_message,
-        );
-    if result_rotate_party_one_third_message.is_err() {
-        panic!("rotation failed");
-    }
-
-    let party_two_master_key_rotated = result_rotate_party_one_third_message.unwrap();
-
-    let private_share = PrivateShare {
-        id: wallet.private_share.id.clone(),
-        master_key: party_two_master_key_rotated,
+    let private_share = PrivateShareGG {
+        id: id.clone(),
+        master_key: master_key1_rotated,
     };
 
     let addresses_derivation_map = HashMap::new();
-    let mut wallet_after_rotate = wallet::Wallet {
+    let mut wallet_after_rotate = wallet::WalletNew {
         id: wallet.id.clone(),
         network: wallet.network.clone(),
         private_share,
