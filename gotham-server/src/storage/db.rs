@@ -25,7 +25,7 @@ fn idify(user_id: &str, id: &str, name: &ecdsa::Share) -> String {
 
 pub fn init(db: &DB) -> Result<()> {
     match db {
-        DB::AWS(dynamodb_client, env) => {
+        DB::AWS(_dynamodb_client, _env) => {
             // !!! Keep this code commented unless you are willing to risk an implicit table
             // creation which can lead to data corruption. This needs disciplines and tables
             // Schema would better live in a cloud formation !!!
@@ -79,7 +79,10 @@ where
         DB::AWS(dynamodb_client, env) => {
             let table_name = calculate_table_name(&name.to_string(), &env);
             let res: Option<T> = aws::dynamodb::get(&dynamodb_client, user_id, id, table_name)?;
-            Ok(res)
+            match res {
+                Some(x) => Ok(serde::export::Some(x)),
+                None => Ok(None),
+            }
         }
         DB::Local(rocksdb_client) => {
             let identifier = idify(user_id, id, name);
@@ -88,7 +91,7 @@ where
             let db_option = rocksdb_client.get(identifier.as_ref())?;
             let vec_option: Option<Vec<u8>> = db_option.map(|v| v.to_vec());
             match vec_option {
-                Some(vec) => Ok(serde_json::from_slice(&vec).unwrap()),
+                Some(vec) => Ok(Some(serde_json::from_slice(&vec).unwrap())),
                 None => Ok(None),
             }
         }
@@ -96,7 +99,7 @@ where
 }
 
 fn calculate_table_name(name: &str, env: &str) -> String {
-    if !name.contains(&ecdsa::Share::Party1MasterKey.to_string()) {
+    if !name.contains(&ecdsa::Share::PartyMasterKey.to_string()) {
         return format!("{}-gotham-{}", env, name);
     }
 

@@ -16,7 +16,6 @@ use rusoto_core::Region;
 use rusoto_dynamodb::DynamoDbClient;
 
 use super::routes::ecdsa;
-use super::routes::ping;
 use super::storage::db;
 
 use std::collections::HashMap;
@@ -86,20 +85,37 @@ pub fn get_server() -> Rocket {
         .mount(
             "/",
             routes![
-                ping::ping,
+                ecdsa::transform_first_message,
+                ecdsa::transform_second_message,
                 ecdsa::first_message,
                 ecdsa::second_message,
                 ecdsa::third_message,
                 ecdsa::fourth_message,
-                ecdsa::chain_code_first_message,
-                ecdsa::chain_code_second_message,
                 ecdsa::sign_first,
                 ecdsa::sign_second,
+                ecdsa::sign_third,
+                ecdsa::sign_fourth,
+                ecdsa::sign_fifth,
+                ecdsa::sign_sixth,
+                ecdsa::sign_seventh,
+                ecdsa::sign_eighth,
+                ecdsa::sign_ninth,
+                ecdsa::rotate_zero,
                 ecdsa::rotate_first,
                 ecdsa::rotate_second,
                 ecdsa::rotate_third,
                 ecdsa::rotate_fourth,
                 ecdsa::recover,
+                //legacy
+                ecdsa::first_message_legacy,
+                ecdsa::second_message_legacy,
+                ecdsa::third_message_legacy,
+                ecdsa::fourth_message_legacy,
+                ecdsa::rotate_first_legacy,
+                ecdsa::rotate_second_legacy,
+                ecdsa::rotate_third_legacy,
+                ecdsa::rotate_fourth_legacy,
+                ecdsa::recover_legacy,
             ],
         )
         .manage(db_config)

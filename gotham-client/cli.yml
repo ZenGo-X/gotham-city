@@ -15,6 +15,13 @@ subcommands:
       - verbose:
           short: v
           help: Sets the level of verbosity
+  - create-wallet-legacy:
+      about: Create an MPC wallet
+      version: "1.0"
+      args:
+      - verbose:
+          short: vl
+          help: Sets the level of verbosity
   - wallet:
       about: Operation on wallet
       version: "1.0"
@@ -55,3 +62,44 @@ subcommands:
                   required: true
                   value_name: amount
                   help: Amount in BTC
+
+  - wallet-legacy:
+      about: Operation on wallet
+      version: "1.0"
+      args:
+        - new-address-legacy:
+            short: a
+            help: Generate a new address legacy
+        - get-balance-legacy:
+            short: b
+            help: Total balance legacy
+        - list-unspent-legacy:
+            short: u
+            help: List unspent transactions (tx hash) legacy
+        - backup-legacy:
+            short: s
+            help: Private share backup legacy
+        - verify-legacy:
+            short: c
+            help: Backup verification  legacy
+        - restore-legacy:
+            short: r
+            help: Private share recovery legacy
+        - rotate-legacy:
+            short: o
+            help: Private shares rotation legacy
+      subcommands:
+        - send-legacy:
+            about: Send a transaction
+            version: "1.0"
+            args:
+            - to:
+                short: t
+                required: true
+                value_name: to
+                help: Receipient
+            - amount:
+                short: a
+                required: true
+                value_name: amount
+                help: Amount in BTC

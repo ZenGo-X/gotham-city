@@ -15,6 +15,7 @@ extern crate config;
 extern crate curv;
 extern crate kms;
 extern crate multi_party_ecdsa;
+extern crate paillier;
 extern crate rocket_contrib;
 extern crate rocksdb;
 extern crate uuid;
@@ -54,6 +55,5 @@ pub mod auth;
 pub mod routes;
 pub mod server;
 pub mod storage;
-pub mod tests;
 
 type Result<T> = std::result::Result<T, failure::Error>;
