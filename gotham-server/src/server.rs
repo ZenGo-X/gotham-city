@@ -107,8 +107,6 @@ pub fn get_server() -> Rocket {
 }
 
 fn get_settings_as_map() -> HashMap<String, String> {
-    assert!(Path::new("Settings.toml").exists());
-
     let mut settings = config::Config::default();
     settings
         .merge(config::File::with_name("Settings"))
