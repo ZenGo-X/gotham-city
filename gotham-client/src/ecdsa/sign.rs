@@ -77,11 +77,13 @@ fn get_signature(
     println!("get_signature #2");
 
     let res_body =
-        requests::postb(client_shim, &format!("/ecdsa/sign/{}/second", id), &request).unwrap();
+        requests::postb(client_shim, &format!("/ecdsa/sign/{}/second", id), &request);
     println!("get_signature #3");
     println!("res_body = {}", res_body);
 
-    let signature: party_one::SignatureRecid = serde_json::from_str(&res_body).unwrap();
+    let res_body1 = res_body.unwrap();
+
+    let signature: party_one::SignatureRecid = serde_json::from_str(&res_body1).unwrap();
     println!("get_signature #4");
     signature
 }
