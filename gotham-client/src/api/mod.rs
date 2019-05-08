@@ -45,6 +45,7 @@ pub fn sign(
     y_pos: BigInt,
     id: &String,
 ) -> party_one::SignatureRecid {
+    println("inside rust: id = {}", id);
     sign::sign(&client_shim, message, mk, x_pos, y_pos, id)
 }
 
