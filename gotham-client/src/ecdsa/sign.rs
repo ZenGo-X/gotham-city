@@ -44,6 +44,7 @@ pub fn sign(
         &sign_party_one_first_message,
         &message,
     );
+    println!("#5");
 
     let signature: party_one::SignatureRecid = get_signature(
         client_shim,
@@ -53,6 +54,7 @@ pub fn sign(
         y_pos,
         &id,
     );
+    println!("#6");
 
     signature
 }
@@ -65,16 +67,20 @@ fn get_signature(
     y_pos_child_key: BigInt,
     id: &String,
 ) -> party_one::SignatureRecid {
+    println!("get_signature #1");
     let request: SignSecondMsgRequest = SignSecondMsgRequest {
         message,
         party_two_sign_message,
         x_pos_child_key,
         y_pos_child_key,
     };
+    println!("get_signature #2");
 
     let res_body =
         requests::postb(client_shim, &format!("/ecdsa/sign/{}/second", id), &request).unwrap();
+    println!("get_signature #3");
 
     let signature: party_one::SignatureRecid = serde_json::from_str(&res_body).unwrap();
+    println!("get_signature #4");
     signature
 }
