@@ -25,12 +25,14 @@ mod tests {
 
         let ps: PrivateShare = client_lib::api::get_master_key(&client_shim);
 
+        let x_pos = BigInt::from(0);
+        let y_pos = BigInt::from(0);
         let child_master_key = ps
             .master_key
-            .get_child(vec![BigInt::from(0)]);
+            .get_child(vec![x_pos.clone(), y_pos.clone()]);
 
         let msg: BigInt = BigInt::from(1234);  // arbitrary message
-        let signature = client_lib::api::sign(&client_shim, msg, &child_master_key, BigInt::from(0), BigInt::from(0), &ps.id);
+        let signature = client_lib::api::sign(&client_shim, msg, &child_master_key, x_pos, y_pos, &ps.id);
         println!(
             "signature = (r: {}, s: {})",
             signature.r.to_hex(),
