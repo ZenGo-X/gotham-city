@@ -75,6 +75,7 @@ fn get_signature(
         y_pos_child_key,
     };
     println!("get_signature #2");
+    println!("request = {:?}", request);
 
     let res_body =
         requests::postb(client_shim, &format!("/ecdsa/sign/{}/second", id), &request);
