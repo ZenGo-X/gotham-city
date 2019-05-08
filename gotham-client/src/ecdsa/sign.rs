@@ -79,7 +79,7 @@ fn get_signature(
     let res_body =
         requests::postb(client_shim, &format!("/ecdsa/sign/{}/second", id), &request);
     println!("get_signature #3");
-    println!("res_body = {}", res_body);
+    println!("res_body = {:?}", res_body);
 
     let res_body1 = res_body.unwrap();
 
