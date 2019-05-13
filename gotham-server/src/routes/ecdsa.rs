@@ -432,28 +432,24 @@ pub fn sign_second(
     id: String,
     request: Json<SignSecondMsgRequest>,
 ) -> Result<Json<(party_one::SignatureRecid)>> {
-    println!("sign_second #1");
     let master_key: MasterKey1 = db::get(&state.db, &claim.sub, &id, &Share::Party1MasterKey)?
         .ok_or(format_err!("No data for such identifier {}", id))?;
 
-    println!("sign_second #2");
     let x: BigInt = request.x_pos_child_key.clone();
     let y: BigInt = request.y_pos_child_key.clone();
 
-    println!("sign_second #3");
     let child_master_key = master_key.get_child(vec![x, y]);
 
-    println!("sign_second #4");
     let eph_ec_key_pair_party1: party_one::EphEcKeyPair =
         db::get(&state.db, &claim.sub, &id, &Share::EphEcKeyPair)?
             .ok_or(format_err!("No data for such identifier {}", id))?;
 
-    println!("sign_second #5");
+
     let eph_key_gen_first_message_party_two: party_two::EphKeyGenFirstMsg =
         db::get(&state.db, &claim.sub, &id, &Share::EphKeyGenFirstMsg)?
             .ok_or(format_err!("No data for such identifier {}", id))?;
 
-    println!("sign_second #6");
+
     let signature_with_recid = child_master_key.sign_second_message(
         &request.party_two_sign_message,
         &eph_key_gen_first_message_party_two,
@@ -461,12 +457,10 @@ pub fn sign_second(
         &request.message,
     );
 
-    println!("sign_second #7");
     if signature_with_recid.is_err() {
         panic!("validation failed")
     };
 
-    println!("sign_second #8");
     Ok(Json(signature_with_recid.unwrap()))
 }
 
