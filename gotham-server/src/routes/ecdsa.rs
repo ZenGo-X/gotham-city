@@ -444,11 +444,9 @@ pub fn sign_second(
         db::get(&state.db, &claim.sub, &id, &Share::EphEcKeyPair)?
             .ok_or(format_err!("No data for such identifier {}", id))?;
 
-
     let eph_key_gen_first_message_party_two: party_two::EphKeyGenFirstMsg =
         db::get(&state.db, &claim.sub, &id, &Share::EphKeyGenFirstMsg)?
             .ok_or(format_err!("No data for such identifier {}", id))?;
-
 
     let signature_with_recid = child_master_key.sign_second_message(
         &request.party_two_sign_message,

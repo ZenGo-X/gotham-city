@@ -68,10 +68,8 @@ fn get_signature(
     };
 
     let res_body =
-        requests::postb(client_shim, &format!("/ecdsa/sign/{}/second", id), &request);
+        requests::postb(client_shim, &format!("/ecdsa/sign/{}/second", id), &request).unwrap();
 
-    let res_body1 = res_body.unwrap();
-
-    let signature: party_one::SignatureRecid = serde_json::from_str(&res_body1).unwrap();
+    let signature: party_one::SignatureRecid = serde_json::from_str(&res_body).unwrap();
     signature
 }
