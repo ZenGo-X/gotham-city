@@ -23,28 +23,22 @@ pub fn sign(
     y_pos: BigInt,
     id: &String,
 ) -> party_one::SignatureRecid {
-    println!("#0");
     let (eph_key_gen_first_message_party_two, eph_comm_witness, eph_ec_key_pair_party2) =
         MasterKey2::sign_first_message();
 
-    println!("#1");
     let request: party_two::EphKeyGenFirstMsg = eph_key_gen_first_message_party_two;
-    println!("#2");
     let res_body =
         requests::postb(client_shim, &format!("/ecdsa/sign/{}/first", id), &request).unwrap();
 
-    println!("#3");
     let sign_party_one_first_message: party_one::EphKeyGenFirstMsg =
         serde_json::from_str(&res_body).unwrap();
 
-    println!("#4");
     let party_two_sign_message = mk.sign_second_message(
         &eph_ec_key_pair_party2,
         eph_comm_witness.clone(),
         &sign_party_one_first_message,
         &message,
     );
-    println!("#5");
 
     let signature: party_one::SignatureRecid = get_signature(
         client_shim,
@@ -54,7 +48,6 @@ pub fn sign(
         y_pos,
         &id,
     );
-    println!("#6");
 
     signature
 }
