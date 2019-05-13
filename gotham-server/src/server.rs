@@ -20,7 +20,6 @@ use super::routes::ping;
 use super::storage::db;
 
 use std::collections::HashMap;
-use std::path::Path;
 use std::str::FromStr;
 
 #[derive(Deserialize)]
@@ -107,11 +106,10 @@ pub fn get_server() -> Rocket {
 }
 
 fn get_settings_as_map() -> HashMap<String, String> {
-    assert!(Path::new("Settings.toml").exists());
-
+    let config_file = include_str!("../Settings.toml");
     let mut settings = config::Config::default();
     settings
-        .merge(config::File::with_name("Settings"))
+        .merge(config::File::from_str(config_file, config::FileFormat::Toml))
         .unwrap()
         .merge(config::Environment::new())
         .unwrap();

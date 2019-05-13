@@ -25,7 +25,7 @@ fn idify(user_id: &str, id: &str, name: &ecdsa::Share) -> String {
 
 pub fn init(db: &DB) -> Result<()> {
     match db {
-        DB::AWS(dynamodb_client, env) => {
+        DB::AWS(_dynamodb_client, _env) => {
             // !!! Keep this code commented unless you are willing to risk an implicit table
             // creation which can lead to data corruption. This needs disciplines and tables
             // Schema would better live in a cloud formation !!!
