@@ -180,7 +180,7 @@ impl Wallet {
         let sk = Msegmentation::decrypt(&encryptions, &g, &y_priv, &escrow::SEGMENT_SIZE);
 
         let client_master_key_recovered =
-            MasterKey2::recover_master_key(sk, public_data, chain_code2);
+            MasterKey2::recover_master_key(sk.unwrap(), public_data, chain_code2);
         let res_body = requests::post(client_shim, &format!("ecdsa/{}/recover", key_id)).unwrap();
 
         let pos_old: u32 = serde_json::from_str(&res_body).unwrap();
