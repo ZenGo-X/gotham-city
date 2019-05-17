@@ -197,7 +197,7 @@ impl Wallet {
         let sk = Msegmentation::decrypt(&encryptions, &g, &y_priv, &escrow::SEGMENT_SIZE);
 
         let client_master_key_recovered =
-            MasterKey2::recover_master_key(sk, public_data, chain_code2);
+            MasterKey2::recover_master_key(sk.unwrap(), public_data, chain_code2);
         let res_body =
             requests::post(client_shim, &format!("ecdsa/{}/recover_legacy", key_id)).unwrap();
 
@@ -595,7 +595,7 @@ impl WalletNew {
 
         let sk = Msegmentation::decrypt(&encryptions, &g, &y_priv, &escrow::SEGMENT_SIZE);
         let private_share: PrivateShareGG =
-            keygen::get_master_key_new(key_id.clone(), sk, &client_shim);
+            keygen::get_master_key_new(key_id.clone(), sk.unwrap(), &client_shim);
         // correct chain code. TODO: take chain code from server
         let master_key_updated_cc = MasterKey1 {
             public: private_share.master_key.public.clone(),
