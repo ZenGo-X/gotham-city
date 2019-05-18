@@ -300,13 +300,7 @@ impl Wallet {
                 script_pubkey: change_address.script_pubkey(),
             },
         ];
-        println!("total selected : {:?}", total_selected.clone());
-        println!(" amount_satoshi : {:?}", amount_satoshi.clone());
-        println!(" fees : {:?}", fees.clone());
-        println!(
-            " result  : {:?}",
-            (total_selected - amount_satoshi - fees).clone()
-        );
+
         let transaction = bitcoin::Transaction {
             version: 0,
             lock_time: 0,
