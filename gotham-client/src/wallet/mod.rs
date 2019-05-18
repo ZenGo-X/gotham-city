@@ -43,7 +43,7 @@ use std::str::FromStr;
 
 // TODO: move that to a config file and double check electrum server addresses
 const ELECTRUM_HOST: &str = "ec2-34-219-15-143.us-west-2.compute.amazonaws.com:60001";
-//const ELECTRUM_HOST: &str = "testnet1.bauerj.eu:51001";
+//const ELECTRUM_HOST: &str = "testnet.hsmiths.com:53011";
 const WALLET_FILENAME: &str = "wallet/wallet.data";
 const BACKUP_FILENAME: &str = "wallet/backup.data";
 
@@ -258,7 +258,9 @@ impl Wallet {
         amount_btc: f32,
         client_shim: &api::ClientShim,
     ) -> String {
-        let selected = self.select_tx_in(amount_btc);
+        let fees = 10_000; //hard coded. TODO: query fees
+
+        let selected = self.select_tx_in(amount_btc + fees as f32);
         if selected.is_empty() {
             panic!("Not enough fund");
         }
@@ -279,8 +281,6 @@ impl Wallet {
             })
             .collect();
 
-        let fees = 10_000;
-
         let amount_satoshi = (amount_btc * 100_000_000 as f32) as u64;
 
         let change_address = self.get_new_bitcoin_address();
@@ -300,7 +300,13 @@ impl Wallet {
                 script_pubkey: change_address.script_pubkey(),
             },
         ];
-
+        println!("total selected : {:?}", total_selected.clone());
+        println!(" amount_satoshi : {:?}", amount_satoshi.clone());
+        println!(" fees : {:?}", fees.clone());
+        println!(
+            " result  : {:?}",
+            (total_selected - amount_satoshi - fees).clone()
+        );
         let transaction = bitcoin::Transaction {
             version: 0,
             lock_time: 0,
@@ -351,6 +357,7 @@ impl Wallet {
         let mut electrum = ElectrumxClient::new(ELECTRUM_HOST).unwrap();
 
         let raw_tx_hex = hex::encode(serialize(&signed_transaction));
+
         let txid = electrum.broadcast_transaction(raw_tx_hex.clone());
 
         txid.unwrap()
