@@ -278,8 +278,7 @@ mod tests {
         let x_pos = BigInt::from(0);
         let y_pos = BigInt::from(21);
 
-        let child_party_two_master_key =
-            master_key_2.get_child(vec![x_pos.clone(), y_pos.clone()]);
+        let child_party_two_master_key = master_key_2.get_child(vec![x_pos.clone(), y_pos.clone()]);
 
         let start = PreciseTime::now();
 
