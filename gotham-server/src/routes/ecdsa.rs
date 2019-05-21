@@ -139,6 +139,7 @@ pub enum Share {
 
     PDLProver,
     PDLDecommit,
+    Alpha,
     PDLFirstMessage,
     Party2PDLFirstMsg,
 
@@ -159,7 +160,7 @@ pub enum Share {
 
 impl Share {
     pub fn iterator() -> Iter<'static, Share> {
-        static FIELDS: [Share; 73] = [
+        static FIELDS: [Share; 74] = [
             KgParty1Message1,
             KgParty1Message2,
             KgParty1Message3,
@@ -178,7 +179,7 @@ impl Share {
             CCParty1Message1,
             CCEcKeyPair,
             CC,
-            PartyMasterKey, // gg18 masterkey
+            PartyMasterKey,  // gg18 masterkey
             PartyMasterKeyL, // legacy
             SignParty1Message1,
             SignParty2Message1,
@@ -222,6 +223,7 @@ impl Share {
             Party2Public,
             PDLProver,
             PDLDecommit,
+            Alpha,
             PDLFirstMessage,
             Party2PDLFirstMsg,
             CCKeyGenFirstMsg,
@@ -1504,7 +1506,7 @@ pub fn third_message_legacy(
         db::get(&state.db, &claim.sub, &id, &Share::Party1Private)?
             .ok_or(format_err!("No data for such identifier {}", id))?;
 
-    let (party_one_third_message, party_one_pdl_decommit) =
+    let (party_one_third_message, party_one_pdl_decommit, alpha) =
         MasterKey1L::key_gen_third_message(&party_2_pdl_first_message.0, &party_one_private);
 
     db::insert(
@@ -1530,6 +1532,8 @@ pub fn third_message_legacy(
         &party_one_third_message,
     )?;
 
+    db::insert(&state.db, &claim.sub, &id, &Share::Alpha, &alpha)?;
+
     Ok(Json(party_one_third_message))
 }
 
@@ -1544,9 +1548,8 @@ pub fn fourth_message_legacy(
     id: String,
     party_two_pdl_second_message: Json<party_two::PDLSecondMessage>,
 ) -> Result<Json<(party_one::PDLSecondMessage)>> {
-    let pdl_party_one_third_message: party_one::PDLFirstMessage =
-        db::get(&state.db, &claim.sub, &id, &Share::PDLFirstMessage)?
-            .ok_or(format_err!("No data for such identifier {}", id))?;
+    let alpha: BigInt = db::get(&state.db, &claim.sub, &id, &Share::Alpha)?
+        .ok_or(format_err!("No data for such identifier {}", id))?;
 
     let party_one_private: party_one::Party1Private =
         db::get(&state.db, &claim.sub, &id, &Share::Party1Private)?
@@ -1561,11 +1564,11 @@ pub fn fourth_message_legacy(
             .ok_or(format_err!("No data for such identifier {}", id))?;
 
     let res = MasterKey1L::key_gen_fourth_message(
-        &pdl_party_one_third_message,
         &party_2_pdl_first_message,
         &party_two_pdl_second_message.0,
         party_one_private,
         party_one_pdl_decommit,
+        alpha,
     );
 
     assert!(res.is_ok());
@@ -1731,7 +1734,7 @@ pub fn rotate_third_legacy(
         db::get(&state.db, &claim.sub, &id, &Share::RotatePrivateNew)?
             .ok_or(format_err!("No data for such identifier {}", id))?;
 
-    let (rotation_party_one_second_message, party_one_pdl_decommit) =
+    let (rotation_party_one_second_message, party_one_pdl_decommit, alpha) =
         MasterKey1L::rotation_second_message(
             &rotation_party_two_first_message.0,
             &party_one_private_new,
@@ -1757,6 +1760,8 @@ pub fn rotate_third_legacy(
         &Share::RotateParty1Second,
         &rotation_party_one_second_message,
     )?;
+
+    db::insert(&state.db, &claim.sub, &id, &Share::Alpha, &alpha)?;
 
     Ok(Json(rotation_party_one_second_message))
 }
@@ -1786,9 +1791,8 @@ pub fn rotate_fourth_legacy(
         db::get(&state.db, &claim.sub, &id, &Share::RotateRandom1)?
             .ok_or(format_err!("No data for such identifier {}", id))?;
 
-    let rotation_party_one_second_message: party_one::PDLFirstMessage =
-        db::get(&state.db, &claim.sub, &id, &Share::RotateParty1Second)?
-            .ok_or(format_err!("No data for such identifier {}", id))?;
+    let alpha: BigInt = db::get(&state.db, &claim.sub, &id, &Share::Alpha)?
+        .ok_or(format_err!("No data for such identifier {}", id))?;
 
     let rotation_party_two_first_message: party_two::PDLFirstMessage =
         db::get(&state.db, &claim.sub, &id, &Share::RotateParty2First)?
@@ -1802,10 +1806,10 @@ pub fn rotate_fourth_legacy(
         &rotation_party_one_first_message,
         party_one_private_new,
         &random1,
-        &rotation_party_one_second_message,
         &rotation_party_two_first_message,
         &rotation_party_two_second_message.0,
         party_one_pdl_decommit,
+        alpha,
     );
     if result_rotate_party_two_second_message.is_err() {
         panic!("rotation failed");
