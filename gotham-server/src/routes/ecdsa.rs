@@ -37,6 +37,11 @@ struct HDPos {
     pos: u32,
 }
 
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+struct Alpha {
+    value: BigInt
+}
+
 #[derive(ToString, Debug)]
 pub enum Share {
     KeyGenFirstMsg,
@@ -218,7 +223,7 @@ pub fn third_message(
         &party_one_pdl_decommit,
     )?;
 
-    db::insert(&state.db, &claim.sub, &id, &Share::Alpha, &alpha)?;
+    db::insert(&state.db, &claim.sub, &id, &Share::Alpha, &Alpha { value: alpha })?;
 
     db::insert(
         &state.db,
@@ -254,7 +259,7 @@ pub fn fourth_message(
         db::get(&state.db, &claim.sub, &id, &Share::Party2PDLFirstMsg)?
             .ok_or(format_err!("No data for such identifier {}", id))?;
 
-    let alpha: BigInt = db::get(&state.db, &claim.sub, &id, &Share::Alpha)?
+    let alpha: Alpha = db::get(&state.db, &claim.sub, &id, &Share::Alpha)?
         .ok_or(format_err!("No data for such identifier {}", id))?;
 
     let res = MasterKey1::key_gen_fourth_message(
@@ -262,7 +267,7 @@ pub fn fourth_message(
         &party_two_pdl_second_message.0,
         party_one_private,
         party_one_pdl_decommit,
-        alpha,
+        alpha.value,
     );
 
     assert!(res.is_ok());
@@ -565,7 +570,7 @@ pub fn rotate_third(
             &party_one_private_new,
         );
 
-    db::insert(&state.db, &claim.sub, &id, &Share::Alpha, &alpha)?;
+    db::insert(&state.db, &claim.sub, &id, &Share::Alpha, &Alpha { value: alpha })?;
 
     db::insert(
         &state.db,
@@ -625,7 +630,7 @@ pub fn rotate_fourth(
         db::get(&state.db, &claim.sub, &id, &Share::RotatePdlDecom)?
             .ok_or(format_err!("No data for such identifier {}", id))?;
 
-    let alpha: BigInt = db::get(&state.db, &claim.sub, &id, &Share::Alpha)?
+    let alpha: Alpha = db::get(&state.db, &claim.sub, &id, &Share::Alpha)?
         .ok_or(format_err!("No data for such identifier {}", id))?;
 
     let result_rotate_party_two_second_message = party_one_master_key.rotation_third_message(
@@ -635,7 +640,7 @@ pub fn rotate_fourth(
         &rotation_party_two_first_message,
         &rotation_party_two_second_message.0,
         party_one_pdl_decommit,
-        alpha,
+        alpha.value,
     );
     if result_rotate_party_two_second_message.is_err() {
         panic!("rotation failed");
