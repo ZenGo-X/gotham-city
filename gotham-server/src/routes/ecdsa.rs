@@ -37,6 +37,11 @@ struct HDPos {
     pos: u32,
 }
 
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+struct Alpha {
+    value: BigInt
+}
+
 #[derive(ToString, Debug)]
 pub enum Share {
     KeyGenFirstMsg,
@@ -48,7 +53,7 @@ pub enum Share {
 
     PDLProver,
     PDLDecommit,
-    PDLFirstMessage,
+    Alpha,
     Party2PDLFirstMsg,
 
     CCKeyGenFirstMsg,
@@ -84,7 +89,7 @@ impl Share {
             Party2Public,
             PDLProver,
             PDLDecommit,
-            PDLFirstMessage,
+            Alpha,
             Party2PDLFirstMsg,
             CCKeyGenFirstMsg,
             CCCommWitness,
@@ -207,7 +212,7 @@ pub fn third_message(
         db::get(&state.db, &claim.sub, &id, &Share::Party1Private)?
             .ok_or(format_err!("No data for such identifier {}", id))?;
 
-    let (party_one_third_message, party_one_pdl_decommit) =
+    let (party_one_third_message, party_one_pdl_decommit, alpha) =
         MasterKey1::key_gen_third_message(&party_2_pdl_first_message.0, &party_one_private);
 
     db::insert(
@@ -217,20 +222,15 @@ pub fn third_message(
         &Share::PDLDecommit,
         &party_one_pdl_decommit,
     )?;
+
+    db::insert(&state.db, &claim.sub, &id, &Share::Alpha, &Alpha { value: alpha })?;
+
     db::insert(
         &state.db,
         &claim.sub,
         &id,
         &Share::Party2PDLFirstMsg,
         &party_2_pdl_first_message.0,
-    )?;
-
-    db::insert(
-        &state.db,
-        &claim.sub,
-        &id,
-        &Share::PDLFirstMessage,
-        &party_one_third_message,
     )?;
 
     Ok(Json(party_one_third_message))
@@ -247,10 +247,6 @@ pub fn fourth_message(
     id: String,
     party_two_pdl_second_message: Json<party_two::PDLSecondMessage>,
 ) -> Result<Json<(party_one::PDLSecondMessage)>> {
-    let pdl_party_one_third_message: party_one::PDLFirstMessage =
-        db::get(&state.db, &claim.sub, &id, &Share::PDLFirstMessage)?
-            .ok_or(format_err!("No data for such identifier {}", id))?;
-
     let party_one_private: party_one::Party1Private =
         db::get(&state.db, &claim.sub, &id, &Share::Party1Private)?
             .ok_or(format_err!("No data for such identifier {}", id))?;
@@ -263,12 +259,15 @@ pub fn fourth_message(
         db::get(&state.db, &claim.sub, &id, &Share::Party2PDLFirstMsg)?
             .ok_or(format_err!("No data for such identifier {}", id))?;
 
+    let alpha: Alpha = db::get(&state.db, &claim.sub, &id, &Share::Alpha)?
+        .ok_or(format_err!("No data for such identifier {}", id))?;
+
     let res = MasterKey1::key_gen_fourth_message(
-        &pdl_party_one_third_message,
         &party_2_pdl_first_message,
         &party_two_pdl_second_message.0,
         party_one_private,
         party_one_pdl_decommit,
+        alpha.value,
     );
 
     assert!(res.is_ok());
@@ -382,7 +381,13 @@ pub fn master_key(state: State<Config>, claim: Claims, id: String) -> Result<()>
         paillier_key_pair,
     );
 
-    db::insert(&state.db, &claim.sub, &id, &Share::Party1MasterKey, &masterKey)
+    db::insert(
+        &state.db,
+        &claim.sub,
+        &id,
+        &Share::Party1MasterKey,
+        &masterKey,
+    )
 }
 
 #[post(
@@ -559,11 +564,14 @@ pub fn rotate_third(
         db::get(&state.db, &claim.sub, &id, &Share::RotatePrivateNew)?
             .ok_or(format_err!("No data for such identifier {}", id))?;
 
-    let (rotation_party_one_second_message, party_one_pdl_decommit) =
+    let (rotation_party_one_second_message, party_one_pdl_decommit, alpha) =
         MasterKey1::rotation_second_message(
             &rotation_party_two_first_message.0,
             &party_one_private_new,
         );
+
+    db::insert(&state.db, &claim.sub, &id, &Share::Alpha, &Alpha { value: alpha })?;
+
     db::insert(
         &state.db,
         &claim.sub,
@@ -614,10 +622,6 @@ pub fn rotate_fourth(
         db::get(&state.db, &claim.sub, &id, &Share::RotateRandom1)?
             .ok_or(format_err!("No data for such identifier {}", id))?;
 
-    let rotation_party_one_second_message: party_one::PDLFirstMessage =
-        db::get(&state.db, &claim.sub, &id, &Share::RotateParty1Second)?
-            .ok_or(format_err!("No data for such identifier {}", id))?;
-
     let rotation_party_two_first_message: party_two::PDLFirstMessage =
         db::get(&state.db, &claim.sub, &id, &Share::RotateParty2First)?
             .ok_or(format_err!("No data for such identifier {}", id))?;
@@ -626,14 +630,17 @@ pub fn rotate_fourth(
         db::get(&state.db, &claim.sub, &id, &Share::RotatePdlDecom)?
             .ok_or(format_err!("No data for such identifier {}", id))?;
 
+    let alpha: Alpha = db::get(&state.db, &claim.sub, &id, &Share::Alpha)?
+        .ok_or(format_err!("No data for such identifier {}", id))?;
+
     let result_rotate_party_two_second_message = party_one_master_key.rotation_third_message(
         &rotation_party_one_first_message,
         party_one_private_new,
         &random1,
-        &rotation_party_one_second_message,
         &rotation_party_two_first_message,
         &rotation_party_two_second_message.0,
         party_one_pdl_decommit,
+        alpha.value,
     );
     if result_rotate_party_two_second_message.is_err() {
         panic!("rotation failed");
