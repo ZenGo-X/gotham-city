@@ -41,6 +41,9 @@ git = "https://github.com/KZen-networks/kms"
 [dependencies.multi-party-ecdsa]
 git = "https://github.com/KZen-networks/multi-party-ecdsa"
 
+[dependencies.multi-party-schnorr]
+path = "../../multi-party-schnorr"
+
 [dependencies.curv]
 git = "https://github.com/KZen-networks/curv"
 features =  ["ec_secp256k1"]

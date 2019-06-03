@@ -9,10 +9,10 @@
 
 use serde_json;
 
-use super::super::api;
-use super::super::api::PrivateShare;
+use super::types::PrivateShare;
 use super::super::utilities::requests;
 use super::super::wallet;
+use super::super::ClientShim;
 use curv::cryptographic_primitives::twoparty::coin_flip_optimal_rounds;
 use kms::ecdsa::two_party::MasterKey2;
 use kms::ecdsa::two_party::*;
@@ -22,7 +22,7 @@ use std::collections::HashMap;
 
 const ROT_PATH_PRE: &str = "ecdsa/rotate";
 
-pub fn rotate_master_key(wallet: wallet::Wallet, client_shim: &api::ClientShim) -> wallet::Wallet {
+pub fn rotate_master_key(wallet: wallet::Wallet, client_shim: &ClientShim) -> wallet::Wallet {
     let id = &wallet.private_share.id.clone();
     let res_body = requests::post(client_shim, &format!("{}/{}/first", ROT_PATH_PRE, id)).unwrap();
 

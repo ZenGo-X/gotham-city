@@ -31,9 +31,26 @@ extern crate secp256k1;
 extern crate time;
 extern crate uuid;
 
-pub mod api;
 pub mod ecdsa;
 pub mod escrow;
-pub mod utilities;
 pub mod wallet;
-pub mod tests;
+mod utilities;
+mod tests;
+
+#[derive(Debug)]
+pub struct ClientShim {
+    pub client: reqwest::Client,
+    pub auth_token: Option<String>,
+    pub endpoint: String,
+}
+
+impl ClientShim {
+    pub fn new(endpoint: String, auth_token: Option<String>) -> ClientShim {
+        let client = reqwest::Client::new();
+        ClientShim {
+            client,
+            auth_token,
+            endpoint,
+        }
+    }
+}

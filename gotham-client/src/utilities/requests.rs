@@ -6,12 +6,11 @@
 // License as published by the Free Software Foundation, either
 // version 3 of the License, or (at your option) any later version.
 //
-
-use super::super::api;
 use serde;
 use time::PreciseTime;
+use super::super::ClientShim;
 
-pub fn post(client_shim: &api::ClientShim, path: &str) -> Option<String> {
+pub fn post(client_shim: &ClientShim, path: &str) -> Option<String> {
     let start = PreciseTime::now();
 
     let mut b = client_shim
@@ -31,7 +30,7 @@ pub fn post(client_shim: &api::ClientShim, path: &str) -> Option<String> {
     Some(res.unwrap().text().unwrap())
 }
 
-pub fn postb<T>(client_shim: &api::ClientShim, path: &str, body: T) -> Option<String>
+pub fn postb<T>(client_shim: &ClientShim, path: &str, body: T) -> Option<String>
 where
     T: serde::ser::Serialize,
 {
