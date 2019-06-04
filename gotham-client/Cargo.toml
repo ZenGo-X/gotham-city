@@ -21,6 +21,7 @@ log = "0.4"
 time = "*"
 clap = { version = "2.32", features = ["yaml"] }
 reqwest = "0.9.5"
+failure = "0.1.5"
 uuid = { version = "0.7", features = ["v4"] }
 electrumx_client = { git = "https://github.com/KZen-networks/rust-electrumx-client" }
 itertools = "0.8.0"

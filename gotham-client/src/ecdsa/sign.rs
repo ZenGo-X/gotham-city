@@ -31,11 +31,8 @@ pub fn sign(
         MasterKey2::sign_first_message();
 
     let request: party_two::EphKeyGenFirstMsg = eph_key_gen_first_message_party_two;
-    let res_body =
-        requests::postb(client_shim, &format!("/ecdsa/sign/{}/first", id), &request).unwrap();
-
     let sign_party_one_first_message: party_one::EphKeyGenFirstMsg =
-        serde_json::from_str(&res_body).unwrap();
+        requests::postb(client_shim, &format!("/ecdsa/sign/{}/first", id), &request).unwrap();
 
     let party_two_sign_message = mk.sign_second_message(
         &eph_ec_key_pair_party2,
@@ -71,10 +68,9 @@ fn get_signature(
         y_pos_child_key,
     };
 
-    let res_body =
+    let signature: party_one::SignatureRecid =
         requests::postb(client_shim, &format!("/ecdsa/sign/{}/second", id), &request).unwrap();
 
-    let signature: party_one::SignatureRecid = serde_json::from_str(&res_body).unwrap();
     signature
 }
 

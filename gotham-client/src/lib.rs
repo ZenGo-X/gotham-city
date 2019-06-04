@@ -23,6 +23,9 @@ extern crate serde_json;
 #[macro_use]
 extern crate log;
 
+#[macro_use]
+extern crate failure;
+
 extern crate bitcoin;
 extern crate electrumx_client;
 extern crate hex;
@@ -32,10 +35,13 @@ extern crate time;
 extern crate uuid;
 
 pub mod ecdsa;
+pub mod schnorr;
 pub mod escrow;
 pub mod wallet;
 mod utilities;
 mod tests;
+
+type Result<T> = std::result::Result<T, failure::Error>;
 
 #[derive(Debug)]
 pub struct ClientShim {

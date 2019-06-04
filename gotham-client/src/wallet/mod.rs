@@ -181,9 +181,8 @@ impl Wallet {
 
         let client_master_key_recovered =
             MasterKey2::recover_master_key(sk.unwrap(), public_data, chain_code2);
-        let res_body = requests::post(client_shim, &format!("ecdsa/{}/recover", key_id)).unwrap();
+        let pos_old: u32 = requests::post(client_shim, &format!("ecdsa/{}/recover", key_id)).unwrap();
 
-        let pos_old: u32 = serde_json::from_str(&res_body).unwrap();
         let pos_old = if pos_old < 10 { 10 } else { pos_old };
         //TODO: temporary, server will keep updated pos, to do so we need to send update to server for every get_new_address
 

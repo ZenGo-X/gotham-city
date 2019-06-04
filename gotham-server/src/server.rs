@@ -15,9 +15,10 @@ use rocksdb;
 use rusoto_core::Region;
 use rusoto_dynamodb::DynamoDbClient;
 
-use super::routes::ecdsa;
+use super::routes::{ecdsa, schnorr};
 use super::routes::ping;
 use super::storage::db;
+use super::Config;
 
 use std::collections::HashMap;
 use std::str::FromStr;
@@ -69,13 +70,8 @@ fn not_found(req: &Request) -> String {
 
 pub fn get_server() -> Rocket {
     let settings = get_settings_as_map();
-    let db_config = ecdsa::Config {
+    let db_config = Config {
         db: get_db(settings.clone()),
-    };
-
-    match db::init(&db_config.db) {
-        Err(_e) => panic!("Error while initializing DB."),
-        _ => {}
     };
 
     let auth_config = AuthConfig::load(settings.clone());
@@ -99,6 +95,10 @@ pub fn get_server() -> Rocket {
                 ecdsa::rotate_third,
                 ecdsa::rotate_fourth,
                 ecdsa::recover,
+                schnorr::keygen_first,
+                schnorr::keygen_second,
+                schnorr::keygen_third,
+                schnorr::sign,
             ],
         )
         .manage(db_config)
