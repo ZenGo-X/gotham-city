@@ -5,7 +5,7 @@ mod tests {
     extern crate bitcoin;
     extern crate kms;
 
-    use client_lib::api::{PrivateShare, ClientShim};
+    use client_lib::{ecdsa, ClientShim};
     use curv::arithmetic::traits::Converter;
     use curv::BigInt;
     use server_lib::server;
@@ -23,7 +23,7 @@ mod tests {
         let five_seconds = time::Duration::from_millis(5000);
         thread::sleep(five_seconds);
 
-        let ps: PrivateShare = client_lib::api::get_master_key(&client_shim);
+        let ps: ecdsa::PrivateShare = ecdsa::get_master_key(&client_shim);
 
         let x_pos = BigInt::from(0);
         let y_pos = BigInt::from(0);
@@ -32,7 +32,7 @@ mod tests {
             .get_child(vec![x_pos.clone(), y_pos.clone()]);
 
         let msg: BigInt = BigInt::from(1234);  // arbitrary message
-        let signature = client_lib::api::sign(&client_shim, msg, &child_master_key, x_pos, y_pos, &ps.id);
+        let signature = ecdsa::sign(&client_shim, msg, &child_master_key, x_pos, y_pos, &ps.id);
         println!(
             "signature = (r: {}, s: {})",
             signature.r.to_hex(),
