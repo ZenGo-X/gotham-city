@@ -41,6 +41,8 @@ pub mod wallet;
 mod utilities;
 mod tests;
 
+pub use curv::BigInt;
+
 type Result<T> = std::result::Result<T, failure::Error>;
 
 #[derive(Debug)]
