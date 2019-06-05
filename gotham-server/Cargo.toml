@@ -44,7 +44,7 @@ git = "https://github.com/KZen-networks/kms"
 git = "https://github.com/KZen-networks/multi-party-ecdsa"
 
 [dependencies.multi-party-schnorr]
-path = "../../multi-party-schnorr"
+git = "https://github.com/KZen-networks/multi-party-schnorr"
 
 [dependencies.curv]
 git = "https://github.com/KZen-networks/curv"
