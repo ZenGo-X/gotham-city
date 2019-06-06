@@ -53,7 +53,7 @@ where
         }
         DB::Local(rocksdb_client) => {
             let identifier = idify(user_id, id, name);
-            info!("Getting from db ({})", identifier);
+            debug!("Getting from db ({})", identifier);
 
             let db_option = rocksdb_client.get(identifier.as_ref())?;
             let vec_option: Option<Vec<u8>> = db_option.map(|v| v.to_vec());

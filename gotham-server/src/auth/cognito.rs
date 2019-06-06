@@ -92,10 +92,10 @@ impl<'a, 'r> FromRequest<'a, 'r> for Claims {
             && config.region.is_empty()
             && config.pool_id.is_empty()
         {
-            info!("!!! Auth config empty, request in PASSTHROUGH mode !!! ");
+            debug!("!!! Auth config empty, request in PASSTHROUGH mode !!! ");
             if auths.is_empty() {
                 // No Authorization header
-                info!("!!! No Authorization header, request accepted !!! ");
+                debug!("!!! No Authorization header, request accepted !!! ");
                 return Outcome::Success(passthrough::get_empty_claim());
             } else {
                 error!("!!! Auth config empty but authorization header, rejecting requests !!!");
