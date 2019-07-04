@@ -35,13 +35,14 @@ extern crate time;
 extern crate uuid;
 
 pub mod ecdsa;
-pub mod schnorr;
 pub mod escrow;
 pub mod wallet;
+
+pub mod eddsa;
+pub mod schnorr;
+
 mod utilities;
 mod tests;
-
-pub use curv::BigInt;
 
 type Result<T> = std::result::Result<T, failure::Error>;
 
@@ -62,3 +63,6 @@ impl ClientShim {
         }
     }
 }
+
+pub use curv::{BigInt, arithmetic::traits::Converter};
+pub use multi_party_ed25519::protocols::aggsig::*;

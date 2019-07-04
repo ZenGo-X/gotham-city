@@ -2,12 +2,8 @@
 mod tests {
     extern crate server_lib;
     extern crate client_lib;
-    extern crate bitcoin;
-    extern crate kms;
 
-    use client_lib::{ecdsa, schnorr, ClientShim};
-    use curv::arithmetic::traits::Converter;
-    use curv::BigInt;
+    use client_lib::*;
     use server_lib::server;
     use std::{thread, time};
 
@@ -48,6 +44,27 @@ mod tests {
             "signature = (e: {:?}, s: {:?})",
             signature.e,
             signature.s
+        );
+    }
+
+    #[test]
+    fn test_eddsa() {
+        spawn_server();
+
+        let client_shim = ClientShim::new("http://localhost:8000".to_string(), None);
+
+        let five_seconds = time::Duration::from_millis(5000);
+        thread::sleep(five_seconds);
+
+        let (key_pair, key_agg, id) = client_lib::eddsa::generate_key(&client_shim).unwrap();
+
+        let message = BigInt::from(1234);
+        let signature = client_lib::eddsa::sign(&client_shim, message, &key_pair, &key_agg, &id)
+            .expect("Error while signing");
+        println!(
+            "signature = (R: {}, s: {})",
+            signature.R.bytes_compressed_to_big_int().to_hex(),
+            signature.s.to_big_int().to_hex()
         );
     }
 

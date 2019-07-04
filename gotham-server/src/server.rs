@@ -15,8 +15,7 @@ use rocksdb;
 use rusoto_core::Region;
 use rusoto_dynamodb::DynamoDbClient;
 
-use super::routes::{ecdsa, schnorr};
-use super::routes::ping;
+use super::routes::*;
 use super::storage::db;
 use super::Config;
 
@@ -99,6 +98,9 @@ pub fn get_server() -> Rocket {
                 schnorr::keygen_second,
                 schnorr::keygen_third,
                 schnorr::sign,
+                eddsa::keygen,
+                eddsa::sign_first,
+                eddsa::sign_second,
             ],
         )
         .manage(db_config)

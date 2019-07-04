@@ -34,23 +34,27 @@ version = "0.12"
 features = ["rand", "serde"]
 
 [dependencies.zk-paillier]
-git = "https://github.com/KZen-networks/zk-paillier"
+path = "../../zk-paillier"
 
 [dependencies.kms]
-git = "https://github.com/KZen-networks/kms"
+path = "../../kms-secp256k1"
 
 [dependencies.multi-party-ecdsa]
-git = "https://github.com/KZen-networks/multi-party-ecdsa"
+path = "../../multi-party-ecdsa"
+
+[dependencies.multi-party-ed25519]
+path = "../../multi-party-eddsa"
 
 [dependencies.multi-party-schnorr]
-git = "https://github.com/KZen-networks/multi-party-schnorr"
+path = "../../multi-party-schnorr"
 
 [dependencies.curv]
 git = "https://github.com/KZen-networks/curv"
+branch = "feature/libra-support"
 features =  ["ec_secp256k1"]
 
 [patch.crates-io]
 rust-gmp = { version = "0.5.0", features = ["serde_support"], git = "https://github.com/KZen-networks/rust-gmp" }
 
 [dependencies.centipede]
-git = "https://github.com/KZen-networks/centipede"
+path = "../../centipede"
