@@ -1,7 +1,10 @@
 [package]
 name = "gotham-client"
 version = "0.1.0"
-authors = ["gbenattar <g.benattar@gmail.com>"]
+authors = [
+    "gbenattar <g.benattar@gmail.com>",
+    "Oded Leiba <odedleiba5@gmail.com"
+]
 edition = "2018"
 
 [lib]
@@ -34,19 +37,24 @@ version = "0.12"
 features = ["rand", "serde"]
 
 [dependencies.zk-paillier]
-path = "../../zk-paillier"
+git = "https://github.com/KZen-networks/zk-paillier"
+branch = "feature/libra-support"
 
 [dependencies.kms]
-path = "../../kms-secp256k1"
+git = "https://github.com/KZen-networks/kms-secp256k1"
+branch = "feature/libra-support"
 
 [dependencies.multi-party-ecdsa]
-path = "../../multi-party-ecdsa"
+git = "https://github.com/KZen-networks/multi-party-ecdsa"
+branch = "feature/libra-support"
 
 [dependencies.multi-party-ed25519]
-path = "../../multi-party-eddsa"
+git = "https://github.com/KZen-networks/multi-party-eddsa"
+branch = "feature/libra-support"
 
 [dependencies.multi-party-schnorr]
-path = "../../multi-party-schnorr"
+git = "https://github.com/KZen-networks/multi-party-schnorr"
+branch = "feature/libra-support"
 
 [dependencies.curv]
 git = "https://github.com/KZen-networks/curv"
@@ -57,4 +65,5 @@ features =  ["ec_secp256k1"]
 rust-gmp = { version = "0.5.0", features = ["serde_support"], git = "https://github.com/KZen-networks/rust-gmp" }
 
 [dependencies.centipede]
-path = "../../centipede"
+git = "https://github.com/KZen-networks/centipede"
+branch = "feature/libra-support"

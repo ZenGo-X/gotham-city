@@ -26,6 +26,7 @@ pub fn generate_key(client_shim: &ClientShim) -> Result<(KeyPair, KeyAgg, String
     Ok((party2_key_pair, key_agg, id))
 }
 
+#[allow(non_snake_case)]
 pub fn sign(client_shim: &ClientShim, message: BigInt, party2_key_pair: &KeyPair, key_agg: &KeyAgg, id: &String) -> Result<Signature> {
     // round 1: send commitments to ephemeral public keys
     let (party2_ephemeral_key, party2_sign_first_msg, party2_sign_second_msg) =

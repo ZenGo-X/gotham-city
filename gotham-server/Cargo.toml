@@ -1,7 +1,10 @@
 [package]
 name = "gotham-server"
 version = "0.1.0"
-authors = ["gbenattar <g.benattar@gmail.com>"]
+authors = [
+    "gbenattar <g.benattar@gmail.com>",
+    "Oded Leiba <odedleiba5@gmail.com"
+]
 edition = "2018"
 
 [lib]
@@ -35,19 +38,24 @@ rust-crypto = "0.2"
 hex = "0.3.2"
 
 [dependencies.zk-paillier]
-path = "../../zk-paillier"
+git = "https://github.com/KZen-networks/zk-paillier"
+branch = "feature/libra-support"
 
 [dependencies.kms]
-path = "../../kms-secp256k1"
+git = "https://github.com/KZen-networks/kms-secp256k1"
+branch = "feature/libra-support"
 
 [dependencies.multi-party-ecdsa]
-path = "../../multi-party-ecdsa"
+git = "https://github.com/KZen-networks/multi-party-ecdsa"
+branch = "feature/libra-support"
 
 [dependencies.multi-party-ed25519]
-path = "../../multi-party-eddsa"
+git = "https://github.com/KZen-networks/multi-party-eddsa"
+branch = "feature/libra-support"
 
 [dependencies.multi-party-schnorr]
-path = "../../multi-party-schnorr"
+git = "https://github.com/KZen-networks/multi-party-schnorr"
+branch = "feature/libra-support"
 
 [dependencies.curv]
 git = "https://github.com/KZen-networks/curv"

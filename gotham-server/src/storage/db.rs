@@ -18,11 +18,11 @@ pub enum DB {
     AWS(rusoto_dynamodb::DynamoDbClient, String),
 }
 
-fn idify(user_id: &str, id: &str, name: &ToString) -> String {
+fn idify(user_id: &str, id: &str, name: &dyn ToString) -> String {
     format!("{}_{}_{}", user_id, id, name.to_string())
 }
 
-pub fn insert<T>(db: &DB, user_id: &str, id: &str, name: &ToString, v: T) -> Result<()>
+pub fn insert<T>(db: &DB, user_id: &str, id: &str, name: &dyn ToString, v: T) -> Result<()>
 where
     T: serde::ser::Serialize,
 {
@@ -41,7 +41,7 @@ where
     }
 }
 
-pub fn get<T>(db: &DB, user_id: &str, id: &str, name: &ToString) -> Result<Option<T>>
+pub fn get<T>(db: &DB, user_id: &str, id: &str, name: &dyn ToString) -> Result<Option<T>>
 where
     T: serde::de::DeserializeOwned,
 {
