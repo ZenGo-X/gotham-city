@@ -12,7 +12,7 @@ use self::MPCStruct::*;
 
 const PARTY1_INDEX: usize = 0;
 
-#[derive(ToString, Debug)]
+#[derive(Debug)]
 pub enum MPCStruct {
     Party2PublicKey,
     Party1KeyPair,
@@ -22,6 +22,12 @@ pub enum MPCStruct {
     Party1EphemeralKey,
     Party1SignFirstMsg,
     Party1SignSecondMsg
+}
+
+impl ToString for MPCStruct {
+    fn to_string(&self) -> String {
+        format!("Eddsa{:?}", self)
+    }
 }
 
 #[post("/eddsa/keygen", format = "json", data = "<party2_public_key_json>")]
