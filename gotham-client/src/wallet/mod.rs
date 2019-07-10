@@ -25,11 +25,11 @@ use centipede::juggling::proof_system::{Helgamalsegmented, Proof};
 use centipede::juggling::segmentation::Msegmentation;
 use kms::chain_code::two_party::party2::ChainCode2;
 
-use super::api;
-use super::api::PrivateShare;
-use super::ecdsa::rotate;
+use super::ecdsa;
+use super::ecdsa::types::PrivateShare;
 use super::escrow;
 use super::utilities::requests;
+use super::ClientShim;
 use curv::arithmetic::traits::Converter;
 use hex;
 use itertools::Itertools;
@@ -88,9 +88,9 @@ pub struct Wallet {
 }
 
 impl Wallet {
-    pub fn new(client_shim: &api::ClientShim, net: &String) -> Wallet {
+    pub fn new(client_shim: &ClientShim, net: &String) -> Wallet {
         let id = Uuid::new_v4().to_string();
-        let private_share = api::get_master_key(client_shim);
+        let private_share = ecdsa::get_master_key(client_shim);
         let last_derived_pos = 0;
         let addresses_derivation_map = HashMap::new();
         let network = net.clone();
@@ -104,8 +104,8 @@ impl Wallet {
         }
     }
 
-    pub fn rotate(self, client_shim: &api::ClientShim) -> Self {
-        rotate::rotate_master_key(self, client_shim)
+    pub fn rotate(self, client_shim: &ClientShim) -> Self {
+        ecdsa::rotate_master_key(self, client_shim)
     }
 
     pub fn backup(&self, escrow_service: escrow::Escrow) {
@@ -162,7 +162,7 @@ impl Wallet {
     pub fn recover_and_save_share(
         escrow_service: escrow::Escrow,
         net: &String,
-        client_shim: &api::ClientShim,
+        client_shim: &ClientShim,
     ) -> Wallet {
         let g: GE = ECPoint::generator();
         let y_priv = escrow_service.get_private_key();
@@ -181,9 +181,8 @@ impl Wallet {
 
         let client_master_key_recovered =
             MasterKey2::recover_master_key(sk.unwrap(), public_data, chain_code2);
-        let res_body = requests::post(client_shim, &format!("ecdsa/{}/recover", key_id)).unwrap();
+        let pos_old: u32 = requests::post(client_shim, &format!("ecdsa/{}/recover", key_id)).unwrap();
 
-        let pos_old: u32 = serde_json::from_str(&res_body).unwrap();
         let pos_old = if pos_old < 10 { 10 } else { pos_old };
         //TODO: temporary, server will keep updated pos, to do so we need to send update to server for every get_new_address
 
@@ -238,7 +237,7 @@ impl Wallet {
         &mut self,
         to_address: String,
         amount_btc: f32,
-        client_shim: &api::ClientShim,
+        client_shim: &ClientShim,
     ) -> String {
         let selected = self.select_tx_in(amount_btc);
         if selected.is_empty() {
@@ -308,7 +307,7 @@ impl Wallet {
                 (selected[i].value as u32).into(),
             );
 
-            let signature = api::sign(
+            let signature = ecdsa::sign(
                 client_shim,
                 BigInt::from_hex(&sig_hash.le_hex_string()),
                 &mk,

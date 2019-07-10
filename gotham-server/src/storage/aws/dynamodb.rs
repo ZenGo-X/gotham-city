@@ -1,4 +1,4 @@
-use super::super::super::routes::ecdsa::Share;
+use super::super::super::routes::ecdsa::EcdsaStruct;
 use super::error::*;
 use super::*;
 use failure;
@@ -64,7 +64,7 @@ where
 {
     let mut query_key: HashMap<String, AttributeValue> = HashMap::new();
 
-    if table_name.contains(&Share::Party1MasterKey.to_string()) {
+    if table_name.contains(&EcdsaStruct::Party1MasterKey.to_string()) {
         query_key.insert(
             "customerId".to_string(),
             AttributeValue {
