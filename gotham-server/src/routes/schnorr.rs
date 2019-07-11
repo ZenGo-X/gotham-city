@@ -17,7 +17,7 @@ const PARAMS: Parameters = Parameters {
     share_count: 2,
 };
 
-#[derive(ToString, Debug)]
+#[derive(Debug)]
 pub enum SchnorrStruct {
     Party1Key,
     Party1KeyGenBroadcastMessage1,
@@ -28,6 +28,12 @@ pub enum SchnorrStruct {
     Party2VerifiableSecretShares,
     Party1SecretShares,
     Party1SharedKey
+}
+
+impl db::MPCStruct for SchnorrStruct {
+    fn to_string(&self) -> String {
+        format!("Schnorr{:?}", self)
+    }
 }
 
 #[post("/schnorr/keygen/first", format = "json", data = "<party2_msg1>")]

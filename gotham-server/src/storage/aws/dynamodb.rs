@@ -1,4 +1,3 @@
-use super::super::super::routes::ecdsa::EcdsaStruct;
 use super::error::*;
 use super::*;
 use failure;
@@ -58,13 +57,14 @@ pub fn get<'a, T>(
     user_id: &str,
     id: &str,
     table_name: String,
+    require_customer_id: bool
 ) -> std::result::Result<Option<T>, failure::Error>
 where
     T: serde::de::Deserialize<'a>,
 {
     let mut query_key: HashMap<String, AttributeValue> = HashMap::new();
 
-    if table_name.contains(&EcdsaStruct::Party1MasterKey.to_string()) {
+    if require_customer_id {
         query_key.insert(
             "customerId".to_string(),
             AttributeValue {

@@ -8,12 +8,12 @@ use super::super::storage::db;
 use super::super::Config;
 
 use multi_party_ed25519::protocols::aggsig::*;
-use self::MPCStruct::*;
+use self::EddsaStruct::*;
 
 const PARTY1_INDEX: usize = 0;
 
 #[derive(Debug)]
-pub enum MPCStruct {
+pub enum EddsaStruct {
     Party2PublicKey,
     Party1KeyPair,
     AggregatedPublicKey,
@@ -24,9 +24,13 @@ pub enum MPCStruct {
     Party1SignSecondMsg
 }
 
-impl ToString for MPCStruct {
+impl db::MPCStruct for EddsaStruct {
     fn to_string(&self) -> String {
         format!("Eddsa{:?}", self)
+    }
+
+    fn require_customer_id(&self) -> bool {
+        self.to_string() == "EddsaAggregatedPublicKey"
     }
 }
 
