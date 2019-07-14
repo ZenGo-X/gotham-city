@@ -1,7 +1,8 @@
-# "local" or "aws"
+# "local" or "aws" or "redis"
 db = "local"
 # if db = aws (also set environment variables AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY):
 # aws_region =
+# redis_url = "redis://127.0.0.1"
 
 region = "" # Override with ENV variable!
 pool_id = "" # Override with ENV variable!
