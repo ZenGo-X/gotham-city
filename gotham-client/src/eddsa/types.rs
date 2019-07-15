@@ -1,0 +1,1 @@
+pub use multi_party_ed25519::protocols::aggsig::{KeyAgg, KeyPair};

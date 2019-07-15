@@ -11,7 +11,7 @@ use super::super::utilities::requests;
 use super::super::Result;
 use super::super::ClientShim;
 
-pub use multi_party_ed25519::protocols::aggsig::*;
+use multi_party_ed25519::protocols::aggsig::*;
 
 #[allow(non_snake_case)]
 pub fn sign(

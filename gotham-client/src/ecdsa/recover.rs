@@ -21,6 +21,7 @@ use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
 
 #[no_mangle]
+#[allow(non_snake_case)]
 pub extern "C" fn decrypt_party_one_master_key(
     c_master_key_two_json: *const c_char,
     c_helgamal_segmented_json: *const c_char,
