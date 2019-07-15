@@ -36,7 +36,6 @@ extern crate uuid;
 
 pub mod ecdsa;
 pub mod escrow;
-<<<<<<< HEAD
 pub mod wallet;
 
 pub mod eddsa;
@@ -67,8 +66,3 @@ impl ClientShim {
 
 pub use curv::{BigInt, arithmetic::traits::Converter};
 pub use multi_party_ed25519::protocols::aggsig::*;
-=======
-pub mod tests;
-pub mod utilities;
-pub mod wallet;
->>>>>>> origin/develop

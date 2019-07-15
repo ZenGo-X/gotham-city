@@ -8,9 +8,6 @@
 //
 
 pub mod ecdsa;
-<<<<<<< HEAD
 pub mod schnorr;
 pub mod eddsa;
-=======
->>>>>>> origin/develop
 pub mod ping;
