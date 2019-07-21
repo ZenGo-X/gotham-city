@@ -28,10 +28,6 @@ impl db::MPCStruct for EddsaStruct {
     fn to_string(&self) -> String {
         format!("Eddsa{:?}", self)
     }
-
-    fn require_customer_id(&self) -> bool {
-        self.to_string() == "EddsaAggregatedPublicKey"
-    }
 }
 
 #[post("/eddsa/keygen", format = "json", data = "<party2_public_key_json>")]
@@ -86,6 +82,7 @@ pub fn sign_first(
     let (party2_sign_first_msg, message): (SignFirstMsg, BigInt) =
         party2_sign_first_msg_obj.0;
 
+    println!("Party1KeyPair: id = {}", id);
     let party1_key_pair: KeyPair = db::get(
         &state.db,
         &claim.sub,
@@ -93,9 +90,11 @@ pub fn sign_first(
         &Party1KeyPair)?
         .ok_or(format_err!("No data for such identifier {}", id))?;
 
+    println!("#2");
     let (party1_ephemeral_key, party1_sign_first_msg, party1_sign_second_msg) =
         Signature::create_ephemeral_key_and_commit(&party1_key_pair, &BigInt::to_vec(&message).as_slice());
 
+    println!("#3");
     db::insert(
         &state.db,
         &claim.sub,

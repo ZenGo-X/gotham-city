@@ -25,7 +25,7 @@ pub trait MPCStruct {
     }
 
     fn require_customer_id(&self) -> bool {
-        false
+        true
     }
 }
 
@@ -59,7 +59,11 @@ where
     match db {
         DB::AWS(dynamodb_client, env) => {
             let table_name = name.to_table_name(env);
+            println!("table_name = {}", table_name);
             let require_customer_id = name.require_customer_id();
+            println!("require_customer_id = {}", require_customer_id);
+            println!("user_id = {}", user_id);
+            println!("id = {}", id);
             let res: Option<T> = aws::dynamodb::get(&dynamodb_client, user_id, id, table_name, require_customer_id)?;
             Ok(res)
         }
