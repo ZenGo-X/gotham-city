@@ -30,6 +30,12 @@ impl db::MPCStruct for EddsaStruct {
     }
 }
 
+// creating a wrapper for dynamodb insertion compatibility
+#[derive(Debug, Serialize, Deserialize)]
+struct MessageStruct {
+    message: BigInt,
+}
+
 #[post("/eddsa/keygen", format = "json", data = "<party2_public_key_json>")]
 pub fn keygen(
     state: State<Config>,
@@ -102,12 +108,17 @@ pub fn sign_first(
         &Party2SignFirstMsg,
         &party2_sign_first_msg,
     )?;
+    println!("#3, message = {}", message);
+    let message_struct = MessageStruct {
+        message,
+    };
+    println!("#4, message_struct = {:?}", message_struct);
     db::insert(
         &state.db,
         &claim.sub,
         &id,
         &Message,
-        &message,
+        &message_struct,
     )?;
     db::insert(
         &state.db,
@@ -184,12 +195,13 @@ pub fn sign_second(
         &AggregatedPublicKey)?
         .ok_or(format_err!("No data for such identifier {}", id))?;
     key_agg.apk = key_agg.apk * &eight_inverse;
-    let message: BigInt = db::get(
+    let message_struct: MessageStruct = db::get(
         &state.db,
         &claim.sub,
         &id,
         &Message)?
         .ok_or(format_err!("No data for such identifier {}", id))?;
+    let message: BigInt = message_struct.message;
 
     // compute R' = sum(Ri):
     let mut Ri: Vec<GE> = Vec::new();

@@ -65,6 +65,7 @@ where
             println!("user_id = {}", user_id);
             println!("id = {}", id);
             let res: Option<T> = aws::dynamodb::get(&dynamodb_client, user_id, id, table_name, require_customer_id)?;
+            println!("res.is_none() = {}", res.is_none());
             Ok(res)
         }
         DB::Local(rocksdb_client) => {
