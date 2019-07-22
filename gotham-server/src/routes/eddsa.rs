@@ -88,7 +88,6 @@ pub fn sign_first(
     let (party2_sign_first_msg, message): (SignFirstMsg, BigInt) =
         party2_sign_first_msg_obj.0;
 
-    println!("Party1KeyPair: id = {}", id);
     let party1_key_pair: KeyPair = db::get(
         &state.db,
         &claim.sub,
@@ -96,11 +95,9 @@ pub fn sign_first(
         &Party1KeyPair)?
         .ok_or(format_err!("No data for such identifier {}", id))?;
 
-    println!("#2");
     let (party1_ephemeral_key, party1_sign_first_msg, party1_sign_second_msg) =
         Signature::create_ephemeral_key_and_commit(&party1_key_pair, &BigInt::to_vec(&message).as_slice());
 
-    println!("#3");
     db::insert(
         &state.db,
         &claim.sub,
@@ -108,11 +105,10 @@ pub fn sign_first(
         &Party2SignFirstMsg,
         &party2_sign_first_msg,
     )?;
-    println!("#3, message = {}", message);
+
     let message_struct = MessageStruct {
         message,
     };
-    println!("#4, message_struct = {:?}", message_struct);
     db::insert(
         &state.db,
         &claim.sub,

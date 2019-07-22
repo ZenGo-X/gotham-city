@@ -21,8 +21,6 @@ pub fn sign(
     key_agg: &KeyAgg,
     id: &String
 ) -> Result<Signature> {
-    println!("party2_key_pair = {:2x?}", party2_key_pair);
-    println!("key_agg = {:2x?}", key_agg);
     // round 1: send commitments to ephemeral public keys
     let (party2_ephemeral_key, party2_sign_first_msg, party2_sign_second_msg) =
         Signature::create_ephemeral_key_and_commit(&party2_key_pair, BigInt::to_vec(&message).as_slice());
@@ -40,22 +38,15 @@ pub fn sign(
         &format!("eddsa/sign/{}/second", id),
         &party2_sign_second_msg)
         .unwrap();
-    println!("party1_sign_second_msg = {:?}", party1_sign_second_msg);
-    println!("s1 = {:2x?}", s1);
     let eight: FE = ECScalar::from(&BigInt::from(8));
-    println!("eight = {:2x?}", eight);
     let eight_inverse: FE = eight.invert();
-    println!("eight_inverse = {:2x?}", eight_inverse);
     party1_sign_second_msg.R = party1_sign_second_msg.R * &eight_inverse;
-    println!("#1");
     s1.R = s1.R * &eight_inverse;
-    println!("#2");
     assert!(test_com(
         &party1_sign_second_msg.R,
         &party1_sign_second_msg.blind_factor,
         &party1_sign_first_msg.commitment
     ));
-    println!("#3");
 
     // round 3:
     // compute R' = sum(Ri):
@@ -63,11 +54,8 @@ pub fn sign(
     Ri.push(party1_sign_second_msg.R.clone());
     Ri.push(party2_sign_second_msg.R.clone());
     // each party i should run this:
-    println!("#4");
     let R_tot = Signature::get_R_tot(Ri);
-    println!("#5");
     let k = Signature::k(&R_tot, &key_agg.apk, BigInt::to_vec(&message).as_slice());
-    println!("#6");
     let s2 = Signature::partial_sign(
         &party2_ephemeral_key.r,
         &party2_key_pair,
@@ -75,19 +63,15 @@ pub fn sign(
         &key_agg.hash,
         &R_tot,
     );
-    println!("s2 = {:?}", s2);
 
     let mut s: Vec<Signature> = Vec::new();
     s.push(s1);
     s.push(s2);
     let signature = Signature::add_signature_parts(s);
-    println!("signature = {:2x?}", signature);
 
     // verify:
-    let ver = verify(&signature, BigInt::to_vec(&message).as_slice(), &key_agg.apk);
-    println!("ver = {:?}", ver);
-
-    ver.or_else(|e| Err(format_err!("Error while verifying signature {}", e)))
+    verify(&signature, BigInt::to_vec(&message).as_slice(), &key_agg.apk)
+        .or_else(|e| Err(format_err!("Error while verifying signature {}", e)))
         .and_then(|_| Ok(signature))
 }
 
@@ -100,7 +84,6 @@ fn test_eddsa() {
     let R = GE::from_bytes(hex::decode("2fc5a43bb1a46198916f88122b7e6bd448024dd5c7eda5d3a581eba6dc5c3").unwrap().as_slice()).unwrap();
     let s_bytes = BigInt::from_str_radix("54f2d812e0ed836947eddb70e42f7ba826d32de1dce0ff91aa2ef47ea01", 16).unwrap();
     let s = ECScalar::from(&s_bytes);
-    println!("s = {:?}", s);
     let signature = Signature {
         R,
         s
