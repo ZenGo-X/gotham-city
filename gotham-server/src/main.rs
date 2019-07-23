@@ -7,8 +7,8 @@
 // version 3 of the License, or (at your option) any later version.
 //
 
-use server_lib::server;
+use server_lib::launch_server;
 
 fn main() {
-    server::get_server().launch();
+    launch_server();
 }

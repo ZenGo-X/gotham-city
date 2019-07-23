@@ -67,6 +67,10 @@ fn not_found(req: &Request) -> String {
     format!("Unknown route '{}'.", req.uri())
 }
 
+pub fn launch_server() {
+    get_server().launch();
+}
+
 pub fn get_server() -> Rocket {
     let settings = get_settings_as_map();
     let db_config = ecdsa::Config {

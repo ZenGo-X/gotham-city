@@ -8,14 +8,14 @@ mod tests {
     use client_lib::api::{PrivateShare, ClientShim};
     use curv::arithmetic::traits::Converter;
     use curv::BigInt;
-    use server_lib::server;
+    use server_lib::launch_server;
     use std::{thread, time};
 
     #[test]
     fn test_api() {
         // Rocket server is blocking, so we spawn a new thread.
         thread::spawn(move || {
-            server::get_server().launch();
+            launch_server();
         });
 
         let client_shim = ClientShim::new("http://localhost:8000".to_string(), None);
