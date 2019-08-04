@@ -75,7 +75,7 @@ pub fn sign(
 
     // verify:
     verify(&signature, BigInt::to_vec(&message).as_slice(), &key_agg.apk)
-        .or_else(|e| Err(format_err!("{}", e)))
+        .or_else(|e| Err(format_err!("Error while verifying signature {}", e)))
         .and_then(|_| Ok(signature))
 }
 

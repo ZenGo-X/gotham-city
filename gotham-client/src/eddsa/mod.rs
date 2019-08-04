@@ -7,8 +7,10 @@
 // version 3 of the License, or (at your option) any later version.
 //
 
-pub mod keygen;
-pub mod sign;
+mod keygen;
+mod sign;
+mod types;
 
 pub use keygen::generate_key;
 pub use sign::sign;
+pub use types::*;
