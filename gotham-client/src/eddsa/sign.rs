@@ -11,7 +11,11 @@ use super::super::utilities::requests;
 use super::super::Result;
 use super::super::ClientShim;
 
-pub use multi_party_ed25519::protocols::aggsig::*;
+// iOS bindings
+use std::ffi::{CStr, CString};
+use std::os::raw::c_char;
+
+use multi_party_ed25519::protocols::aggsig::*;
 
 #[allow(non_snake_case)]
 pub fn sign(
@@ -73,4 +77,76 @@ pub fn sign(
     verify(&signature, BigInt::to_vec(&message).as_slice(), &key_agg.apk)
         .or_else(|e| Err(format_err!("{}", e)))
         .and_then(|_| Ok(signature))
+}
+
+#[no_mangle]
+pub extern "C" fn sign_message_eddsa(
+    c_endpoint: *const c_char,
+    c_auth_token: *const c_char,
+    c_message_le_hex: *const c_char,
+    c_key_pair_json: *const c_char,
+    c_key_agg_json: *const c_char,
+    c_id: *const c_char,
+) -> *mut c_char {
+    let raw_endpoint = unsafe { CStr::from_ptr(c_endpoint) };
+    let endpoint = match raw_endpoint.to_str() {
+        Ok(s) => s,
+        Err(_) => panic!("Error while decoding raw endpoint"),
+    };
+
+    let raw_auth_token = unsafe { CStr::from_ptr(c_auth_token) };
+    let auth_token = match raw_auth_token.to_str() {
+        Ok(s) => s,
+        Err(_) => panic!("Error while decoding raw auth_token"),
+    };
+
+    let raw_message_hex = unsafe { CStr::from_ptr(c_message_le_hex) };
+    let message_hex = match raw_message_hex.to_str() {
+        Ok(s) => s,
+        Err(_) => panic!("Error while decoding raw message_hex"),
+    };
+
+    let raw_key_pair_json = unsafe { CStr::from_ptr(c_key_pair_json) };
+    let key_pair_json = match raw_key_pair_json.to_str() {
+        Ok(s) => s,
+        Err(_) => panic!("Error while decoding raw key_pair_json"),
+    };
+
+    let raw_key_agg_json = unsafe { CStr::from_ptr(c_key_agg_json) };
+    let key_agg_json = match raw_key_agg_json.to_str() {
+        Ok(s) => s,
+        Err(_) => panic!("Error while decoding raw key_agg_json"),
+    };
+
+    let raw_id = unsafe { CStr::from_ptr(c_id) };
+    let id = match raw_id.to_str() {
+        Ok(s) => s,
+        Err(_) => panic!("Error while decoding raw id"),
+    };
+
+    let client_shim = ClientShim::new(endpoint.to_string(), Some(auth_token.to_string()));
+
+    let message: BigInt = serde_json::from_str(message_hex).unwrap();
+
+    let mut key_pair: KeyPair = serde_json::from_str(key_pair_json).unwrap();
+
+    let mut key_agg: KeyAgg = serde_json::from_str(key_agg_json).unwrap();
+
+    let eight: FE = ECScalar::from(&BigInt::from(8));
+    let eight_inverse: FE = eight.invert();
+
+    key_pair.public_key = key_pair.public_key * &eight_inverse;
+    key_agg.apk = key_agg.apk * &eight_inverse;
+
+    let sig = match sign(&client_shim, message, &key_pair, &key_agg, &id.to_string()) {
+        Ok(s) => s,
+        Err(_) => panic!("Error while signing to endpoint {}", endpoint)
+    };
+
+    let signature_json = match serde_json::to_string(&sig) {
+        Ok(share) => share,
+        Err(_) => panic!("Error while encoding signature"),
+    };
+
+    CString::new(signature_json.to_owned()).unwrap().into_raw()
 }
