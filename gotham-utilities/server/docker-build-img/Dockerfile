@@ -25,7 +25,7 @@ WORKDIR /
 
 # Rust
 ARG CHANNEL="nightly"
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain ${CHANNEL}
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain nightly-2019-07-10
 
 # Server
 ENV rocket_address=0.0.0.0

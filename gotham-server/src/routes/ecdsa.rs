@@ -39,7 +39,7 @@ struct Alpha {
     value: BigInt
 }
 
-#[derive(ToString, Debug)]
+#[derive(Debug)]
 pub enum EcdsaStruct {
     KeyGenFirstMsg,
     CommWitness,
@@ -73,6 +73,25 @@ pub enum EcdsaStruct {
     RotateParty1Second,
 
     POS,
+}
+
+impl db::MPCStruct for EcdsaStruct {
+    fn to_string(&self) -> String {
+        format!("{:?}", self)
+    }
+
+    // backward compatibility
+    fn to_table_name(&self, env: &str) -> String {
+        if self.to_string() == "Party1MasterKey" {
+            format!("{}_{}", env, self.to_string())
+        } else {
+            format!("{}-gotham-{}", env, self.to_string())
+        }
+    }
+
+    fn require_customer_id(&self) -> bool {
+        self.to_string() == "Party1MasterKey"
+    }
 }
 
 #[post("/ecdsa/keygen/first", format = "json")]

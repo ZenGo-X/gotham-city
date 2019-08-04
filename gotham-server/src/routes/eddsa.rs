@@ -8,12 +8,12 @@ use super::super::storage::db;
 use super::super::Config;
 
 use multi_party_ed25519::protocols::aggsig::*;
-use self::MPCStruct::*;
+use self::EddsaStruct::*;
 
 const PARTY1_INDEX: usize = 0;
 
 #[derive(Debug)]
-pub enum MPCStruct {
+pub enum EddsaStruct {
     Party2PublicKey,
     Party1KeyPair,
     AggregatedPublicKey,
@@ -24,10 +24,16 @@ pub enum MPCStruct {
     Party1SignSecondMsg
 }
 
-impl ToString for MPCStruct {
+impl db::MPCStruct for EddsaStruct {
     fn to_string(&self) -> String {
         format!("Eddsa{:?}", self)
     }
+}
+
+// creating a wrapper for dynamodb insertion compatibility
+#[derive(Debug, Serialize, Deserialize)]
+struct MessageStruct {
+    message: BigInt,
 }
 
 #[post("/eddsa/keygen", format = "json", data = "<party2_public_key_json>")]
@@ -99,12 +105,16 @@ pub fn sign_first(
         &Party2SignFirstMsg,
         &party2_sign_first_msg,
     )?;
+
+    let message_struct = MessageStruct {
+        message,
+    };
     db::insert(
         &state.db,
         &claim.sub,
         &id,
         &Message,
-        &message,
+        &message_struct,
     )?;
     db::insert(
         &state.db,
@@ -181,12 +191,13 @@ pub fn sign_second(
         &AggregatedPublicKey)?
         .ok_or(format_err!("No data for such identifier {}", id))?;
     key_agg.apk = key_agg.apk * &eight_inverse;
-    let message: BigInt = db::get(
+    let message_struct: MessageStruct = db::get(
         &state.db,
         &claim.sub,
         &id,
         &Message)?
         .ok_or(format_err!("No data for such identifier {}", id))?;
+    let message: BigInt = message_struct.message;
 
     // compute R' = sum(Ri):
     let mut Ri: Vec<GE> = Vec::new();
