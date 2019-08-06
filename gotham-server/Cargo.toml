@@ -39,16 +39,20 @@ git = "https://github.com/KZen-networks/zk-paillier"
 
 [dependencies.kms]
 git = "https://github.com/KZen-networks/kms"
+tag = "v0.1.0"
 
 [dependencies.multi-party-ecdsa]
 git = "https://github.com/KZen-networks/multi-party-ecdsa"
+tag = "v0.1.0"
 
 [dependencies.multi-party-schnorr]
 git = "https://github.com/KZen-networks/multi-party-schnorr"
+tag = "v0.3.0"
 
 [dependencies.curv]
 git = "https://github.com/KZen-networks/curv"
 features =  ["ec_secp256k1"]
+tag = "v0.1.0"
 
 [dependencies.serde_dynamodb]
 git = "https://github.com/KZen-networks/serde_dynamodb"
