@@ -314,7 +314,7 @@ impl Wallet {
                 BigInt::from(0),
                 BigInt::from(address_derivation.pos),
                 &self.private_share.id,
-            );
+            ).unwrap();
 
             let mut v = BigInt::to_vec(&signature.r);
             v.extend(BigInt::to_vec(&signature.s));
