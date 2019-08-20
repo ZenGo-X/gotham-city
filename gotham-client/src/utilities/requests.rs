@@ -45,6 +45,10 @@ fn _postb<T, V>(client_shim: &ClientShim, path: &str, body: T) -> Option<V>
 
     info!("(req {}, took: {})", path, start.to(end));
 
-    let value = res.unwrap().text().unwrap();
+    let value = match res {
+        Ok(mut v) => v.text().unwrap(),
+        Err(_) => return None
+    };
+
     Some(serde_json::from_str(value.as_str()).unwrap())
 }

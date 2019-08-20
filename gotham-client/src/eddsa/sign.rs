@@ -8,6 +8,7 @@
 //
 
 use super::super::utilities::requests;
+use super::super::utilities::error_to_c_string;
 use super::super::Result;
 use super::super::ClientShim;
 
@@ -29,19 +30,24 @@ pub fn sign(
     let (party2_ephemeral_key, party2_sign_first_msg, party2_sign_second_msg) =
         Signature::create_ephemeral_key_and_commit(&party2_key_pair, BigInt::to_vec(&message).as_slice());
 
-    let party1_sign_first_msg: SignFirstMsg = requests::postb(
+    let party1_sign_first_msg: SignFirstMsg = match requests::postb(
         client_shim,
         &format!("eddsa/sign/{}/first", id),
-        &(party2_sign_first_msg, message.clone()))
-        .unwrap();
+        &(party2_sign_first_msg, message.clone())) {
+            Some(s) => s,
+            None => return Err(failure::err_msg("party1 sign first message request failed"))
+        };
 
     // round 2: send ephemeral public keys and check commitments.
     // in the two-party setting, the counterparty can immediately return its local signature.
-    let (mut party1_sign_second_msg, mut s1): (SignSecondMsg, Signature) = requests::postb(
+    let (mut party1_sign_second_msg, mut s1): (SignSecondMsg, Signature) = match requests::postb(
         client_shim,
         &format!("eddsa/sign/{}/second", id),
-        &party2_sign_second_msg)
-        .unwrap();
+        &party2_sign_second_msg) {
+            Some(s) => s,
+            None => return Err(failure::err_msg("party1 sign second message request failed"))
+        };
+
     let eight: FE = ECScalar::from(&BigInt::from(8));
     let eight_inverse: FE = eight.invert();
     party1_sign_second_msg.R = party1_sign_second_msg.R * &eight_inverse;
@@ -75,7 +81,7 @@ pub fn sign(
 
     // verify:
     verify(&signature, BigInt::to_vec(&message).as_slice(), &key_agg.apk)
-        .or_else(|e| Err(format_err!("Error while verifying signature {}", e)))
+        .or_else(|e| Err(format_err!("verifying signature failed: {}", e)))
         .and_then(|_| Ok(signature))
 }
 
@@ -91,37 +97,37 @@ pub extern "C" fn sign_message_eddsa(
     let raw_endpoint = unsafe { CStr::from_ptr(c_endpoint) };
     let endpoint = match raw_endpoint.to_str() {
         Ok(s) => s,
-        Err(_) => panic!("Error while decoding raw endpoint"),
+        Err(e) => return error_to_c_string(format_err!("decoding raw endpoint failed: {}", e)),
     };
 
     let raw_auth_token = unsafe { CStr::from_ptr(c_auth_token) };
     let auth_token = match raw_auth_token.to_str() {
         Ok(s) => s,
-        Err(_) => panic!("Error while decoding raw auth_token"),
+        Err(e) => return error_to_c_string(format_err!("decoding raw auth_token failed: {}", e)),
     };
 
     let raw_message_hex = unsafe { CStr::from_ptr(c_message_le_hex) };
     let message_hex = match raw_message_hex.to_str() {
         Ok(s) => s,
-        Err(_) => panic!("Error while decoding raw message_hex"),
+        Err(e) => return error_to_c_string(format_err!("decoding raw message_hex failed: {}", e)),
     };
 
     let raw_key_pair_json = unsafe { CStr::from_ptr(c_key_pair_json) };
     let key_pair_json = match raw_key_pair_json.to_str() {
         Ok(s) => s,
-        Err(_) => panic!("Error while decoding raw key_pair_json"),
+        Err(e) => return error_to_c_string(format_err!("decoding raw key_pair_json failed: {}", e)),
     };
 
     let raw_key_agg_json = unsafe { CStr::from_ptr(c_key_agg_json) };
     let key_agg_json = match raw_key_agg_json.to_str() {
         Ok(s) => s,
-        Err(_) => panic!("Error while decoding raw key_agg_json"),
+        Err(e) => return error_to_c_string(format_err!("decoding raw key_agg_json failed: {}", e)),
     };
 
     let raw_id = unsafe { CStr::from_ptr(c_id) };
     let id = match raw_id.to_str() {
         Ok(s) => s,
-        Err(_) => panic!("Error while decoding raw id"),
+        Err(e) => return error_to_c_string(format_err!("decoding raw id failed: {}", e)),
     };
 
     let client_shim = ClientShim::new(endpoint.to_string(), Some(auth_token.to_string()));
@@ -140,12 +146,12 @@ pub extern "C" fn sign_message_eddsa(
 
     let sig = match sign(&client_shim, message, &key_pair, &key_agg, &id.to_string()) {
         Ok(s) => s,
-        Err(_) => panic!("Error while signing to endpoint {}", endpoint)
+        Err(e) => return error_to_c_string(format_err!("signing to endpoint {} failed: {}", endpoint, e))
     };
 
     let signature_json = match serde_json::to_string(&sig) {
         Ok(share) => share,
-        Err(_) => panic!("Error while encoding signature"),
+        Err(e) => return error_to_c_string(format_err!("encoding signature failed: {}", e)),
     };
 
     CString::new(signature_json.to_owned()).unwrap().into_raw()
