@@ -22,7 +22,9 @@ mod tests {
             .get_child(vec![x_pos.clone(), y_pos.clone()]);
 
         let msg: BigInt = BigInt::from(1234);  // arbitrary message
-        let signature = ecdsa::sign(&client_shim, msg, &child_master_key, x_pos, y_pos, &ps.id);
+        let signature = ecdsa::sign(&client_shim, msg, &child_master_key, x_pos, y_pos, &ps.id)
+            .expect("ECDSA signature failed");
+
         println!(
             "signature = (r: {}, s: {})",
             signature.r.to_hex(),
@@ -39,7 +41,9 @@ mod tests {
         let share: schnorr::Share = schnorr::generate_key(&client_shim).unwrap();
 
         let msg: BigInt = BigInt::from(1234);  // arbitrary message
-        let signature: schnorr::Signature = schnorr::sign(&client_shim, msg, &share).unwrap();
+        let signature = schnorr::sign(&client_shim, msg, &share)
+            .expect("Schnorr signature failed");
+
         println!(
             "signature = (e: {:?}, s: {:?})",
             signature.e,
@@ -60,7 +64,8 @@ mod tests {
 
         let message = BigInt::from(1234);
         let signature = client_lib::eddsa::sign(&client_shim, message, &key_pair, &key_agg, &id)
-            .expect("Error while signing");
+            .expect("EdDSA signature failed");
+
         println!(
             "signature = (R: {}, s: {})",
             signature.R.bytes_compressed_to_big_int().to_hex(),

@@ -125,7 +125,7 @@ pub extern "C" fn sign_message(
         Err(e) => return error_to_c_string(format_err!("decoding raw id failed: {}", e))
     };
 
-    let x: BigInt = BigInt::from(c_x_pos);;
+    let x: BigInt = BigInt::from(c_x_pos);
 
     let y: BigInt = BigInt::from(c_y_pos);
 
