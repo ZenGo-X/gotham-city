@@ -29,12 +29,8 @@ uuid = { version = "0.7", features = ["v4"] }
 electrumx_client = { git = "https://github.com/KZen-networks/rust-electrumx-client", tag = "bitcoin@0.20.0" }
 itertools = "0.8.0"
 hex = "0.3.2"
-bitcoin = "0.16.0"
+bitcoin = "0.20.0"
 config = "0.9"
-
-[dependencies.secp256k1]
-version = "0.12"
-features = ["rand", "serde"]
 
 [dependencies.zk-paillier]
 git = "https://github.com/KZen-networks/zk-paillier"

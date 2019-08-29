@@ -42,7 +42,9 @@ mod tests {
         let share: schnorr::Share = schnorr::generate_key(&client_shim).unwrap();
 
         let msg: BigInt = BigInt::from(1234);  // arbitrary message
-        let signature: schnorr::Signature = schnorr::sign(&client_shim, msg, &share).unwrap();
+        let signature = schnorr::sign(&client_shim, msg, &share)
+            .expect("Schnorr signature failed");
+
         println!(
             "signature = (e: {:?}, s: {:?})",
             signature.e,
