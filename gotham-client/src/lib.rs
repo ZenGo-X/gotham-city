@@ -30,6 +30,7 @@ extern crate bitcoin;
 extern crate electrumx_client;
 extern crate hex;
 extern crate itertools;
+extern crate secp256k1;
 extern crate time;
 extern crate uuid;
 

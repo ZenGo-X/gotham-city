@@ -12,8 +12,6 @@ use bitcoin::consensus::encode::serialize;
 use bitcoin::network::constants::Network;
 use bitcoin::util::bip143::SighashComponents;
 use bitcoin::{TxIn, TxOut};
-use bitcoin::hashes::{sha256d, hex::FromHex};
-use bitcoin::secp256k1::Signature;
 use curv::elliptic::curves::traits::ECPoint;
 use curv::{BigInt, GE};
 use electrumx_client::{electrumx_client::ElectrumxClient, interface::Electrumx};
@@ -35,6 +33,7 @@ use super::ClientShim;
 use curv::arithmetic::traits::Converter;
 use hex;
 use itertools::Itertools;
+use secp256k1::Signature;
 use std::collections::HashMap;
 use std::str::FromStr;
 
@@ -252,7 +251,7 @@ impl Wallet {
             .into_iter()
             .map(|s| bitcoin::TxIn {
                 previous_output: bitcoin::OutPoint {
-                    txid: sha256d::Hash::from_hex(&s.tx_hash).unwrap(),
+                    txid: bitcoin::util::hash::Sha256dHash::from_hex(&s.tx_hash).unwrap(),
                     vout: s.tx_pos as u32,
                 },
                 script_sig: bitcoin::Script::default(),
@@ -304,15 +303,13 @@ impl Wallet {
             let comp = SighashComponents::new(&transaction);
             let sig_hash = comp.sighash_all(
                 &transaction.input[i],
-                &bitcoin::Address::p2pkh(
-                    &to_bitcoin_public_key(pk),
-                    self.get_bitcoin_network()).script_pubkey(),
+                &bitcoin::Address::p2pkh(&pk, self.get_bitcoin_network()).script_pubkey(),
                 (selected[i].value as u32).into(),
             );
 
             let signature = ecdsa::sign(
                 client_shim,
-                BigInt::from_hex(&hex::encode(&sig_hash[..])),
+                BigInt::from_hex(&sig_hash.le_hex_string()),
                 &mk,
                 BigInt::from(0),
                 BigInt::from(address_derivation.pos),
@@ -322,15 +319,14 @@ impl Wallet {
             let mut v = BigInt::to_vec(&signature.r);
             v.extend(BigInt::to_vec(&signature.s));
 
-            let mut sig_vec = Signature::from_compact(&v[..])
-                .unwrap()
-                .serialize_der()
-                .to_vec();
-            sig_vec.push(01);
+            let mut sig = Signature::from_compact(&v[..]).unwrap().serialize_der();
 
-            let pk_vec = pk.serialize().to_vec();
+            sig.push(01);
+            let mut witness = Vec::new();
+            witness.push(sig);
+            witness.push(pk.serialize().to_vec());
 
-            signed_transaction.input[i].witness = vec![sig_vec, pk_vec];
+            signed_transaction.input[i].witness = witness;
         }
 
         let mut electrum = ElectrumxClient::new(ELECTRUM_HOST).unwrap();
@@ -344,10 +340,7 @@ impl Wallet {
     pub fn get_new_bitcoin_address(&mut self) -> bitcoin::Address {
         let (pos, mk) = Self::derive_new_key(&self.private_share, self.last_derived_pos);
         let pk = mk.public.q.get_element();
-        let address = bitcoin::Address::p2wpkh(
-            &to_bitcoin_public_key(pk),
-            self.get_bitcoin_network()
-        );
+        let address = bitcoin::Address::p2wpkh(&pk, self.get_bitcoin_network());
 
         self.addresses_derivation_map
             .insert(address.to_string(), AddressDerivation { mk, pos });
@@ -362,10 +355,7 @@ impl Wallet {
             let (pos, mk) = Self::derive_new_key(&self.private_share, i);
 
             let address =
-                bitcoin::Address::p2wpkh(
-                    &to_bitcoin_public_key(mk.public.q.get_element()),
-                    self.get_bitcoin_network()
-                );
+                bitcoin::Address::p2wpkh(&mk.public.q.get_element(), self.get_bitcoin_network());
 
             self.addresses_derivation_map
                 .insert(address.to_string(), AddressDerivation { mk, pos });
@@ -392,7 +382,7 @@ impl Wallet {
         let list_unspent: Vec<GetListUnspentResponse> = self
             .get_all_addresses_balance()
             .into_iter()
-//            .filter(|b| b.confirmed > 0)
+            .filter(|b| b.confirmed > 0)
             .map(|a| self.list_unspent_for_addresss(a.address.to_string()))
             .flatten()
             .sorted_by(|a, b| a.value.partial_cmp(&b.value).unwrap())
@@ -498,24 +488,13 @@ impl Wallet {
     }
 
     fn to_bitcoin_address(mk: &MasterKey2, network: Network) -> bitcoin::Address {
-        bitcoin::Address::p2wpkh(
-            &to_bitcoin_public_key(mk.public.q.get_element()),
-            network
-        )
-    }
-}
-
-// type conversion
-fn to_bitcoin_public_key(pk: curv::PK) -> bitcoin::util::key::PublicKey {
-    bitcoin::util::key::PublicKey {
-        compressed: true,
-        key: pk
+        bitcoin::Address::p2wpkh(&mk.public.q.get_element(), network)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use bitcoin::hashes::sha256d;
+    use bitcoin::util::hash::Sha256dHash;
     use curv::arithmetic::traits::Converter;
     use curv::BigInt;
 
@@ -527,7 +506,7 @@ mod tests {
         ];
 
         // 14abf5ed107ff58bf844ee7f447bec317c276b00905c09a45434f8848599597e
-        let hash = sha256d::Hash::from_slice(&message);
+        let hash = Sha256dHash::from_data(&message);
 
         // 7e59998584f83454a4095c90006b277c31ec7b447fee44f88bf57f10edf5ab14
         let ser = hash.le_hex_string();
