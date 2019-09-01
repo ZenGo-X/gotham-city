@@ -22,7 +22,10 @@ mod tests {
             .get_child(vec![x_pos.clone(), y_pos.clone()]);
 
         let msg: BigInt = BigInt::from(1234);  // arbitrary message
-        let signature = ecdsa::sign(&client_shim, msg, &child_master_key, x_pos, y_pos, &ps.id);
+        let signature =
+            ecdsa::sign(&client_shim, msg, &child_master_key, x_pos, y_pos, &ps.id)
+                .expect("ECDSA signature failed");
+
         println!(
             "signature = (r: {}, s: {})",
             signature.r.to_hex(),
@@ -59,8 +62,10 @@ mod tests {
         let (key_pair, key_agg, id) = client_lib::eddsa::generate_key(&client_shim).unwrap();
 
         let message = BigInt::from(1234);
-        let signature = client_lib::eddsa::sign(&client_shim, message, &key_pair, &key_agg, &id)
-            .expect("Error while signing");
+        let signature =
+            client_lib::eddsa::sign(&client_shim, message, &key_pair, &key_agg, &id)
+            .expect("EdDSA signature failed");
+
         println!(
             "signature = (R: {}, s: {})",
             signature.R.bytes_compressed_to_big_int().to_hex(),
