@@ -37,27 +37,27 @@ hex = "0.3.2"
 
 [dependencies.zk-paillier]
 git = "https://github.com/KZen-networks/zk-paillier"
-branch = "feature/libra-support"
+branch = "feature/libra-support-fix"
 
 [dependencies.kms]
 git = "https://github.com/KZen-networks/kms-secp256k1"
-branch = "feature/libra-support"
+branch = "feature/libra-support-fix"
 
 [dependencies.multi-party-ecdsa]
 git = "https://github.com/KZen-networks/multi-party-ecdsa"
-branch = "feature/libra-support"
+branch = "feature/libra-support-fix"
 
 [dependencies.multi-party-ed25519]
 git = "https://github.com/KZen-networks/multi-party-eddsa"
-branch = "feature/libra-support"
+branch = "feature/libra-support-fix"
 
 [dependencies.multi-party-schnorr]
 git = "https://github.com/KZen-networks/multi-party-schnorr"
-branch = "feature/libra-support"
+branch = "feature/libra-support-fix"
 
 [dependencies.curv]
 git = "https://github.com/KZen-networks/curv"
-branch = "feature/libra-support"
+branch = "feature/libra-support-fix"
 features =  ["ec_secp256k1"]
 
 [dependencies.serde_dynamodb]
