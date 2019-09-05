@@ -37,14 +37,12 @@ git = "https://github.com/KZen-networks/zk-paillier"
 tag = "v0.2.0"
 
 [dependencies.kms]
-#git = "https://github.com/KZen-networks/kms-secp256k1"
-#branch = "feature/libra-support-fix"
-path = "../../kms-secp256k1"
+git = "https://github.com/KZen-networks/kms-secp256k1"
+tag = "v0.1.0"
 
 [dependencies.multi-party-ecdsa]
-#git = "https://github.com/KZen-networks/multi-party-ecdsa"
-#branch = "feature/libra-support-fix"
-path = "../../multi-party-ecdsa"
+git = "https://github.com/KZen-networks/multi-party-ecdsa"
+tag = "v0.1.0"
 
 [dependencies.multi-party-ed25519]
 git = "https://github.com/KZen-networks/multi-party-eddsa"
