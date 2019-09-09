@@ -15,22 +15,26 @@ mod tests {
 
         let ps: ecdsa::PrivateShare = ecdsa::get_master_key(&client_shim);
 
-        let x_pos = BigInt::from(0);
-        let y_pos = BigInt::from(0);
-        let child_master_key = ps
-            .master_key
-            .get_child(vec![x_pos.clone(), y_pos.clone()]);
+        for y in 0..10 {
+            let x_pos = BigInt::from(0);
+            let y_pos = BigInt::from(y);
+            println!("Deriving child_master_key at [x: {}, y:{}]", x_pos, y_pos);
 
-        let msg: BigInt = BigInt::from(1234);  // arbitrary message
-        let signature =
-            ecdsa::sign(&client_shim, msg, &child_master_key, x_pos, y_pos, &ps.id)
-                .expect("ECDSA signature failed");
+            let child_master_key = ps
+                .master_key
+                .get_child(vec![x_pos.clone(), y_pos.clone()]);
 
-        println!(
-            "signature = (r: {}, s: {})",
-            signature.r.to_hex(),
-            signature.s.to_hex()
-        );
+            let msg: BigInt = BigInt::from(y + 1);  // arbitrary message
+            let signature =
+                ecdsa::sign(&client_shim, msg, &child_master_key, x_pos, y_pos, &ps.id)
+                    .expect("ECDSA signature failed");
+
+            println!(
+                "signature = (r: {}, s: {})",
+                signature.r.to_hex(),
+                signature.s.to_hex()
+            );
+        }
     }
 
     #[test]
