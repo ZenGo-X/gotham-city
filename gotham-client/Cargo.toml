@@ -46,7 +46,7 @@ tag = "v0.1.0"
 
 [dependencies.multi-party-ed25519]
 git = "https://github.com/KZen-networks/multi-party-eddsa"
-branch = "alt-curv-v0.2.0"
+tag = "curv2@v0.2.0"
 
 [dependencies.multi-party-schnorr]
 git = "https://github.com/KZen-networks/multi-party-schnorr"
