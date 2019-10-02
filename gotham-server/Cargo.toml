@@ -47,9 +47,9 @@ tag = "v0.1.0"
 git = "https://github.com/KZen-networks/multi-party-ecdsa"
 tag = "v0.1.0"
 
-[dependencies.multi-party-ed25519]
+[dependencies.multi-party-eddsa]
 git = "https://github.com/KZen-networks/multi-party-eddsa"
-tag = "curv-replica@v0.2.0"
+tag = "v0.2.1"
 
 [dependencies.multi-party-schnorr]
 git = "https://github.com/KZen-networks/multi-party-schnorr"

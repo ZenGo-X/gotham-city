@@ -64,4 +64,4 @@ impl ClientShim {
 }
 
 pub use curv::{BigInt, arithmetic::traits::Converter};
-pub use multi_party_ed25519::protocols::aggsig::*;
+pub use multi_party_eddsa::protocols::aggsig::*;

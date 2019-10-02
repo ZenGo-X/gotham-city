@@ -15,7 +15,7 @@ use super::super::ClientShim;
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
 
-use multi_party_ed25519::protocols::aggsig::*;
+use multi_party_eddsa::protocols::aggsig::*;
 
 const PARTY2_INDEX: usize = 1; // client (self)
 

@@ -7,7 +7,7 @@ use super::super::auth::jwt::Claims;
 use super::super::storage::db;
 use super::super::Config;
 
-use multi_party_ed25519::protocols::aggsig::*;
+use multi_party_eddsa::protocols::aggsig::*;
 use self::EddsaStruct::*;
 
 const PARTY1_INDEX: usize = 0;
