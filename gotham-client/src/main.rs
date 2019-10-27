@@ -11,7 +11,7 @@
 extern crate clap;
 use clap::App;
 
-use client_lib::api;
+use client_lib::ClientShim;
 use client_lib::escrow;
 use client_lib::wallet;
 use time::PreciseTime;
@@ -34,7 +34,7 @@ fn main() {
     let hm = settings.try_into::<HashMap<String, String>>().unwrap();
     let endpoint = hm.get("endpoint").unwrap();
 
-    let client_shim = api::ClientShim::new(endpoint.to_string(), None);
+    let client_shim = ClientShim::new(endpoint.to_string(), None);
 
     let network = "testnet".to_string();
 

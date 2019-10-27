@@ -30,11 +30,6 @@ extern crate serde_derive;
 extern crate serde;
 extern crate serde_json;
 
-extern crate strum;
-
-#[macro_use]
-extern crate strum_macros;
-
 #[macro_use]
 extern crate log;
 
@@ -57,3 +52,7 @@ pub mod storage;
 pub mod tests;
 
 type Result<T> = std::result::Result<T, failure::Error>;
+
+pub struct Config {
+    pub db: storage::db::DB,
+}

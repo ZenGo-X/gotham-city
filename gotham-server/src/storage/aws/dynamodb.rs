@@ -1,4 +1,3 @@
-use super::super::super::routes::ecdsa::Share;
 use super::error::*;
 use super::*;
 use failure;
@@ -36,9 +35,12 @@ where
         customerId: user_id.to_string(),
         id: id.to_string(),
     };
+    println!("identifier = {:?}", identifier);
 
     let mut item = serde_dynamodb::to_hashmap(&identifier).unwrap();
+    println!("item #1 = {:?}", item);
     item.extend(serde_dynamodb::to_hashmap(&v).unwrap());
+    println!("item #2 = {:?}", item);
 
     let put_item_input = PutItemInput {
         item: item,
@@ -58,13 +60,14 @@ pub fn get<'a, T>(
     user_id: &str,
     id: &str,
     table_name: String,
+    require_customer_id: bool
 ) -> std::result::Result<Option<T>, failure::Error>
 where
     T: serde::de::Deserialize<'a>,
 {
     let mut query_key: HashMap<String, AttributeValue> = HashMap::new();
 
-    if table_name.contains(&Share::Party1MasterKey.to_string()) {
+    if require_customer_id {
         query_key.insert(
             "customerId".to_string(),
             AttributeValue {
@@ -82,7 +85,7 @@ where
         },
     );
 
-    info!("Querying table {}, key: {:?}", table_name, query_key);
+    println!("Querying table {}, key: {:?}", table_name, query_key);
 
     let query_item = GetItemInput {
         key: query_key,
@@ -93,27 +96,36 @@ where
     match dynamodb_client.get_item(query_item).sync() {
         Ok(item_from_dynamo) => match item_from_dynamo.item {
             None => {
-                info!("nothing received from Dynamo, item may not exist");
+                println!("nothing received from Dynamo, item may not exist");
                 Ok(None)
             }
             Some(mut attributes_map) => {
                 // This is not the best we can do but if you look at the DBItemIdentifier above
                 // we augment it with the ser/de of the actual object, so we remove extra fields
                 // here. TODO: Is there something cleaner?
+                println!("#1");
                 attributes_map.remove(CUSTOMER_ID_IDENTIFIER);
                 attributes_map.remove(ID_IDENTIFIER);
+                println!("#2, attributes_map = {:?}", attributes_map);
 
                 let raw_item: serde_dynamodb::error::Result<T> =
                     serde_dynamodb::from_hashmap(attributes_map);
+                println!("#3");
 
                 match raw_item {
-                    Ok(s) => Ok(Some(s)),
-                    Err(_e) => Ok(None),
+                    Ok(s) => {
+                        println!("#4");
+                        Ok(Some(s))
+                    },
+                    Err(_e) => {
+                        println!("#5, {}", _e);
+                        Ok(None)
+                    },
                 }
             }
         },
         Err(err) => {
-            info!("Error retrieving object: {:?}", err);
+            println!("Error retrieving object: {:?}", err);
             Err(failure::err_msg(format!("{:?}", err)))
         }
     }

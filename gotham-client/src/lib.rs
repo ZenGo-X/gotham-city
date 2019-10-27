@@ -23,17 +23,45 @@ extern crate serde_json;
 #[macro_use]
 extern crate log;
 
+#[macro_use]
+extern crate failure;
+
 extern crate bitcoin;
 extern crate electrumx_client;
 extern crate hex;
 extern crate itertools;
-extern crate secp256k1;
 extern crate time;
 extern crate uuid;
 
-pub mod api;
 pub mod ecdsa;
 pub mod escrow;
-pub mod utilities;
 pub mod wallet;
-pub mod tests;
+
+pub mod eddsa;
+pub mod schnorr;
+
+mod utilities;
+mod tests;
+
+type Result<T> = std::result::Result<T, failure::Error>;
+
+#[derive(Debug)]
+pub struct ClientShim {
+    pub client: reqwest::Client,
+    pub auth_token: Option<String>,
+    pub endpoint: String,
+}
+
+impl ClientShim {
+    pub fn new(endpoint: String, auth_token: Option<String>) -> ClientShim {
+        let client = reqwest::Client::new();
+        ClientShim {
+            client,
+            auth_token,
+            endpoint,
+        }
+    }
+}
+
+pub use curv::{BigInt, arithmetic::traits::Converter};
+pub use multi_party_eddsa::protocols::aggsig::*;

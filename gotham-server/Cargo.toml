@@ -1,7 +1,10 @@
 [package]
 name = "gotham-server"
 version = "0.1.0"
-authors = ["gbenattar <g.benattar@gmail.com>"]
+authors = [
+    "gbenattar <g.benattar@gmail.com>",
+    "Oded Leiba <odedleiba5@gmail.com"
+]
 edition = "2018"
 
 [lib]
@@ -13,16 +16,14 @@ name = "server_exec"
 path = "src/main.rs"
 
 [dependencies]
-rocket = "0.4.0"
-rocket_contrib = "0.4.0"
+rocket = { version = "0.4.2", default-features = false }
+rocket_contrib = { version = "0.4.2", default-features = false }
 rocksdb = "0.10.1"
 serde = "1.0"
 serde_json = "1.0"
 serde_derive = "1.0"
 rusoto_dynamodb = "0.36.0"
 rusoto_core = "0.36.0"
-strum = "0.12.0"
-strum_macros = "0.12.0"
 time-test = "0.2.1"
 log = "0.4"
 time = "*"
@@ -30,21 +31,33 @@ config = "0.9.2"
 uuid = { version = "0.7", features = ["v4"] }
 error-chain = "0.12.0"
 failure = "0.1.5"
-jsonwebtoken = "5"
+jsonwebtoken = "6.0.1"
 rust-crypto = "0.2"
 hex = "0.3.2"
 
 [dependencies.zk-paillier]
 git = "https://github.com/KZen-networks/zk-paillier"
+tag = "v0.2.0"
 
 [dependencies.kms]
-git = "https://github.com/KZen-networks/kms"
+git = "https://github.com/KZen-networks/kms-secp256k1"
+tag = "v0.1.0"
 
 [dependencies.multi-party-ecdsa]
 git = "https://github.com/KZen-networks/multi-party-ecdsa"
+tag = "v0.1.0"
+
+[dependencies.multi-party-eddsa]
+git = "https://github.com/KZen-networks/multi-party-eddsa"
+tag = "v0.2.1"
+
+[dependencies.multi-party-schnorr]
+git = "https://github.com/KZen-networks/multi-party-schnorr"
+tag = "v0.3.0"
 
 [dependencies.curv]
 git = "https://github.com/KZen-networks/curv"
+tag = "v0.2.0"
 features =  ["ec_secp256k1"]
 
 [dependencies.serde_dynamodb]

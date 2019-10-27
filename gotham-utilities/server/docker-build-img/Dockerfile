@@ -16,27 +16,29 @@ RUN apt-get update && apt-get install -y \
 RUN curl -sL https://deb.nodesource.com/setup_11.x | bash -
 RUN apt-get install -y nodejs
 
-# Adding utilities for JWT and Cognito auth
-ADD gotham-utilities /gotham-utilities
+ADD . /
+
 WORKDIR /gotham-utilities/server/cognito
 RUN ["npm", "install"]
 
-WORKDIR /
-
 # Rust
 ARG CHANNEL="nightly"
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain ${CHANNEL}
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain nightly-2019-07-10
 
-# Server
 ENV rocket_address=0.0.0.0
 ENV rocket_port=8000
-ENV db=AWS
 
 EXPOSE 8000
-ADD gotham-server /app
-WORKDIR /app
-RUN ["/root/.cargo/bin/cargo", "update"]
+WORKDIR /gotham-server
 RUN ["/root/.cargo/bin/cargo", "build", "--release"]
+
+
+WORKDIR /integration-tests
+RUN ["/root/.cargo/bin/cargo", "test", "--release", "--", "--nocapture"]
+
+# Server
+ENV db=AWS
+WORKDIR /gotham-server
 CMD ["/root/.cargo/bin/cargo", "run", "--release"]
 
 

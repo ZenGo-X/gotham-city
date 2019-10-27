@@ -1,7 +1,10 @@
 [package]
 name = "gotham-client"
 version = "0.1.0"
-authors = ["gbenattar <g.benattar@gmail.com>"]
+authors = [
+    "gbenattar <g.benattar@gmail.com>",
+    "Oded Leiba <odedleiba5@gmail.com"
+]
 edition = "2018"
 
 [lib]
@@ -21,28 +24,37 @@ log = "0.4"
 time = "*"
 clap = { version = "2.32", features = ["yaml"] }
 reqwest = "0.9.5"
+failure = "0.1.5"
 uuid = { version = "0.7", features = ["v4"] }
-electrumx_client = { git = "https://github.com/KZen-networks/rust-electrumx-client" }
+electrumx_client = { git = "https://github.com/KZen-networks/rust-electrumx-client", tag = "bitcoin@0.20.0" }
 itertools = "0.8.0"
 hex = "0.3.2"
-bitcoin = "0.16.0"
+bitcoin = "0.20.0"
 config = "0.9"
-
-[dependencies.secp256k1]
-version = "0.12"
-features = ["rand", "serde"]
 
 [dependencies.zk-paillier]
 git = "https://github.com/KZen-networks/zk-paillier"
+tag = "v0.2.0"
 
 [dependencies.kms]
-git = "https://github.com/KZen-networks/kms"
+git = "https://github.com/KZen-networks/kms-secp256k1"
+tag = "v0.1.0"
 
 [dependencies.multi-party-ecdsa]
 git = "https://github.com/KZen-networks/multi-party-ecdsa"
+tag = "v0.1.0"
+
+[dependencies.multi-party-eddsa]
+git = "https://github.com/KZen-networks/multi-party-eddsa"
+tag = "v0.2.1"
+
+[dependencies.multi-party-schnorr]
+git = "https://github.com/KZen-networks/multi-party-schnorr"
+tag = "v0.3.0"
 
 [dependencies.curv]
 git = "https://github.com/KZen-networks/curv"
+tag = "v0.2.0"
 features =  ["ec_secp256k1"]
 
 [patch.crates-io]
@@ -50,3 +62,4 @@ rust-gmp = { version = "0.5.0", features = ["serde_support"], git = "https://git
 
 [dependencies.centipede]
 git = "https://github.com/KZen-networks/centipede"
+tag = "v0.2.0"
