@@ -1,6 +1,6 @@
 [package]
 name = "gotham-server"
-version = "0.1.0"
+version = "0.2.0"
 authors = [
     "gbenattar <g.benattar@gmail.com>",
     "Oded Leiba <odedleiba5@gmail.com"
@@ -17,7 +17,7 @@ path = "src/main.rs"
 
 [dependencies]
 rocket = { version = "0.4.2", default-features = false }
-rocket_contrib = { version = "0.4.2", default-features = false }
+rocket_contrib = { version = "0.4.2", default-features = false,features = ["json"] }
 rocksdb = "0.10.1"
 serde = "1.0"
 serde_json = "1.0"
@@ -37,15 +37,15 @@ hex = "0.3.2"
 
 [dependencies.zk-paillier]
 git = "https://github.com/KZen-networks/zk-paillier"
-tag = "v0.2.0"
+tag = "v0.2.4"
 
 [dependencies.kms]
 git = "https://github.com/KZen-networks/kms-secp256k1"
-tag = "v0.1.0"
+tag = "v0.2.0"
 
 [dependencies.multi-party-ecdsa]
 git = "https://github.com/KZen-networks/multi-party-ecdsa"
-tag = "v0.1.0"
+tag = "v0.2.5"
 
 [dependencies.multi-party-eddsa]
 git = "https://github.com/KZen-networks/multi-party-eddsa"
@@ -53,11 +53,11 @@ tag = "v0.2.1"
 
 [dependencies.multi-party-schnorr]
 git = "https://github.com/KZen-networks/multi-party-schnorr"
-tag = "v0.3.0"
+tag = "v0.3.1"
 
 [dependencies.curv]
 git = "https://github.com/KZen-networks/curv"
-tag = "v0.2.0"
+tag = "v0.2.2"
 features =  ["ec_secp256k1"]
 
 [dependencies.serde_dynamodb]

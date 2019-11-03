@@ -113,7 +113,7 @@ impl Wallet {
         let g: GE = ECPoint::generator();
         let y = escrow_service.get_public_key();
         let (segments, encryptions) = self.private_share.master_key.private.to_encrypted_segment(
-            &escrow::SEGMENT_SIZE,
+            escrow::SEGMENT_SIZE,
             escrow::NUM_SEGMENTS,
             &y,
             &g,
