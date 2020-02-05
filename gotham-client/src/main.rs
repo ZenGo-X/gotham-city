@@ -15,6 +15,7 @@ use client_lib::ClientShim;
 use client_lib::escrow;
 use client_lib::wallet;
 use std::time::Instant;
+use floating_duration::TimeAsFloat;
 
 use std::collections::HashMap;
 
