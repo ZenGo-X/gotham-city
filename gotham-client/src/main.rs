@@ -14,7 +14,7 @@ use clap::App;
 use client_lib::ClientShim;
 use client_lib::escrow;
 use client_lib::wallet;
-use time::PreciseTime;
+use std::time::Instant;
 
 use std::collections::HashMap;
 
@@ -73,40 +73,36 @@ fn main() {
 
             println!("Backup private share pending (it can take some time)...");
 
-            let start = PreciseTime::now();
+            let start = Instant::now();
             wallet.backup(escrow);
-            let end = PreciseTime::now();
 
-            println!("Backup key saved in escrow (Took: {})", start.to(end));
+            println!("Backup key saved in escrow (Took: {})", start.elapsed().as_secs());
         } else if matches.is_present("verify") {
             let escrow = escrow::Escrow::load();
 
             println!("verify encrypted backup (it can take some time)...");
 
-            let start = PreciseTime::now();
+            let start = Instant::now();
             wallet.verify_backup(escrow);
-            let end = PreciseTime::now();
 
-            println!(" (Took: {})", start.to(end));
+            println!(" (Took: {})", start.elapsed().as_secs());
         } else if matches.is_present("restore") {
             let escrow = escrow::Escrow::load();
 
             println!("backup recovery in process 📲 (it can take some time)...");
 
-            let start = PreciseTime::now();
+            let start = Instant::now();
             wallet::Wallet::recover_and_save_share(escrow, &network, &client_shim);
-            let end = PreciseTime::now();
 
-            println!(" Backup recovered 💾(Took: {})", start.to(end));
+            println!(" Backup recovered 💾(Took: {})", start.elapsed().as_secs());
         } else if matches.is_present("rotate") {
             println!("Rotating secret shares");
 
-            let start = PreciseTime::now();
+            let start = Instant::now();
             let wallet = wallet.rotate(&client_shim);
             wallet.save();
-            let end = PreciseTime::now();
 
-            println!("key rotation complete, (Took: {})", start.to(end));
+            println!("key rotation complete, (Took: {})", start.elapsed().as_secs());
         } else if matches.is_present("send") {
             if let Some(matches) = matches.subcommand_matches("send") {
                 let to: &str = matches.value_of("to").unwrap();

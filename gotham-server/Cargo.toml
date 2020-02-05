@@ -26,7 +26,6 @@ rusoto_dynamodb = "0.36.0"
 rusoto_core = "0.36.0"
 time-test = "0.2.1"
 log = "0.4"
-time = "*"
 config = "0.9.2"
 uuid = { version = "0.7", features = ["v4"] }
 error-chain = "0.12.0"
