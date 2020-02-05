@@ -39,7 +39,7 @@ mod tests {
             .dispatch();
         assert_eq!(response.status(), Status::Ok);
 
-        println!("{} Network/Server: party1 first message", start.elapsed().as_fractional_secs());
+        println!("{} Network/Server: party1 first message", TimeFormat(start.elapsed()));
 
         let res_body = response.body_string().unwrap();
         let (id, kg_party_one_first_message): (String, party_one::KeyGenFirstMsg) =
@@ -50,7 +50,7 @@ mod tests {
         let (kg_party_two_first_message, kg_ec_key_pair_party2) =
             MasterKey2::key_gen_first_message();
 
-        println!("{} Client: party2 first message", start.elapsed().as_fractional_secs());
+        println!("{} Client: party2 first message", TimeFormat(start.elapsed()));
         /*************** END: FIRST MESSAGE ***************/
 
         /*************** START: SECOND MESSAGE ***************/
@@ -65,7 +65,7 @@ mod tests {
             .dispatch();
         assert_eq!(response.status(), Status::Ok);
 
-        println!("{} Network/Server: party1 second message", start.elapsed().as_fractional_secs());
+        println!("{} Network/Server: party1 second message", TimeFormat(start.elapsed()));
 
         let res_body = response.body_string().unwrap();
         let kg_party_one_second_message: party1::KeyGenParty1Message2 =
@@ -79,7 +79,7 @@ mod tests {
         );
         assert!(key_gen_second_message.is_ok());
 
-        println!("{} Client: party2 second message", start.elapsed().as_fractional_secs());
+        println!("{} Client: party2 second message", TimeFormat(start.elapsed()));
 
         let (party_two_second_message, party_two_paillier, party_two_pdl_chal) =
             key_gen_second_message.unwrap();
@@ -97,7 +97,7 @@ mod tests {
             .dispatch();
         assert_eq!(response.status(), Status::Ok);
 
-        println!("{} Network/Server: party1 third message", start.elapsed().as_fractional_secs());
+        println!("{} Network/Server: party1 third message", TimeFormat(start.elapsed()));
 
         let res_body = response.body_string().unwrap();
         let party_one_third_message: party_one::PDLFirstMessage =
@@ -107,7 +107,7 @@ mod tests {
 
         let pdl_decom_party2 = MasterKey2::key_gen_third_message(&party_two_pdl_chal);
 
-        println!("{} Client: party2 third message", start.elapsed().as_fractional_secs());
+        println!("{} Client: party2 third message", TimeFormat(start.elapsed()));
         /*************** END: THIRD MESSAGE ***************/
 
         /*************** START: FOURTH MESSAGE ***************/
@@ -125,7 +125,7 @@ mod tests {
             .dispatch();
         assert_eq!(response.status(), Status::Ok);
 
-        println!("{} Network/Server: party1 fourth message", start.elapsed().as_fractional_secs());
+        println!("{} Network/Server: party1 fourth message", TimeFormat(start.elapsed()));
 
         let res_body = response.body_string().unwrap();
         let party_one_pdl_second_message: party_one::PDLSecondMessage =
@@ -140,7 +140,7 @@ mod tests {
         )
         .expect("pdl error party1");
 
-        println!("{} Client: party2 fourth message", start.elapsed().as_fractional_secs());
+        println!("{} Client: party2 fourth message", TimeFormat(start.elapsed()));
         /*************** END: FOURTH MESSAGE ***************/
 
         /*************** START: CHAINCODE FIRST MESSAGE ***************/
@@ -154,7 +154,7 @@ mod tests {
 
         println!(
             "{} Network/Server: party1 chain code first message",
-            start.elapsed().as_fractional_secs()
+            TimeFormat(start.elapsed())
         );
 
         let res_body = response.body_string().unwrap();
@@ -165,7 +165,7 @@ mod tests {
         let (cc_party_two_first_message, cc_ec_key_pair2) =
             chain_code::party2::ChainCode2::chain_code_first_message();
 
-        println!("{} Client: party2 chain code first message", start.elapsed().as_fractional_secs());
+        println!("{} Client: party2 chain code first message", TimeFormat(start.elapsed()));
         /*************** END: CHAINCODE FIRST MESSAGE ***************/
 
         /*************** START: CHAINCODE SECOND MESSAGE ***************/
@@ -182,7 +182,7 @@ mod tests {
 
         println!(
             "{} Network/Server: party1 chain code second message",
-            start.elapsed().as_fractional_secs()
+            TimeFormat(start.elapsed())
         );
 
         let res_body = response.body_string().unwrap();
@@ -196,7 +196,7 @@ mod tests {
                 &cc_party_one_second_message,
             );
 
-        println!("{} Client: party2 chain code second message", start.elapsed().as_fractional_secs());
+        println!("{} Client: party2 chain code second message", TimeFormat(start.elapsed()));
         /*************** END: CHAINCODE SECOND MESSAGE ***************/
 
         let start = Instant::now();
@@ -206,7 +206,7 @@ mod tests {
         )
         .chain_code;
 
-        println!("{} Client: party2 chain code second message", start.elapsed().as_fractional_secs());
+        println!("{} Client: party2 chain code second message", TimeFormat(start.elapsed()));
         /*************** END: CHAINCODE COMPUTE MESSAGE ***************/
 
         let start = Instant::now();
@@ -220,7 +220,7 @@ mod tests {
             &party_two_paillier,
         );
 
-        println!("{} Client: party2 master_key", start.elapsed().as_fractional_secs());
+        println!("{} Client: party2 master_key", TimeFormat(start.elapsed()));
         /*************** END: MASTER KEYS MESSAGE ***************/
 
         (id, party_two_master_key)
@@ -251,7 +251,7 @@ mod tests {
 
         println!(
             "{} Network/Server: party1 sign first message",
-            start.elapsed().as_fractional_secs()
+            TimeFormat(start.elapsed())
         );
 
         let res_body = response.body_string().unwrap();
@@ -272,7 +272,7 @@ mod tests {
             &message,
         );
 
-        println!("{} Client: party2 sign second message", start.elapsed().as_fractional_secs());
+        println!("{} Client: party2 sign second message", TimeFormat(start.elapsed()));
 
         let request: ecdsa::SignSecondMsgRequest = ecdsa::SignSecondMsgRequest {
             message,
@@ -294,7 +294,7 @@ mod tests {
 
         println!(
             "{} Network/Server: party1 sign second message",
-            start.elapsed().as_fractional_secs()
+            TimeFormat(start.elapsed())
         );
 
         let res_body = response.body_string().unwrap();

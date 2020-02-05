@@ -9,7 +9,7 @@
 
 use serde_json;
 use std::time::Instant;
-use floating_duration::TimeAsFloat;
+use floating_duration::TimeFormat;
 
 use curv::cryptographic_primitives::twoparty::dh_key_exchange_variant_with_pok_comm::*;
 use kms::chain_code::two_party as chain_code;
@@ -109,7 +109,7 @@ pub fn get_master_key(client_shim: &ClientShim) -> PrivateShare {
         &party_two_paillier,
     );
 
-    println!("(id: {}) Took: {}", id, start.elapsed().as_fractional_secs());
+    println!("(id: {}) Took: {}", id, TimeFormat(start.elapsed()));
 
     PrivateShare { id, master_key }
 }

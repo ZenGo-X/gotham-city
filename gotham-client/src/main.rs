@@ -15,7 +15,7 @@ use client_lib::ClientShim;
 use client_lib::escrow;
 use client_lib::wallet;
 use std::time::Instant;
-use floating_duration::TimeAsFloat;
+use floating_duration::TimeFormat;
 
 use std::collections::HashMap;
 
@@ -77,7 +77,7 @@ fn main() {
             let start = Instant::now();
             wallet.backup(escrow);
 
-            println!("Backup key saved in escrow (Took: {})", start.elapsed().as_fractional_secs());
+            println!("Backup key saved in escrow (Took: {})", TimeFormat(start.elapsed()));
         } else if matches.is_present("verify") {
             let escrow = escrow::Escrow::load();
 
@@ -86,7 +86,7 @@ fn main() {
             let start = Instant::now();
             wallet.verify_backup(escrow);
 
-            println!(" (Took: {})", start.elapsed().as_fractional_secs());
+            println!(" (Took: {})", TimeFormat(start.elapsed()));
         } else if matches.is_present("restore") {
             let escrow = escrow::Escrow::load();
 
@@ -95,7 +95,7 @@ fn main() {
             let start = Instant::now();
             wallet::Wallet::recover_and_save_share(escrow, &network, &client_shim);
 
-            println!(" Backup recovered 💾(Took: {})", start.elapsed().as_fractional_secs());
+            println!(" Backup recovered 💾(Took: {})", TimeFormat(start.elapsed()));
         } else if matches.is_present("rotate") {
             println!("Rotating secret shares");
 
@@ -103,7 +103,7 @@ fn main() {
             let wallet = wallet.rotate(&client_shim);
             wallet.save();
 
-            println!("key rotation complete, (Took: {})", start.elapsed().as_fractional_secs());
+            println!("key rotation complete, (Took: {})", TimeFormat(start.elapsed()));
         } else if matches.is_present("send") {
             if let Some(matches) = matches.subcommand_matches("send") {
                 let to: &str = matches.value_of("to").unwrap();
