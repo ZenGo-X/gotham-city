@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.com/KZen-networks/gotham-city.svg?branch=master)](https://travis-ci.com/KZen-networks/gotham-city)
+[![Build Status](https://travis-ci.org/KZen-networks/gotham-city.svg?branch=master)](https://travis-ci.org/KZen-networks/gotham-city)
 
 Gotham City
 =====================================
