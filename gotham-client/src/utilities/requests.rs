@@ -8,6 +8,7 @@
 //
 use serde;
 use std::time::Instant;
+use floating_duration::TimeAsFloat;
 use super::super::ClientShim;
 
 pub fn post<V>(client_shim: &ClientShim, path: &str) -> Option<V>
@@ -41,7 +42,7 @@ fn _postb<T, V>(client_shim: &ClientShim, path: &str, body: T) -> Option<V>
 
     let res = b.json(&body).send();
 
-    info!("(req {}, took: {})", path, start.elapsed().as_secs());
+    info!("(req {}, took: {})", path, start.elapsed().as_fractional_secs());
 
     let value = match res {
         Ok(mut v) => v.text().unwrap(),
