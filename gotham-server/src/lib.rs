@@ -36,7 +36,7 @@ extern crate log;
 #[cfg(test)]
 #[macro_use]
 extern crate time_test;
-extern crate time;
+extern crate floating_duration;
 
 extern crate crypto;
 extern crate jsonwebtoken as jwt;

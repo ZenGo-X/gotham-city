@@ -7,7 +7,8 @@
 // version 3 of the License, or (at your option) any later version.
 //
 use serde;
-use time::PreciseTime;
+use std::time::Instant;
+use floating_duration::TimeFormat;
 use super::super::ClientShim;
 
 pub fn post<V>(client_shim: &ClientShim, path: &str) -> Option<V>
@@ -29,7 +30,7 @@ fn _postb<T, V>(client_shim: &ClientShim, path: &str, body: T) -> Option<V>
         T: serde::ser::Serialize,
         V: serde::de::DeserializeOwned
 {
-    let start = PreciseTime::now();
+    let start = Instant::now();
 
     let mut b = client_shim
         .client
@@ -41,9 +42,7 @@ fn _postb<T, V>(client_shim: &ClientShim, path: &str, body: T) -> Option<V>
 
     let res = b.json(&body).send();
 
-    let end = PreciseTime::now();
-
-    info!("(req {}, took: {})", path, start.to(end));
+    info!("(req {}, took: {})", path, TimeFormat(start.elapsed()));
 
     let value = match res {
         Ok(mut v) => v.text().unwrap(),

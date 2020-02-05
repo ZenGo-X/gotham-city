@@ -1,0 +1,8 @@
+language: rust
+cache: cargo
+rust:
+  - nightly-2019-07-10
+
+script:
+  - cd integration-tests
+  - cargo test --verbose

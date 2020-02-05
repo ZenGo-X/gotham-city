@@ -8,7 +8,8 @@
 //
 
 use serde_json;
-use time::PreciseTime;
+use std::time::Instant;
+use floating_duration::TimeFormat;
 
 use curv::cryptographic_primitives::twoparty::dh_key_exchange_variant_with_pok_comm::*;
 use kms::chain_code::two_party as chain_code;
@@ -26,7 +27,7 @@ use std::os::raw::c_char;
 const KG_PATH_PRE: &str = "ecdsa/keygen";
 
 pub fn get_master_key(client_shim: &ClientShim) -> PrivateShare {
-    let start = PreciseTime::now();
+    let start = Instant::now();
 
     let (id, kg_party_one_first_message): (String, party_one::KeyGenFirstMsg) =
         requests::post(client_shim, &format!("{}/first", KG_PATH_PRE)).unwrap();
@@ -108,8 +109,7 @@ pub fn get_master_key(client_shim: &ClientShim) -> PrivateShare {
         &party_two_paillier,
     );
 
-    let end = PreciseTime::now();
-    println!("(id: {}) Took: {}", id, start.to(end));
+    println!("(id: {}) Took: {}", id, TimeFormat(start.elapsed()));
 
     PrivateShare { id, master_key }
 }
