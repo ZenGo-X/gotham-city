@@ -1,6 +1,6 @@
 [package]
 name = "gotham-server"
-version = "0.1.1"
+version = "0.1.2"
 authors = [
     "gbenattar <g.benattar@gmail.com>",
     "Oded Leiba <odedleiba5@gmail.com"
