@@ -53,12 +53,16 @@ pub struct ClientShim {
 
 impl ClientShim {
     pub fn new(endpoint: String, auth_token: Option<String>) -> ClientShim {
+        println!("ClientShim::new #1");
         let client = reqwest::Client::new();
-        ClientShim {
+        println!("ClientShim::new #2");
+        let res = ClientShim {
             client,
             auth_token,
             endpoint,
-        }
+        };
+        println!("ClientShim::new #3");
+        res
     }
 }
 
