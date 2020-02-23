@@ -36,7 +36,6 @@ pub mod ecdsa;
 pub mod escrow;
 
 mod utilities;
-mod tests;
 
 type Result<T> = std::result::Result<T, failure::Error>;
 
@@ -59,4 +58,3 @@ impl ClientShim {
 }
 
 pub use curv::{BigInt, arithmetic::traits::Converter};
-pub use multi_party_eddsa::protocols::aggsig::*;

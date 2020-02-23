@@ -14,7 +14,7 @@ use curv::cryptographic_primitives::twoparty::coin_flip_optimal_rounds;
 use curv::cryptographic_primitives::twoparty::dh_key_exchange_variant_with_pok_comm::{
     CommWitness, EcKeyPair, Party1FirstMessage, Party1SecondMessage,
 };
-use curv::elliptic::curves::secp256_k1::Secp256k1Scalar;
+use curv::elliptic::curves::secp256_r1::Secp256r1Scalar;
 use curv::{BigInt, GE};
 use kms::chain_code::two_party as chain_code;
 use kms::ecdsa::two_party::*;
@@ -493,10 +493,10 @@ pub fn rotate_second(
 > {
     let party_one_master_key = get_mk(&state, claim.clone(), &id)?;
 
-    let m1: Secp256k1Scalar = db::get(&state.db, &claim.sub, &id, &EcdsaStruct::RotateCommitMessage1M)?
+    let m1: Secp256r1Scalar = db::get(&state.db, &claim.sub, &id, &EcdsaStruct::RotateCommitMessage1M)?
         .ok_or(format_err!("No data for such identifier {}", id))?;
 
-    let r1: Secp256k1Scalar = db::get(&state.db, &claim.sub, &id, &EcdsaStruct::RotateCommitMessage1R)?
+    let r1: Secp256r1Scalar = db::get(&state.db, &claim.sub, &id, &EcdsaStruct::RotateCommitMessage1R)?
         .ok_or(format_err!("No data for such identifier {}", id))?;
 
     let (party1_second_message, random1) =

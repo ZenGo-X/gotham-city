@@ -80,7 +80,6 @@ pub fn get_server() -> Rocket {
         .mount(
             "/",
             routes![
-                ping::ping,
                 ecdsa::first_message,
                 ecdsa::second_message,
                 ecdsa::third_message,

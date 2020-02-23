@@ -6,7 +6,7 @@
 // License as published by the Free Software Foundation, either
 // version 3 of the License, or (at your option) any later version.
 //
-use super::super::jwt::{decode, decode_header, Algorithm, Header, Validation};
+use super::super::jwt::{decode, decode_header, Algorithm, Header, Validation, DecodingKey};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Claims {
@@ -29,9 +29,9 @@ pub fn get_claims(
     validation.algorithms = algorithms;
 
     // Setting audience
-    validation.set_audience(audience);
+    validation.set_audience(audience.as_ref());
 
-    let token_data = match decode::<Claims>(token, secret, &validation) {
+    let token_data = match decode::<Claims>(token, &DecodingKey::from_secret(secret), &validation) {
         Ok(c) => c,
         Err(_) => return Err(()),
     };
