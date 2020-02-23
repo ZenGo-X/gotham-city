@@ -33,33 +33,30 @@ config = "0.9"
 floating-duration = "0.1.2"
 
 [dependencies.zk-paillier]
-git = "https://github.com/KZen-networks/zk-paillier"
-tag = "v0.2.0"
+#git = "https://github.com/KZen-networks/zk-paillier"
+#tag = "v0.2.0"
+path = "../../zk-paillier"
 
 [dependencies.kms]
-git = "https://github.com/KZen-networks/kms-secp256k1"
-tag = "v0.1.0"
+#git = "https://github.com/KZen-networks/kms-secp256k1"
+#tag = "v0.1.0"
+path = "../../kms-secp256k1"
 
 [dependencies.multi-party-ecdsa]
-git = "https://github.com/KZen-networks/multi-party-ecdsa"
-tag = "v0.1.0"
-
-[dependencies.multi-party-eddsa]
-git = "https://github.com/KZen-networks/multi-party-eddsa"
-tag = "v0.2.1"
-
-[dependencies.multi-party-schnorr]
-git = "https://github.com/KZen-networks/multi-party-schnorr"
-tag = "v0.3.0"
+#git = "https://github.com/KZen-networks/multi-party-ecdsa"
+#tag = "v0.1.0"
+path = "../../multi-party-ecdsa"
 
 [dependencies.curv]
-git = "https://github.com/KZen-networks/curv"
-tag = "v0.2.0"
-features =  ["ec_secp256k1"]
+#git = "https://github.com/KZen-networks/curv"
+#tag = "v0.2.0"
+features =  ["ec_secp256r1"]
+path = "../../curv"
 
 [patch.crates-io]
 rust-gmp = { version = "0.5.0", features = ["serde_support"], git = "https://github.com/KZen-networks/rust-gmp" }
 
 [dependencies.centipede]
-git = "https://github.com/KZen-networks/centipede"
-tag = "v0.2.0"
+#git = "https://github.com/KZen-networks/centipede"
+#tag = "v0.2.0"
+path = "../../centipede"

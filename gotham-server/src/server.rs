@@ -94,13 +94,6 @@ pub fn get_server() -> Rocket {
                 ecdsa::rotate_third,
                 ecdsa::rotate_fourth,
                 ecdsa::recover,
-                schnorr::keygen_first,
-                schnorr::keygen_second,
-                schnorr::keygen_third,
-                schnorr::sign,
-                eddsa::keygen,
-                eddsa::sign_first,
-                eddsa::sign_second,
             ],
         )
         .manage(db_config)

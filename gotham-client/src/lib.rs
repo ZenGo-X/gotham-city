@@ -34,10 +34,6 @@ extern crate uuid;
 
 pub mod ecdsa;
 pub mod escrow;
-pub mod wallet;
-
-pub mod eddsa;
-pub mod schnorr;
 
 mod utilities;
 mod tests;
