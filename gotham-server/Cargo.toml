@@ -36,24 +36,20 @@ hex = "0.3.2"
 floating-duration = "0.1.2"
 
 [dependencies.zk-paillier]
-#git = "https://github.com/KZen-networks/zk-paillier"
-#tag = "v0.2.0"
-path = "../../zk-paillier"
+git = "https://github.com/KZen-networks/zk-paillier"
+branch = "feature/p256"
 
 [dependencies.kms]
-#git = "https://github.com/KZen-networks/kms-secp256k1"
-#tag = "v0.1.0"
-path = "../../kms-secp256k1"
+git = "https://github.com/KZen-networks/kms-secp256k1"
+branch = "feature/p256"
 
 [dependencies.multi-party-ecdsa]
-#git = "https://github.com/KZen-networks/multi-party-ecdsa"
-#tag = "v0.1.0"
-path = "../../multi-party-ecdsa"
+git = "https://github.com/KZen-networks/multi-party-ecdsa"
+branch = "feature/p256"
 
 [dependencies.curv]
-#git = "https://github.com/KZen-networks/curv"
-#tag = "v0.2.0"
-path = "../../curv"
+git = "https://github.com/KZen-networks/curv"
+branch = "feature/p256"
 features =  ["ec_secp256r1"]
 
 [dependencies.serde_dynamodb]

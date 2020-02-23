@@ -6,8 +6,6 @@ mod tests {
     use client_lib::*;
     use server_lib::server;
     use std::{thread, time};
-    use curv::elliptic::curves::traits::ECPoint;
-    use curv::arithmetic::traits::Converter;
 
     #[test]
     fn test_ecdsa() {
@@ -32,13 +30,10 @@ mod tests {
                     .expect("ECDSA signature failed");
 
             println!(
-                "signature = (r: {}, s: {}, recid = {})",
+                "signature = (r: {}, s: {})",
                 signature.r.to_hex(),
                 signature.s.to_hex(),
-                signature.recid
             );
-            println!("msg = {}", BigInt::from(y + 1).to_hex());
-            println!("public key = {}", BigInt::from(child_master_key.public.q.pk_to_key_slice().as_slice()).to_hex());
         }
     }
 

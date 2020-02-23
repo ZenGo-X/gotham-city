@@ -18,9 +18,5 @@ path = "../gotham-server"
 [dependencies.gotham-client]
 path = "../gotham-client"
 
-[dependencies.curv]
-path = "../../curv"
-features = ["ec_secp256r1"]
-
 [patch.crates-io]
 rust-gmp = { version = "0.5.0", features = ["serde_support"], git = "https://github.com/KZen-networks/rust-gmp" }
