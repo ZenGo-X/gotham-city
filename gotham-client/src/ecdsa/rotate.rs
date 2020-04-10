@@ -45,50 +45,16 @@ pub fn rotate_master_key(wallet: wallet::Wallet, client_shim: &ClientShim) -> wa
         &coin_flip_party1_first_message,
     );
 
-    let result_rotate_party_one_first_message = wallet
+    let result_masterkey2_new = wallet
         .private_share
         .master_key
         .rotate_first_message(&random2, &rotation_party1_first_message);
-    if result_rotate_party_one_first_message.is_err() {
+    if result_masterkey2_new.is_err() {
         panic!("rotation failed");
     }
 
-    let (rotation_party_two_first_message, party_two_pdl_chal, party_two_paillier) =
-        result_rotate_party_one_first_message.unwrap();
-
-    let body = &rotation_party_two_first_message;
-
-    let rotation_party1_second_message: party_one::PDLFirstMessage = requests::postb(
-        client_shim,
-        &format!("{}/{}/third", ROT_PATH_PRE, id.clone()),
-        body,
-    )
-    .unwrap();
-
-    let rotation_party_two_second_message = MasterKey2::rotate_second_message(&party_two_pdl_chal);
-
-    let body = &rotation_party_two_second_message;
-
-    let rotation_party1_third_message: party_one::PDLSecondMessage = requests::postb(
-        client_shim,
-        &format!("{}/{}/fourth", ROT_PATH_PRE, id.clone()),
-        body,
-    )
-    .unwrap();
-
-    let result_rotate_party_one_third_message =
-        wallet.private_share.master_key.rotate_third_message(
-            &random2,
-            &party_two_paillier,
-            &party_two_pdl_chal,
-            &rotation_party1_second_message,
-            &rotation_party1_third_message,
-        );
-    if result_rotate_party_one_third_message.is_err() {
-        panic!("rotation failed");
-    }
-
-    let party_two_master_key_rotated = result_rotate_party_one_third_message.unwrap();
+    let party_two_master_key_rotated =
+        result_masterkey2_new.unwrap();
 
     let private_share = PrivateShare {
         id: wallet.private_share.id.clone(),

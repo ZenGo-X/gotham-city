@@ -17,7 +17,7 @@ path = "src/main.rs"
 
 [dependencies]
 rocket = { version = "0.4.2", default-features = false }
-rocket_contrib = { version = "0.4.2", default-features = false }
+rocket_contrib = { version = "0.4.2", default-features = false, features = ["json"] }
 rocksdb = "0.10.1"
 serde = "1.0"
 serde_json = "1.0"
@@ -37,15 +37,15 @@ floating-duration = "0.1.2"
 
 [dependencies.zk-paillier]
 git = "https://github.com/KZen-networks/zk-paillier"
-tag = "v0.2.0"
+tag = "v0.2.8"
 
 [dependencies.kms]
 git = "https://github.com/KZen-networks/kms-secp256k1"
-tag = "v0.1.0"
+branch = "alternate_lindell"
 
 [dependencies.multi-party-ecdsa]
 git = "https://github.com/KZen-networks/multi-party-ecdsa"
-tag = "v0.1.0"
+branch = "alternative_lindell_2p"
 
 [dependencies.multi-party-eddsa]
 git = "https://github.com/KZen-networks/multi-party-eddsa"
@@ -57,7 +57,7 @@ tag = "v0.3.0"
 
 [dependencies.curv]
 git = "https://github.com/KZen-networks/curv"
-tag = "v0.2.0"
+tag = "v0.2.3"
 features =  ["ec_secp256k1"]
 
 [dependencies.serde_dynamodb]
