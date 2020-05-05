@@ -58,3 +58,4 @@ pub struct Config {
 }
 
 pub use kms;
+pub use curv::BigInt;
