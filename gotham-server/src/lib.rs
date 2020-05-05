@@ -45,14 +45,16 @@ extern crate serde_dynamodb;
 
 extern crate hex;
 
-pub mod auth;
-pub mod routes;
+mod auth;
+mod routes;
 pub mod server;
-pub mod storage;
-pub mod tests;
+mod storage;
+mod tests;
 
 type Result<T> = std::result::Result<T, failure::Error>;
 
 pub struct Config {
     pub db: storage::db::DB,
 }
+
+pub use kms;
