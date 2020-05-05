@@ -13,7 +13,7 @@
 extern crate rocket;
 extern crate config;
 extern crate curv;
-extern crate kms;
+pub extern crate kms;
 extern crate multi_party_ecdsa;
 extern crate rocket_contrib;
 extern crate rocksdb;
@@ -57,5 +57,4 @@ pub struct Config {
     pub db: storage::db::DB,
 }
 
-pub use kms;
 pub use curv::BigInt;
