@@ -1,6 +1,6 @@
 [package]
 name = "gotham-server"
-version = "0.1.2"
+version = "0.1.3"
 authors = [
     "gbenattar <g.benattar@gmail.com>",
     "Oded Leiba <odedleiba5@gmail.com"
@@ -41,11 +41,11 @@ tag = "v0.2.8"
 
 [dependencies.kms]
 git = "https://github.com/KZen-networks/kms-secp256k1"
-branch = "alternate_lindell"
+tag = "v0.2.2"
 
 [dependencies.multi-party-ecdsa]
 git = "https://github.com/KZen-networks/multi-party-ecdsa"
-branch = "alternative_lindell_2p"
+rev = "0a4931b8247b2f187dcb9ff7c7c096444feadcc3"
 
 [dependencies.multi-party-eddsa]
 git = "https://github.com/KZen-networks/multi-party-eddsa"
