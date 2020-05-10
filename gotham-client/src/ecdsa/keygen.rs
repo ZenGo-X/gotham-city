@@ -44,29 +44,8 @@ pub fn get_master_key(client_shim: &ClientShim) -> PrivateShare {
         &kg_party_one_second_message,
     );
 
-    let (party_two_second_message, party_two_paillier, party_two_pdl_chal) =
+    let (_, party_two_paillier) =
         key_gen_second_message.unwrap();
-
-    let body = &party_two_second_message.pdl_first_message;
-
-    let party_one_third_message: party_one::PDLFirstMessage =
-        requests::postb(client_shim, &format!("{}/{}/third", KG_PATH_PRE, id), body).unwrap();
-
-    let pdl_decom_party2 = MasterKey2::key_gen_third_message(&party_two_pdl_chal);
-
-    let party_2_pdl_second_message = pdl_decom_party2;
-
-    let body = &party_2_pdl_second_message;
-
-    let party_one_pdl_second_message: party_one::PDLSecondMessage =
-        requests::postb(client_shim, &format!("{}/{}/fourth", KG_PATH_PRE, id), body).unwrap();
-
-    MasterKey2::key_gen_fourth_message(
-        &party_two_pdl_chal,
-        &party_one_third_message,
-        &party_one_pdl_second_message,
-    )
-    .expect("pdl error party1");
 
     let cc_party_one_first_message: Party1FirstMessage = requests::post(
         client_shim,
