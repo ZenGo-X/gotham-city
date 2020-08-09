@@ -91,4 +91,4 @@ Gotham City is released under the terms of the GPL-3.0 license. See [LICENSE](LI
 
 Contact
 -------
-For any questions, feel free to [email us](mailto:github@kzencorp.com).
+For any questions, feel free to [email us](mailto:github@kzencorp.com) or join ZenGo X [Telegram](https://t.me/zengo_x).
