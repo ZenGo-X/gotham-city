@@ -9,7 +9,7 @@
   "dependencies": {
     "jwk-to-pem": "^2.0.1",
     "lodash": "^4.17.15",
-    "node-fetch": "^2.3.0",
+    "node-fetch": "^2.6.1",
     "rsa-key": "0.0.6",
     "yargs": "^12.0.5"
   }
