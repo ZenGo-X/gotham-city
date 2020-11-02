@@ -59,13 +59,13 @@ where
     match db {
         DB::AWS(dynamodb_client, env) => {
             let table_name = name.to_table_name(env);
-            println!("table_name = {}", table_name);
+            debug!("table_name = {}", table_name);
             let require_customer_id = name.require_customer_id();
-            println!("require_customer_id = {}", require_customer_id);
-            println!("user_id = {}", user_id);
-            println!("id = {}", id);
+            debug!("require_customer_id = {}", require_customer_id);
+            debug!("user_id = {}", user_id);
+            debug!("id = {}", id);
             let res: Option<T> = aws::dynamodb::get(&dynamodb_client, user_id, id, table_name, require_customer_id)?;
-            println!("res.is_none() = {}", res.is_none());
+            debug!("res.is_none() = {}", res.is_none());
             Ok(res)
         }
         DB::Local(rocksdb_client) => {
