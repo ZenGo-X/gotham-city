@@ -683,7 +683,6 @@ fn has_active_share(db: &db::DB, user_id: &str) -> Result<bool> {
                 ..QueryInput::default()
             };
             let result = dynamodb_client.query(query_input).sync();
-            println!("Query result for active shares of customerId {}: {:?}", user_id, result);
             match result {
                 Ok(query_output) => {
                     query_output.items.map_or(

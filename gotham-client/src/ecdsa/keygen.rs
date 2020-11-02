@@ -109,7 +109,7 @@ pub fn get_master_key(client_shim: &ClientShim) -> PrivateShare {
     );
 
     let end = PreciseTime::now();
-    println!("(id: {}) Took: {}", id, start.to(end));
+    println!("(id: {}) Took: {:?}", id, start.to(end));
 
     PrivateShare { id, master_key }
 }

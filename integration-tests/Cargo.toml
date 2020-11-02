@@ -9,8 +9,8 @@ serde = "1.0"
 serde_json = "1.0"
 serde_derive = "1.0"
 time-test = "0.2.1"
-log = "0.4"
-time = "*"
+log = "0.4.11"
+time = "0.1.42"
 
 [dependencies.gotham-server]
 path = "../gotham-server"
@@ -20,3 +20,4 @@ path = "../gotham-client"
 
 [patch.crates-io]
 rust-gmp = { version = "0.5.0", features = ["serde_support"], git = "https://github.com/KZen-networks/rust-gmp" }
+remove_dir_all = { version = "0.5.3", git = "https://github.com/ZenGo-X/remove_dir_all", tag = "v0.5.3-fix" }
