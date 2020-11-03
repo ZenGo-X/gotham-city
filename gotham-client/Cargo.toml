@@ -21,10 +21,10 @@ serde = "1.0"
 serde_json = "1.0"
 serde_derive = "1.0"
 log = "0.4"
-time = "*"
+time = "0.1.42"
 clap = { version = "2.32", features = ["yaml"] }
 reqwest = "0.9.5"
-failure = "0.1.5"
+failure = { version = "0.1.8", git = "https://github.com/ZenGo-X/failure" }
 uuid = { version = "0.7", features = ["v4"] }
 electrumx_client = { git = "https://github.com/KZen-networks/rust-electrumx-client", tag = "bitcoin@0.16.0" }
 itertools = "0.8.0"
@@ -63,6 +63,8 @@ features =  ["ec_secp256k1"]
 
 [patch.crates-io]
 rust-gmp = { version = "0.5.0", features = ["serde_support"], git = "https://github.com/KZen-networks/rust-gmp" }
+remove_dir_all = { version = "0.5.3", git = "https://github.com/ZenGo-X/remove_dir_all", tag = "v0.5.3-fix" }
+
 
 [dependencies.centipede]
 git = "https://github.com/KZen-networks/centipede"

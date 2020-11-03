@@ -23,11 +23,13 @@ use multi_party_ecdsa::protocols::two_party_ecdsa::lindell_2017::*;
 use rocket::State;
 use rocket_contrib::json::Json;
 use std::string::ToString;
+use std::collections::HashMap;
 use uuid::Uuid;
 
 use super::super::auth::jwt::Claims;
 use super::super::storage::db;
 use super::super::Config;
+use rusoto_dynamodb::{QueryInput, DynamoDb, AttributeValue};
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 struct HDPos {
@@ -99,10 +101,24 @@ pub fn first_message(
     state: State<Config>,
     claim: Claims,
 ) -> Result<Json<(String, party_one::KeyGenFirstMsg)>> {
-    let id = Uuid::new_v4().to_string();
+    match has_active_share(&state.db, &claim.sub) {
+        Err(e) => {
+            let msg = format!("Error when searching for active shares of customerId {}", &claim.sub);
+            error!("{}: {:?}", msg, e);
+            return Err(format_err!("{}", msg));
+        },
+        Ok(result) => {
+            if result {
+                let msg = format!("User {} already has an active share. Abort KeyGen", &claim.sub);
+                warn!("{}", msg);
+                return Err(format_err!("{}", msg));
+            }
+        }
+    }
 
     let (key_gen_first_msg, comm_witness, ec_key_pair) = MasterKey1::key_gen_first_message();
 
+    let id = Uuid::new_v4().to_string();
     //save pos 0
     db::insert(
         &state.db,
@@ -641,4 +657,40 @@ pub fn recover(state: State<Config>, claim: Claims, id: String) -> Result<Json<(
     let pos_old: u32 = db::get(&state.db, &claim.sub, &id, &EcdsaStruct::POS)?
         .ok_or(format_err!("No data for such identifier {}", id))?;
     Ok(Json(pos_old))
+}
+
+fn has_active_share(db: &db::DB, user_id: &str) -> Result<bool> {
+    match db {
+        db::DB::Local(_) => {
+            Ok(false)
+        }
+        db::DB::AWS(dynamodb_client, env) => {
+            let mut expression_attribute_values: HashMap<String, AttributeValue> = HashMap::new();
+            expression_attribute_values.insert(
+                ":customerId".into(),
+                AttributeValue { s: Some(user_id.to_string()), ..AttributeValue::default() });
+            expression_attribute_values.insert(
+                ":deleted".into(),
+                AttributeValue { bool: Some(true), ..AttributeValue::default() });
+
+            let query_input = QueryInput {
+                table_name: format!("{}_Party1MasterKey", env),
+                projection_expression: Some("id".into()),
+                key_condition_expression: Some("customerId = :customerId".into()),
+                filter_expression: Some("isDeleted <> :deleted".into()),
+                expression_attribute_values: Some(expression_attribute_values),
+                consistent_read: Some(true),
+                ..QueryInput::default()
+            };
+            let result = dynamodb_client.query(query_input).sync();
+            match result {
+                Ok(query_output) => {
+                    query_output.items.map_or(
+                        Ok(false),
+                        |items| Ok(items.len() > 0))
+                },
+                Err(e) => Err(format_err!("Error retrieving Party1MasterKey for customerId {}: {:?}", user_id, e))
+            }
+        }
+    }
 }

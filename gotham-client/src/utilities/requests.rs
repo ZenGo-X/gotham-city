@@ -43,7 +43,7 @@ fn _postb<T, V>(client_shim: &ClientShim, path: &str, body: T) -> Option<V>
 
     let end = PreciseTime::now();
 
-    info!("(req {}, took: {})", path, start.to(end));
+    info!("(req {}, took: {:?})", path, start.to(end));
 
     let value = match res {
         Ok(mut v) => v.text().unwrap(),
