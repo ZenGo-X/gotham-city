@@ -109,9 +109,13 @@ pub fn first_message(
         },
         Ok(result) => {
             if result {
-                let msg = format!("User {} already has an active share. Abort KeyGen", &claim.sub);
+                let msg = format!("User {} already has an active share", &claim.sub);
                 warn!("{}", msg);
-                return Err(format_err!("{}", msg));
+                let should_fail_keygen = std::env::var("FAIL_KEYGEN_IF_ACTIVE_SHARE_EXISTS");
+                if should_fail_keygen.is_ok() && should_fail_keygen.unwrap() == "true" {
+                    warn!("Abort KeyGen");
+                    return Err(format_err!("{}", msg));
+                }
             }
         }
     }

@@ -108,6 +108,11 @@ pub fn get_server() -> Rocket {
 }
 
 fn get_settings_as_map() -> HashMap<String, String> {
+    info!(
+        "FAIL_KEYGEN_IF_ACTIVE_SHARE_EXISTS = {:?}",
+        std::env::var("FAIL_KEYGEN_IF_ACTIVE_SHARE_EXISTS")
+    );
+
     let config_file = include_str!("../Settings.toml");
     let mut settings = config::Config::default();
     settings
