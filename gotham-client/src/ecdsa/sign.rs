@@ -12,6 +12,12 @@ use super::super::ClientShim;
 // iOS bindings
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
+//Android bindings
+use jni::JNIEnv;
+use jni::objects::{JClass, JString};
+use jni::sys::{jstring, jint};
+use jni::strings::JavaStr;
+use std::ops::Deref;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SignSecondMsgRequest {
@@ -155,4 +161,140 @@ pub extern "C" fn sign_message(
     };
 
     CString::new(signature_json.to_owned()).unwrap().into_raw()
+}
+
+#[cfg(target_os="android")]
+#[no_mangle]
+#[allow(non_snake_case)]
+pub extern fn
+Java_com_zengo_components_kms_gotham_ECDSA_signMessage(
+    env: JNIEnv,
+    // this is the class that owns our
+    // static method. Not going to be
+    // used, but still needs to have an
+    // argument slot
+    _class: JClass,
+    j_endpoint: JString,
+    j_auth_token: JString,
+    j_message_le_hex: JString,
+    j_master_key_json: JString,
+    j_x_pos: jint,
+    j_y_pos: jint,
+    j_id: JString,
+) -> jstring {
+
+    /************************ START CONVERSION ************************/
+
+    //Convert endpoint
+    let JavaStr_endpoint = match env.get_string(j_endpoint) {
+        Ok(java_endpoint) => java_endpoint,
+        Err(e) => return env.new_string(format!("Error from Rust in signMessage: {}", e.to_string()))
+            .unwrap()
+        .into_inner()
+    };
+
+    let endpoint = match JavaStr::deref(&JavaStr_endpoint).to_str() {
+        Ok(endpoint) => endpoint,
+        Err(e) => return env.new_string(format!("Error from Rust in signMessage: {}", e.to_string()))
+            .unwrap()
+            .into_inner()
+    };
+
+    //Convert auth_token
+    let JavaStr_auth_token= match env.get_string(j_auth_token) {
+        Ok(java_auth_token) => java_auth_token,
+        Err(e) => return env.new_string(format!("Error from Rust in signMessage: {}", e.to_string()))
+            .unwrap()
+            .into_inner()
+    };
+    let auth_token = match JavaStr::deref(&JavaStr_auth_token).to_str() {
+        Ok(auth_token) => auth_token,
+        Err(e) => return env.new_string(format!("Error from Rust in signMessage: {}", e.to_string()))
+            .unwrap()
+            .into_inner()
+    };
+
+    //Convert message_le_hex
+    let JavaStr_message_le_hex = match env.get_string(j_message_le_hex) {
+        Ok(java_message_le_hex) => java_message_le_hex,
+        Err(e) => return env.new_string(format!("Error from Rust in signMessage: {}", e.to_string()))
+            .unwrap()
+            .into_inner()
+    };
+
+    let message_le_hex = match JavaStr::deref(&JavaStr_message_le_hex).to_str() {
+        Ok(message_le_hex) => message_le_hex,
+        Err(e) => return env.new_string(format!("Error from Rust in signMessage: {}", e.to_string()))
+            .unwrap()
+            .into_inner()
+    };
+
+    //Convert master_key_json
+    let JavaStr_master_key_json= match env.get_string(j_master_key_json) {
+        Ok(java_master_key_json) => java_master_key_json,
+        Err(e) => return env.new_string(format!("Error from Rust in signMessage: {}", e.to_string()))
+            .unwrap()
+            .into_inner()
+    };
+    let master_key_json = match JavaStr::deref(&JavaStr_master_key_json).to_str() {
+        Ok(master_key_json) => master_key_json,
+        Err(e) => return env.new_string(format!("Error from Rust in signMessage: {}", e.to_string()))
+            .unwrap()
+            .into_inner()
+    };
+
+    //Convert x_pos
+    let x: BigInt = BigInt::from(j_x_pos);
+
+    //Convert y_pos
+    let y: BigInt = BigInt::from(j_y_pos);
+
+    //Convert id
+    let JavaStr_id= match env.get_string(j_id) {
+        Ok(java_id) => java_id,
+        Err(e) => return env.new_string(format!("Error from Rust in signMessage: {}", e.to_string()))
+            .unwrap()
+            .into_inner()
+    };
+    let id = match JavaStr::deref(&JavaStr_id).to_str() {
+        Ok(id) => id,
+        Err(e) => return env.new_string(format!("Error from Rust in signMessage: {}", e.to_string()))
+            .unwrap()
+            .into_inner()
+    };
+
+    /************************ END CONVERSION ************************/
+
+    let client_shim = ClientShim::new(endpoint.to_string(), Some(auth_token.to_string()));
+
+    let mk: MasterKey2 = serde_json::from_str(master_key_json).unwrap();
+
+    let mk_child: MasterKey2 = mk.get_child(vec![x.clone(), y.clone()]);
+
+    let message: BigInt = serde_json::from_str(message_le_hex).unwrap();
+
+    let sig = match sign(
+        &client_shim,
+        message,
+        &mk_child,
+        x,
+        y,
+        &id.to_string(),
+    ) {
+        Ok(s) => s,
+        Err(e) => return env.new_string(format!("Error from Rust in signMessage: {}", e.to_string()))
+            .unwrap()
+            .into_inner()
+    };
+
+    let signature_json = match serde_json::to_string(&sig) {
+        Ok(share) => share,
+        Err(e) => return env.new_string(format!("Error from Rust in signMessage: {}", e.to_string()))
+            .unwrap()
+            .into_inner()
+    };
+
+    env.new_string(signature_json)
+        .unwrap()
+        .into_inner()
 }
