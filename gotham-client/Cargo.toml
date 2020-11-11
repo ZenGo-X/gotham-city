@@ -13,7 +13,7 @@ jni = { version = "0.5", default-features = false }
 [lib]
 name = "client_lib"
 path = "src/lib.rs"
-#crate-type = ["staticlib", "cdylib"]
+crate-type = ["staticlib", "cdylib"]
 
 [[bin]]
 name = "cli"
