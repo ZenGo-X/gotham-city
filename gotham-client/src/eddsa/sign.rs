@@ -16,6 +16,13 @@ use super::super::ClientShim;
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
 
+// Android bindings
+use jni::JNIEnv;
+use jni::objects::{JClass, JString};
+use jni::sys::jstring;
+use jni::strings::JavaStr;
+use std::ops::Deref;
+
 use multi_party_ed25519::protocols::aggsig::*;
 
 #[allow(non_snake_case)]
@@ -155,4 +162,87 @@ pub extern "C" fn sign_message_eddsa(
     };
 
     CString::new(signature_json.to_owned()).unwrap().into_raw()
+}
+
+#[cfg(target_os="android")]
+#[no_mangle]
+#[allow(non_snake_case)]
+pub extern fn
+Java_com_zengo_components_kms_gotham_EdDSA_signMessageEddsa(
+    env: JNIEnv,
+    _class: JClass,
+    j_endpoint: JString,
+    j_auth_token: JString,
+    j_message_le_hex: JString,
+    j_key_pair_json: JString,
+    j_key_agg_json: JString,
+    j_id: JString,
+) -> jstring {
+    let endpoint = match get_String_from_JString(&env, j_endpoint) {
+        Ok(s) => s,
+        Err(e) => return env.new_string(format!("Error from Rust in signMessageEddsa: {}", e.to_string())).unwrap().into_inner()
+    };
+    let auth_token = match get_String_from_JString(&env, j_auth_token) {
+        Ok(s) => s,
+        Err(e) => return env.new_string(format!("Error from Rust in signMessageEddsa: {}", e.to_string())).unwrap().into_inner()
+    };
+    let message_hex = match get_String_from_JString(&env, j_message_le_hex) {
+        Ok(s) => s,
+        Err(e) => return env.new_string(format!("Error from Rust in signMessageEddsa: {}", e.to_string())).unwrap().into_inner()
+    };
+    let key_pair_json = match get_String_from_JString(&env, j_key_pair_json) {
+        Ok(s) => s,
+        Err(e) => return env.new_string(format!("Error from Rust in signMessageEddsa: {}", e.to_string())).unwrap().into_inner()
+    };
+    let key_agg_json = match get_String_from_JString(&env, j_key_agg_json) {
+        Ok(s) => s,
+        Err(e) => return env.new_string(format!("Error from Rust in signMessageEddsa: {}", e.to_string())).unwrap().into_inner()
+    };
+    let id = match get_String_from_JString(&env, j_id) {
+        Ok(s) => s,
+        Err(e) => return env.new_string(format!("Error from Rust in signMessageEddsa: {}", e.to_string())).unwrap().into_inner()
+    };
+
+    let client_shim = ClientShim::new(endpoint.to_string(), Some(auth_token.to_string()));
+
+    let message: BigInt = serde_json::from_str(&message_hex).unwrap();
+
+    let mut key_pair: KeyPair = serde_json::from_str(&key_pair_json).unwrap();
+
+    let mut key_agg: KeyAgg = serde_json::from_str(&key_agg_json).unwrap();
+
+    let eight: FE = ECScalar::from(&BigInt::from(8));
+    let eight_inverse: FE = eight.invert();
+
+    key_pair.public_key = key_pair.public_key * &eight_inverse;
+    key_agg.apk = key_agg.apk * &eight_inverse;
+
+    let sig = match sign(&client_shim, message, &key_pair, &key_agg, &id) {
+        Ok(s) => s,
+        Err(e) => return env.new_string(format!("Error from Rust in signMessageEddsa: {}", e.to_string())).unwrap().into_inner()
+    };
+
+    let signature_json = match serde_json::to_string(&sig) {
+        Ok(share) => share,
+        Err(e) => return env.new_string(format!("Error from Rust in signMessageEddsa: {}", e.to_string())).unwrap().into_inner()
+    };
+
+    env.new_string(signature_json.to_owned())
+        .unwrap()
+        .into_inner()
+}
+
+#[allow(non_snake_case)]
+fn get_String_from_JString(env: &JNIEnv, j_string: JString) -> Result<String> {
+    let java_str_string = match env.get_string(j_string) {
+        Ok(java_string) => java_string,
+        Err(e) => unimplemented!()
+    };
+
+    let string_ref = match JavaStr::deref(&java_str_string).to_str() {
+        Ok(string_ref) => string_ref,
+        Err(e) => unimplemented!()
+    };
+
+    Ok(string_ref.to_string())
 }

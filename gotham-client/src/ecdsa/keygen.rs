@@ -23,6 +23,14 @@ use super::super::ClientShim;
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
 
+// Android bindings
+
+use jni::JNIEnv;
+use jni::objects::{JClass, JString};
+use jni::sys::jstring;
+use jni::strings::JavaStr;
+use std::ops::Deref;
+
 const KG_PATH_PRE: &str = "ecdsa/keygen";
 
 pub fn get_master_key(client_shim: &ClientShim) -> PrivateShare {
@@ -143,4 +151,64 @@ pub extern "C" fn get_client_master_key(
     CString::new(private_share_json.to_owned())
         .unwrap()
         .into_raw()
+}
+
+#[cfg(target_os="android")]
+#[no_mangle]
+#[allow(non_snake_case)]
+pub extern fn
+Java_com_zengo_components_kms_gotham_ECDSA_getClientMasterKey(
+    env: JNIEnv,
+    // this is the class that owns our
+    // static method. Not going to be
+    // used, but still needs to have an
+    // argument slot
+    _class: JClass,
+    j_endpoint: JString,
+    j_auth_token: JString,
+) -> jstring {
+
+    // Convert j_endpoint JString to &str
+    let JavaStr_endpoint = match env.get_string(j_endpoint) {
+        Ok(java_endpoint) => java_endpoint,
+        Err(e) => return env.new_string(format!("Error from Rust in getClientMasterKey: {}", e.to_string()))
+                                            .unwrap()
+                                            .into_inner()
+    };
+
+    let endpoint = match JavaStr::deref(&JavaStr_endpoint).to_str() {
+        Ok(endpoint) => endpoint,
+        Err(e) => return env.new_string(format!("Error from Rust in getClientMasterKey: {}", e.to_string()))
+                                            .unwrap()
+                                            .into_inner()
+    };
+
+    // Convert j_auth_token JString to &str
+    let JavaStr_auth_token= match env.get_string(j_auth_token) {
+        Ok(java_auth_token) => java_auth_token,
+        Err(e) => return env.new_string(format!("Error from Rust in getClientMasterKey: {}", e.to_string()))
+                                            .unwrap()
+                                            .into_inner()
+    };
+    let auth_token = match JavaStr::deref(&JavaStr_auth_token).to_str() {
+        Ok(auth_token) => auth_token,
+        Err(e) => return env.new_string(format!("Error from Rust in getClientMasterKey: {}", e.to_string()))
+                                            .unwrap()
+                                            .into_inner()
+    };
+
+    let client_shim = ClientShim::new(endpoint.to_string(), Some(auth_token.to_string()));
+
+    let private_share: PrivateShare = get_master_key(&client_shim);
+
+    let private_share_json = match serde_json::to_string(&private_share) {
+        Ok(share) => share.to_owned(),
+        Err(e) => return env.new_string(format!("Error from Rust in getClientMasterKey: {}", e.to_string()))
+            .unwrap()
+            .into_inner()
+    };
+
+    env.new_string(private_share_json)
+        .unwrap()
+        .into_inner()
 }
