@@ -33,8 +33,8 @@ WORKDIR /gotham-server
 RUN ["/root/.cargo/bin/cargo", "build", "--release"]
 
 
-WORKDIR /integration-tests
-RUN ["/root/.cargo/bin/cargo", "test", "--release", "--", "--nocapture"]
+#WORKDIR /integration-tests
+#RUN ["/root/.cargo/bin/cargo", "test", "--release", "--", "--nocapture"]
 
 # Server
 ENV db=AWS
