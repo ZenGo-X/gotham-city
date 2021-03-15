@@ -244,8 +244,6 @@ impl Wallet {
 
         msg_hash_vec.reverse();
         let msg_bn = BigInt::from(&msg_hash_vec[..]);
-        println!("msg_bn : {:?}", msg_bn.to_str_radix(16));
-       // let msg_bn = BigInt::from_hex(&hex::encode(&msg_hash[..]));
         let signature = ecdsa::sign(
             client_shim,
             msg_bn.clone(),
@@ -260,14 +258,7 @@ impl Wallet {
         };
         let res = verify(&test_sig, &self.private_share.master_key.public.q, &msg_bn);
         assert!(res.is_ok());
-      //  let mut v = BigInt::to_vec(&signature.r);
-     //   v.extend(BigInt::to_vec(&signature.s));
 
-
-     //   let mut sig_vec = Signature::from_compact(&v[..]).unwrap().serialize_compact();
-       // let mut sig_vec = sig.to_vec();
-    //    let rs = hex::encode(sig_vec);
-        //let s = BigInt::to_str_radix(&signature.s, 16);
         let mut s_vec = BigInt::to_vec(&signature.s);
         s_vec.reverse();
         let mut r_vec = BigInt::to_vec(&signature.r);
@@ -275,7 +266,6 @@ impl Wallet {
         let s = hex::encode(s_vec);
         let r = hex::encode(r_vec);
 
-       // let r = BigInt::to_str_radix(&signature.r, 16);
         (r,s)
     }
 
