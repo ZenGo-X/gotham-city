@@ -343,7 +343,9 @@ pub fn sign_second(
     let x: BigInt = request.x_pos_child_key.clone();
     let y: BigInt = request.y_pos_child_key.clone();
 
-    let child_master_key = master_key.get_child(vec![x, y]);
+    let mut child_master_key;
+    if x == BigInt::zero() && y == BigInt::zero(){child_master_key = master_key}
+    else {child_master_key = master_key.get_child(vec![x, y])}
 
     let eph_ec_key_pair_party1: party_one::EphEcKeyPair =
         db::get(&state.db, &claim.sub, &id, &EcdsaStruct::EphEcKeyPair)?
