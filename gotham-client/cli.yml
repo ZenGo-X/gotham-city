@@ -55,3 +55,12 @@ subcommands:
                   required: true
                   value_name: amount
                   help: Amount in BTC
+        - sign_raw:
+            about: Sign Raw message with master key
+            version: "1.0"
+            args:
+              - hash_msg:
+                  short: h
+                  required: true
+                  value_name: msg_hash
+                  help: byte_slice

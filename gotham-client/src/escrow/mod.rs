@@ -14,7 +14,9 @@ use curv::{FE, GE};
 use serde_json;
 use std::fs;
 
-const ESCROW_SK_FILENAME: &str = "escrow/escrow-sk.json";
+//const ESCROW_SK_FILENAME: &str = "escrow/escrow-sk.json";
+const ESCROW_SK_FILENAME: &str = "escrow-sk.json";
+
 
 pub const SEGMENT_SIZE: usize = 8;
 pub const NUM_SEGMENTS: usize = 32;

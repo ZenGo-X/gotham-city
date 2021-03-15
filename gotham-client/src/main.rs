@@ -23,6 +23,7 @@ fn main() {
     let yaml = load_yaml!("../cli.yml");
     let matches = App::from_yaml(yaml).get_matches();
 
+    /*
     let mut settings = config::Config::default();
     settings
         // Add in `./Settings.toml`
@@ -34,6 +35,8 @@ fn main() {
         .unwrap();
     let hm = settings.try_into::<HashMap<String, String>>().unwrap();
     let endpoint = hm.get("endpoint").unwrap();
+    */
+    let endpoint = "http://localhost:8000";
 
     let client_shim = ClientShim::new(endpoint.to_string(), None);
 
@@ -50,7 +53,20 @@ fn main() {
     } else if let Some(matches) = matches.subcommand_matches("wallet") {
         let mut wallet: wallet::Wallet = wallet::Wallet::load();
 
-        if matches.is_present("new-address") {
+        if matches.is_present("sign_raw"){
+            if let Some(matches) = matches.subcommand_matches("sign_raw") {
+                let msg: &str = matches.value_of("hash_msg").unwrap();
+                let (r,s) = wallet.sign_raw(
+                    msg,
+                    &client_shim,
+                );
+                wallet.save();
+                println!(
+                    "signature: rs:{}{}", r,s
+                );
+            }
+        }
+        else if matches.is_present("new-address") {
             let address = wallet.get_new_bitcoin_address();
             println!("Network: [{}], Address: [{}]", network, address.to_string());
             wallet.save();

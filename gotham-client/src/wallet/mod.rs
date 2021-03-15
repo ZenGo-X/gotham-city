@@ -37,12 +37,14 @@ use hex;
 use itertools::Itertools;
 use std::collections::HashMap;
 use std::str::FromStr;
+use multi_party_ecdsa::protocols::two_party_ecdsa::lindell_2017::party_one::{Signature as LSig, SignatureRecid, verify};
 
 // TODO: move that to a config file and double check electrum server addresses
 const ELECTRUM_HOST: &str = "ec2-34-219-15-143.us-west-2.compute.amazonaws.com:60001";
 //const ELECTRUM_HOST: &str = "testnetnode.arihanc.com:51001";
-const WALLET_FILENAME: &str = "wallet/wallet.data";
-const BACKUP_FILENAME: &str = "wallet/backup.data";
+const WALLET_FILENAME: &str = "wallet.data";
+const BACKUP_FILENAME: &str = "backup.data";
+//const BACKUP_FILENAME: &str = "~/Downloads/from_github/gotham-city/gotham-client/wallet/backup.data";
 
 #[derive(Serialize, Deserialize)]
 pub struct SignSecondMsgRequest {
@@ -209,7 +211,6 @@ impl Wallet {
 
     pub fn save_to(&self, filepath: &str) {
         let wallet_json = serde_json::to_string(self).unwrap();
-
         fs::write(filepath, wallet_json).expect("Unable to save wallet!");
 
         debug!("(wallet id: {}) Saved wallet to disk", self.id);
@@ -231,6 +232,51 @@ impl Wallet {
 
     pub fn load() -> Wallet {
         Wallet::load_from(WALLET_FILENAME)
+    }
+
+    pub fn sign_raw(
+        &mut self,
+        msg: &str,
+        client_shim: &ClientShim,
+    ) -> (String, String){
+        let msg_hash = sha256d::Hash::from_hex(msg).unwrap();
+        let mut msg_hash_vec = msg_hash.to_vec();
+
+        msg_hash_vec.reverse();
+        let msg_bn = BigInt::from(&msg_hash_vec[..]);
+        println!("msg_bn : {:?}", msg_bn.to_str_radix(16));
+       // let msg_bn = BigInt::from_hex(&hex::encode(&msg_hash[..]));
+        let signature = ecdsa::sign(
+            client_shim,
+            msg_bn.clone(),
+            &self.private_share.master_key,
+            BigInt::from(0),
+            BigInt::from(0),
+            &self.private_share.id,
+        ).unwrap();
+        let test_sig = LSig{
+            r: signature.r.clone(),
+            s: signature.s.clone(),
+        };
+        let res = verify(&test_sig, &self.private_share.master_key.public.q, &msg_bn);
+        assert!(res.is_ok());
+      //  let mut v = BigInt::to_vec(&signature.r);
+     //   v.extend(BigInt::to_vec(&signature.s));
+
+
+     //   let mut sig_vec = Signature::from_compact(&v[..]).unwrap().serialize_compact();
+       // let mut sig_vec = sig.to_vec();
+    //    let rs = hex::encode(sig_vec);
+        //let s = BigInt::to_str_radix(&signature.s, 16);
+        let mut s_vec = BigInt::to_vec(&signature.s);
+        s_vec.reverse();
+        let mut r_vec = BigInt::to_vec(&signature.r);
+        r_vec.reverse();
+        let s = hex::encode(s_vec);
+        let r = hex::encode(r_vec);
+
+       // let r = BigInt::to_str_radix(&signature.r, 16);
+        (r,s)
     }
 
     pub fn send(
