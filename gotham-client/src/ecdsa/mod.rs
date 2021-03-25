@@ -11,6 +11,7 @@ pub mod rotate;
 pub mod sign;
 pub mod types;
 pub mod recover;
+pub mod get_secret_at_location;
 
 pub use keygen::get_master_key;
 pub use rotate::rotate_master_key;

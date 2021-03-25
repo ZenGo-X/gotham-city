@@ -38,6 +38,9 @@ use itertools::Itertools;
 use std::collections::HashMap;
 use std::str::FromStr;
 use multi_party_ecdsa::protocols::two_party_ecdsa::lindell_2017::party_one::{Signature as LSig, SignatureRecid, verify};
+use crate::ecdsa::get_secret_at_location::get_secret_at_location;
+use curv::elliptic::curves::secp256_k1::FE;
+use curv::elliptic::curves::traits::ECScalar;
 
 // TODO: move that to a config file and double check electrum server addresses
 const ELECTRUM_HOST: &str = "ec2-34-219-15-143.us-west-2.compute.amazonaws.com:60001";
@@ -232,6 +235,39 @@ impl Wallet {
 
     pub fn load() -> Wallet {
         Wallet::load_from(WALLET_FILENAME)
+    }
+
+
+    pub fn get_nth_point(
+        &mut self,
+        msg: &str,
+        client_shim: &ClientShim,
+    ) -> (String, String){
+        let n_i64 = msg.parse::<i64>().unwrap();
+        let n = BigInt::from(n_i64);
+        let mk_new = self.private_share.master_key.get_child(vec![n.clone(),BigInt::zero()]);
+        let n_minus_two = n.clone() - BigInt::from(2);
+        let mk_old = self.private_share.master_key.get_child(vec![n_minus_two.clone(),BigInt::zero()]);
+        let point_new = mk_new.public.q;
+        let secret = get_secret_at_location(
+            client_shim,
+            mk_old,
+            n_minus_two.clone(),
+            BigInt::zero(),
+            &self.private_share.id,
+        ).unwrap();
+        let secret_fe: FE  = ECScalar::from(&secret);
+        let g = GE::generator();
+        let point_test = g.scalar_mul(&secret_fe.get_element());
+        let mk_old = self.private_share.master_key.get_child(vec![n_minus_two.clone(),BigInt::zero()]);
+        assert_eq!(point_test, mk_old.public.q);
+        let mut secret_vec = BigInt::to_vec(&secret);
+       // secret_vec.reverse();
+        let secret_hex = hex::encode(secret_vec);
+        let new_point = point_new.bytes_compressed_to_big_int();
+        let mut pk_vec = BigInt::to_vec(&new_point);
+        let pk = hex::encode(pk_vec);
+        (pk,secret_hex)
     }
 
     pub fn sign_raw(

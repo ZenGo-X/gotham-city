@@ -53,6 +53,20 @@ fn main() {
     } else if let Some(matches) = matches.subcommand_matches("wallet") {
         let mut wallet: wallet::Wallet = wallet::Wallet::load();
 
+        if matches.is_present("new_point"){
+            if let Some(matches) = matches.subcommand_matches("new_point") {
+                let msg: &str = matches.value_of("nth").unwrap();
+                let (point,old_secret) = wallet.get_nth_point(
+                    msg,
+                    &client_shim,
+                );
+                wallet.save();
+                println!(
+                    "n_point:{}, old_secret:{}", point,old_secret
+                );
+            }
+        }
+
         if matches.is_present("sign_raw"){
             if let Some(matches) = matches.subcommand_matches("sign_raw") {
                 let msg: &str = matches.value_of("hash_msg").unwrap();

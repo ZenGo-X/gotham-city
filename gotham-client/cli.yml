@@ -64,3 +64,12 @@ subcommands:
                   required: true
                   value_name: msg_hash
                   help: byte_slice
+        - new_point:
+            about: get new commitment point and reveal old secret
+            version: "1.0"
+            args:
+            - nth:
+                short: n
+                required: true
+                value_name: nth_point
+                help: byte_slice
