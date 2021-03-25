@@ -39,6 +39,13 @@ struct Alpha {
     value: BigInt
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+pub struct LocationXY {
+    pub x_pos: BigInt,
+    pub y_pos: BigInt,
+}
+
+
 #[derive(Debug)]
 pub enum EcdsaStruct {
     KeyGenFirstMsg,
@@ -288,6 +295,26 @@ pub fn master_key(state: State<Config>, claim: Claims, id: String) -> Result<()>
         &EcdsaStruct::Party1MasterKey,
         &masterKey,
     )
+}
+
+
+#[post(
+"/ecdsa/get_secret/<id>/first",
+format = "json",
+data = "<location>"
+)]
+pub fn get_secret(
+    state: State<Config>,
+    claim: Claims,
+    id: String,
+    location: Json<LocationXY>,
+) -> Result<Json<(MasterKey1)>> {
+
+    let master_key: MasterKey1 = db::get(&state.db, &claim.sub, &id, &EcdsaStruct::Party1MasterKey)?
+        .ok_or(format_err!("No data for such identifier {}", id))?;
+
+    let mk_old = master_key.get_child(vec![location.x_pos.clone(),location.y_pos.clone()]);
+    Ok(Json(mk_old))
 }
 
 #[post(

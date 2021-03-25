@@ -85,6 +85,7 @@ pub fn get_server() -> Rocket {
                 ecdsa::second_message,
                 ecdsa::chain_code_first_message,
                 ecdsa::chain_code_second_message,
+                ecdsa::get_secret,
                 ecdsa::sign_first,
                 ecdsa::sign_second,
                 ecdsa::rotate_first,
