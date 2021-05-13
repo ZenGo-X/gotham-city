@@ -15,7 +15,8 @@ use curv::cryptographic_primitives::twoparty::dh_key_exchange_variant_with_pok_c
     CommWitness, EcKeyPair, Party1FirstMessage, Party1SecondMessage,
 };
 use curv::elliptic::curves::secp256_k1::Secp256k1Scalar;
-use curv::{BigInt, GE};
+use curv::BigInt;
+use curv::elliptic::curves::secp256_k1::GE;
 use kms::chain_code::two_party as chain_code;
 use kms::ecdsa::two_party::*;
 use kms::rotation::two_party::party1::Rotation1;
@@ -136,7 +137,7 @@ pub fn second_message(
     state: State<Config>,
     claim: Claims,
     id: String,
-    dlog_proof: Json<DLogProof>,
+    dlog_proof: Json<DLogProof<GE>>,
 ) -> Result<Json<party1::KeyGenParty1Message2>> {
     let party2_public: GE = dlog_proof.0.pk.clone();
     db::insert(
@@ -218,9 +219,9 @@ pub fn chain_code_second_message(
     state: State<Config>,
     claim: Claims,
     id: String,
-    cc_party_two_first_message_d_log_proof: Json<DLogProof>,
-) -> Result<Json<(Party1SecondMessage)>> {
-    let cc_comm_witness: CommWitness = db::get(&state.db, &claim.sub, &id, &EcdsaStruct::CCCommWitness)?
+    cc_party_two_first_message_d_log_proof: Json<DLogProof<GE>>,
+) -> Result<Json<(Party1SecondMessage<GE>)>> {
+    let cc_comm_witness: CommWitness<GE> = db::get(&state.db, &claim.sub, &id, &EcdsaStruct::CCCommWitness)?
         .ok_or(format_err!("No data for such identifier {}", id))?;
 
     let party1_cc = chain_code::party1::ChainCode1::chain_code_second_message(
@@ -240,7 +241,7 @@ pub fn chain_code_compute_message(
     id: String,
     cc_party2_public: &GE,
 ) -> Result<Json<()>> {
-    let cc_ec_key_pair_party1: EcKeyPair =
+    let cc_ec_key_pair_party1: EcKeyPair<GE> =
         db::get(&state.db, &claim.sub, &id, &EcdsaStruct::CCEcKeyPair)?
             .ok_or(format_err!("No data for such identifier {}", id))?;
     let party1_cc = chain_code::party1::ChainCode1::compute_chain_code(
@@ -377,7 +378,7 @@ pub fn rotate_first(
     state: State<Config>,
     claim: Claims,
     id: String,
-) -> Result<Json<(coin_flip_optimal_rounds::Party1FirstMessage)>> {
+) -> Result<Json<(coin_flip_optimal_rounds::Party1FirstMessage<GE>)>> {
     let (party1_coin_flip_first_message, m1, r1) = Rotation1::key_rotate_first_message();
     db::insert(
         &state.db,
@@ -405,11 +406,11 @@ pub fn rotate_second(
     state: State<Config>,
     id: String,
     claim: Claims,
-    party2_first_message: Json<coin_flip_optimal_rounds::Party2FirstMessage>,
+    party2_first_message: Json<coin_flip_optimal_rounds::Party2FirstMessage<GE>>,
 ) -> Result<
     Json<
         ((
-            coin_flip_optimal_rounds::Party1SecondMessage,
+            coin_flip_optimal_rounds::Party1SecondMessage<GE>,
             party1::RotationParty1Message1,
         )),
     >,
