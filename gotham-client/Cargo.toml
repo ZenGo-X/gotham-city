@@ -1,6 +1,6 @@
 [package]
 name = "gotham-client"
-version = "0.1.3"
+version = "0.1.4"
 authors = [
     "gbenattar <g.benattar@gmail.com>",
     "Oded Leiba <odedleiba5@gmail.com"
