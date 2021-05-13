@@ -10,6 +10,8 @@ use uuid::Uuid;
 use multi_party_schnorr::protocols::thresholdsig::zilliqa_schnorr::*;
 use self::SchnorrStruct::*;
 
+use curv::elliptic::curves::secp256_k1::{GE, FE};
+
 const PARTY1_INDEX: usize = 1;
 const PARTY2_INDEX: usize = 2;
 const PARAMS: Parameters = Parameters {
@@ -167,7 +169,7 @@ pub fn keygen_third(
         &id,
         &Party2KeyGenBroadcastMessage2)?
         .ok_or(format_err!("No data for such identifier {}", id))?;
-    let vss_scheme: VerifiableSS = db::get(
+    let vss_scheme: VerifiableSS<GE> = db::get(
         &state.db,
 &claim.sub,
         &id,
@@ -234,29 +236,29 @@ pub fn sign(
         .ok_or(format_err!("No data for such identifier {}", eph_keygen_id))?;
 
     let local_sig = LocalSig::compute(
-        &BigInt::to_vec(&party2_sign_msg1.message).as_slice(),
+        &BigInt::to_bytes(&party2_sign_msg1.message).as_slice(),
         &eph_shared_key,
         &shared_key);
 
-    let vss_scheme: VerifiableSS = db::get(
+    let vss_scheme: VerifiableSS<GE> = db::get(
         &state.db,
 &claim.sub,
         &keygen_id,
         &Party1VerifiableSecretShares)?
         .ok_or(format_err!("No data for such identifier {}", keygen_id))?;
-    let party2_vss_scheme: VerifiableSS = db::get(
+    let party2_vss_scheme: VerifiableSS<GE> = db::get(
         &state.db,
 &claim.sub,
         &keygen_id,
         &Party2VerifiableSecretShares)?
         .ok_or(format_err!("No data for such identifier {}", keygen_id))?;
-    let eph_vss_scheme: VerifiableSS = db::get(
+    let eph_vss_scheme: VerifiableSS<GE> = db::get(
         &state.db,
         &claim.sub,
         &eph_keygen_id,
         &Party1VerifiableSecretShares)?
         .ok_or(format_err!("No data for such identifier {}", eph_keygen_id))?;
-    let party2_eph_vss_scheme: VerifiableSS = db::get(
+    let party2_eph_vss_scheme: VerifiableSS<GE> = db::get(
         &state.db,
         &claim.sub,
         &eph_keygen_id,

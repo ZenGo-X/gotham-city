@@ -17,15 +17,18 @@ mod tests {
     use rocket::http::Status;
     use rocket::local::Client;
     use serde_json;
+    use zk_paillier::zkproofs::SALT_STRING;
     use std::env;
     use std::time::Instant;
 
+    use curv::elliptic::curves::secp256_k1::{GE, FE};
     use curv::arithmetic::traits::Converter;
     use curv::cryptographic_primitives::twoparty::dh_key_exchange_variant_with_pok_comm::*;
     use curv::BigInt;
     use kms::chain_code::two_party as chain_code;
     use kms::ecdsa::two_party::*;
     use multi_party_ecdsa::protocols::two_party_ecdsa::lindell_2017::*;
+    use floating_duration::TimeFormat;
 
     fn key_gen(client: &Client) -> (String, MasterKey2) {
         time_test!();
@@ -76,72 +79,16 @@ mod tests {
         let key_gen_second_message = MasterKey2::key_gen_second_message(
             &kg_party_one_first_message,
             &kg_party_one_second_message,
+            SALT_STRING,
         );
         assert!(key_gen_second_message.is_ok());
 
         println!("{} Client: party2 second message", TimeFormat(start.elapsed()));
 
-        let (party_two_second_message, party_two_paillier, party_two_pdl_chal) =
+        let (party_two_second_message, party_two_paillier) =
             key_gen_second_message.unwrap();
+
         /*************** END: SECOND MESSAGE ***************/
-
-        /*************** START: THIRD MESSAGE ***************/
-        let body = serde_json::to_string(&party_two_second_message.pdl_first_message).unwrap();
-
-        let start = Instant::now();
-
-        let mut response = client
-            .post(format!("/ecdsa/keygen/{}/third", id))
-            .body(body)
-            .header(ContentType::JSON)
-            .dispatch();
-        assert_eq!(response.status(), Status::Ok);
-
-        println!("{} Network/Server: party1 third message", TimeFormat(start.elapsed()));
-
-        let res_body = response.body_string().unwrap();
-        let party_one_third_message: party_one::PDLFirstMessage =
-            serde_json::from_str(&res_body).unwrap();
-
-        let start = Instant::now();
-
-        let pdl_decom_party2 = MasterKey2::key_gen_third_message(&party_two_pdl_chal);
-
-        println!("{} Client: party2 third message", TimeFormat(start.elapsed()));
-        /*************** END: THIRD MESSAGE ***************/
-
-        /*************** START: FOURTH MESSAGE ***************/
-
-        let party_2_pdl_second_message = pdl_decom_party2;
-        let request = party_2_pdl_second_message;
-        let body = serde_json::to_string(&request).unwrap();
-
-        let start = Instant::now();
-
-        let mut response = client
-            .post(format!("/ecdsa/keygen/{}/fourth", id))
-            .body(body)
-            .header(ContentType::JSON)
-            .dispatch();
-        assert_eq!(response.status(), Status::Ok);
-
-        println!("{} Network/Server: party1 fourth message", TimeFormat(start.elapsed()));
-
-        let res_body = response.body_string().unwrap();
-        let party_one_pdl_second_message: party_one::PDLSecondMessage =
-            serde_json::from_str(&res_body).unwrap();
-
-        let start = Instant::now();
-
-        MasterKey2::key_gen_fourth_message(
-            &party_two_pdl_chal,
-            &party_one_third_message,
-            &party_one_pdl_second_message,
-        )
-        .expect("pdl error party1");
-
-        println!("{} Client: party2 fourth message", TimeFormat(start.elapsed()));
-        /*************** END: FOURTH MESSAGE ***************/
 
         /*************** START: CHAINCODE FIRST MESSAGE ***************/
         let start = Instant::now();
@@ -186,7 +133,7 @@ mod tests {
         );
 
         let res_body = response.body_string().unwrap();
-        let cc_party_one_second_message: Party1SecondMessage =
+        let cc_party_one_second_message: Party1SecondMessage<GE> =
             serde_json::from_str(&res_body).unwrap();
 
         let start = Instant::now();

@@ -7,6 +7,8 @@ use super::super::auth::jwt::Claims;
 use super::super::storage::db;
 use super::super::Config;
 
+use curv::BigInt;
+use curv::elliptic::curves::ed25519::{GE, FE};
 use multi_party_eddsa::protocols::aggsig::*;
 use self::EddsaStruct::*;
 
@@ -96,7 +98,7 @@ pub fn sign_first(
         .ok_or(format_err!("No data for such identifier {}", id))?;
 
     let (party1_ephemeral_key, party1_sign_first_msg, party1_sign_second_msg) =
-        Signature::create_ephemeral_key_and_commit(&party1_key_pair, &BigInt::to_vec(&message).as_slice());
+        Signature::create_ephemeral_key_and_commit(&party1_key_pair, &BigInt::to_bytes(&message).as_slice());
 
     db::insert(
         &state.db,
@@ -205,7 +207,7 @@ pub fn sign_second(
     Ri.push(party2_sign_second_msg.R.clone());
     // each party i should run this:
     let R_tot = Signature::get_R_tot(Ri);
-    let k = Signature::k(&R_tot, &key_agg.apk, &BigInt::to_vec(&message).as_slice());
+    let k = Signature::k(&R_tot, &key_agg.apk, &BigInt::to_bytes(&message).as_slice());
     let s1 = Signature::partial_sign(
         &party1_ephemeral_key.r,
         &party1_key_pair,
