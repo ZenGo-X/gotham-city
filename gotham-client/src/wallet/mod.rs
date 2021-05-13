@@ -11,11 +11,12 @@ use bitcoin;
 use bitcoin::consensus::encode::serialize;
 use bitcoin::network::constants::Network;
 use bitcoin::util::bip143::SighashComponents;
-use bitcoin::{TxIn, TxOut};
+use bitcoin::{TxIn, TxOut, Txid};
 use bitcoin::hashes::{sha256d, hex::FromHex};
 use bitcoin::secp256k1::Signature;
 use curv::elliptic::curves::traits::ECPoint;
-use curv::{BigInt, GE};
+use curv::BigInt;
+use curv::elliptic::curves::secp256_k1::{GE, PK};
 use electrumx_client::{electrumx_client::ElectrumxClient, interface::Electrumx};
 use kms::ecdsa::two_party::MasterKey2;
 use kms::ecdsa::two_party::*;
@@ -251,7 +252,7 @@ impl Wallet {
             .into_iter()
             .map(|s| bitcoin::TxIn {
                 previous_output: bitcoin::OutPoint {
-                    txid: sha256d::Hash::from_hex(&s.tx_hash).unwrap(),
+                    txid: Txid::from_hash(sha256d::Hash::from_hex(&s.tx_hash).unwrap()),
                     vout: s.tx_pos as u32,
                 },
                 script_sig: bitcoin::Script::default(),
@@ -311,15 +312,15 @@ impl Wallet {
 
             let signature = ecdsa::sign(
                 client_shim,
-                BigInt::from_hex(&hex::encode(&sig_hash[..])),
+                BigInt::from_hex(&hex::encode(&sig_hash[..])).unwrap(),
                 &mk,
                 BigInt::from(0),
                 BigInt::from(address_derivation.pos),
                 &self.private_share.id,
             ).unwrap();
 
-            let mut v = BigInt::to_vec(&signature.r);
-            v.extend(BigInt::to_vec(&signature.s));
+            let mut v = BigInt::to_bytes(&signature.r);
+            v.extend(BigInt::to_bytes(&signature.s));
 
             let mut sig_vec = Signature::from_compact(&v[..])
                 .unwrap()
@@ -346,7 +347,7 @@ impl Wallet {
         let address = bitcoin::Address::p2wpkh(
             &to_bitcoin_public_key(pk),
             self.get_bitcoin_network()
-        );
+        ).expect("Cannot panic because `to_bitcoin_public_key` creates a compressed address");
 
         self.addresses_derivation_map
             .insert(address.to_string(), AddressDerivation { mk, pos });
@@ -364,7 +365,7 @@ impl Wallet {
                 bitcoin::Address::p2wpkh(
                     &to_bitcoin_public_key(mk.public.q.get_element()),
                     self.get_bitcoin_network()
-                );
+                ).expect("Cannot panic because `to_bitcoin_public_key` creates a compressed address");
 
             self.addresses_derivation_map
                 .insert(address.to_string(), AddressDerivation { mk, pos });
@@ -500,12 +501,12 @@ impl Wallet {
         bitcoin::Address::p2wpkh(
             &to_bitcoin_public_key(mk.public.q.get_element()),
             network
-        )
+        ).expect("Cannot panic because `to_bitcoin_public_key` creates a compressed address")
     }
 }
 
 // type conversion
-fn to_bitcoin_public_key(pk: curv::PK) -> bitcoin::util::key::PublicKey {
+fn to_bitcoin_public_key(pk: PK) -> bitcoin::util::key::PublicKey {
     bitcoin::util::key::PublicKey {
         compressed: true,
         key: pk
@@ -515,6 +516,8 @@ fn to_bitcoin_public_key(pk: curv::PK) -> bitcoin::util::key::PublicKey {
 #[cfg(test)]
 mod tests {
     use bitcoin::hashes::sha256d;
+    use bitcoin::hashes::hex::ToHex;
+    use bitcoin::hashes::Hash;
     use curv::arithmetic::traits::Converter;
     use curv::BigInt;
 
@@ -526,13 +529,13 @@ mod tests {
         ];
 
         // 14abf5ed107ff58bf844ee7f447bec317c276b00905c09a45434f8848599597e
-        let hash = sha256d::Hash::from_slice(&message);
+        let hash = sha256d::Hash::from_slice(&message).unwrap();
 
         // 7e59998584f83454a4095c90006b277c31ec7b447fee44f88bf57f10edf5ab14
-        let ser = hash.le_hex_string();
+        let ser = hash.to_hex();
 
         // 57149727877124134702546803488322951680010683936655914236113461592936003513108
-        let b: BigInt = BigInt::from_hex(&ser);
+        let b: BigInt = BigInt::from_hex(&ser).unwrap();
 
         println!("({},{},{})", hash, ser, b.to_hex());
     }

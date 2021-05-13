@@ -1,5 +1,5 @@
-// Gotham-city 
-// 
+// Gotham-city
+//
 // Copyright 2018 by Kzen Networks (kzencorp.com)
 // Gotham city is free software: you can redistribute
 // it and/or modify it under the terms of the GNU General Public
@@ -7,14 +7,14 @@
 // version 3 of the License, or (at your option) any later version.
 //
 
-use curv::{FE, BigInt, GE};
 use kms::ecdsa::two_party::{MasterKey1, MasterKey2};
 use serde_json;
 use centipede::juggling::segmentation::Msegmentation;
 use centipede::juggling::proof_system::Helgamalsegmented;
 use curv::elliptic::curves::traits::{ECScalar, ECPoint};
-use curv::arithmetic::traits::Modulo;
-use curv::arithmetic::traits::Converter;
+use crate::curv::arithmetic::{Converter, Modulo};
+use curv::elliptic::curves::secp256_k1::{FE, GE};
+use curv::BigInt;
 use serde_json::Error;
 // iOS bindings
 use std::ffi::{CStr, CString};
@@ -110,9 +110,9 @@ pub extern "C" fn construct_single_private_key(
     c_mk1_x1: *const c_char,
     c_mk2_x2: *const c_char
 ) -> *mut c_char {
-    let mk1_x1: BigInt = BigInt::from_hex(&get_str_from_c_char(c_mk1_x1));
+    let mk1_x1: BigInt = BigInt::from_hex(&get_str_from_c_char(c_mk1_x1)).unwrap();
 
-    let mk2_x2: BigInt =  BigInt::from_hex(&get_str_from_c_char(c_mk2_x2));
+    let mk2_x2: BigInt =  BigInt::from_hex(&get_str_from_c_char(c_mk2_x2)).unwrap();
 
     let sk = BigInt::mod_mul(&mk1_x1, &mk2_x2, &FE::q());
 

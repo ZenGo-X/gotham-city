@@ -7,9 +7,9 @@
 // version 3 of the License, or (at your option) any later version.
 //
 
+use curv::elliptic::curves::secp256_k1::{FE, GE};
 use curv::elliptic::curves::traits::ECPoint;
 use curv::elliptic::curves::traits::ECScalar;
-use curv::{FE, GE};
 
 use serde_json;
 use std::fs;

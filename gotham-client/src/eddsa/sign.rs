@@ -16,6 +16,8 @@ use super::super::ClientShim;
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
 
+use curv::elliptic::curves::ed25519::{FE, GE};
+use curv::BigInt;
 use multi_party_eddsa::protocols::aggsig::*;
 
 #[allow(non_snake_case)]
@@ -28,7 +30,10 @@ pub fn sign(
 ) -> Result<Signature> {
     // round 1: send commitments to ephemeral public keys
     let (party2_ephemeral_key, party2_sign_first_msg, party2_sign_second_msg) =
-        Signature::create_ephemeral_key_and_commit(&party2_key_pair, BigInt::to_vec(&message).as_slice());
+        Signature::create_ephemeral_key_and_commit(
+            &party2_key_pair,
+            BigInt::to_bytes(&message).as_slice(),
+        );
 
     let party1_sign_first_msg: SignFirstMsg = match requests::postb(
         client_shim,
@@ -65,7 +70,7 @@ pub fn sign(
     Ri.push(party2_sign_second_msg.R.clone());
     // each party i should run this:
     let R_tot = Signature::get_R_tot(Ri);
-    let k = Signature::k(&R_tot, &key_agg.apk, BigInt::to_vec(&message).as_slice());
+    let k = Signature::k(&R_tot, &key_agg.apk, BigInt::to_bytes(&message).as_slice());
     let s2 = Signature::partial_sign(
         &party2_ephemeral_key.r,
         &party2_key_pair,
@@ -80,7 +85,7 @@ pub fn sign(
     let signature = Signature::add_signature_parts(s);
 
     // verify:
-    verify(&signature, BigInt::to_vec(&message).as_slice(), &key_agg.apk)
+    verify(&signature, BigInt::to_bytes(&message).as_slice(), &key_agg.apk)
         .or_else(|e| Err(format_err!("verifying signature failed: {}", e)))
         .and_then(|_| Ok(signature))
 }
