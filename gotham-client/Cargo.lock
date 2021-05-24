@@ -1124,8 +1124,8 @@ dependencies = [
 
 [[package]]
 name = "kms"
-version = "0.3.0"
-source = "git+https://github.com/KZen-networks/kms-secp256k1?tag=v0.3.0#89be9bfd59cb18223c6fcb43146a7e0c77dcde76"
+version = "0.3.1"
+source = "git+https://github.com/KZen-networks/kms-secp256k1?tag=v0.3.1#a9f21ea94375b1d9e536e6ef9078b09a717be1e6"
 dependencies = [
  "centipede",
  "curv-kzen",
@@ -1133,7 +1133,6 @@ dependencies = [
  "multi-party-schnorr",
  "paillier",
  "rand 0.5.6",
- "rust-gmp",
  "serde 1.0.126",
  "serde_derive",
  "zk-paillier",
@@ -1338,8 +1337,8 @@ dependencies = [
 
 [[package]]
 name = "multi-party-schnorr"
-version = "0.4.4"
-source = "git+https://github.com/KZen-networks/multi-party-schnorr?tag=v0.4.4#ec5fb693419258fd2cdeaf2ca85e74ecaa43e9d0"
+version = "0.4.5"
+source = "git+https://github.com/KZen-networks/multi-party-schnorr?tag=v0.4.5#04b7454e8d682c8b69940b669ade36c4500e18e3"
 dependencies = [
  "centipede",
  "curv-kzen",
@@ -1986,16 +1985,6 @@ dependencies = [
  "rand 0.3.23",
  "rustc-serialize",
  "time",
-]
-
-[[package]]
-name = "rust-gmp"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c3ddf28998d5730b96a9fe188557953de503d77ff403ae175ad1417921e5d906"
-dependencies = [
- "libc",
- "num-traits 0.1.43",
 ]
 
 [[package]]
