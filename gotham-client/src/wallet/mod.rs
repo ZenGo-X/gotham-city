@@ -56,7 +56,7 @@ pub struct SignSecondMsgRequest {
 pub struct GetBalanceResponse {
     pub address: String,
     pub confirmed: u64,
-    pub unconfirmed: u64,
+    pub unconfirmed: i128,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -71,7 +71,7 @@ pub struct GetListUnspentResponse {
 #[derive(Debug, Deserialize)]
 pub struct GetWalletBalanceResponse {
     pub confirmed: u64,
-    pub unconfirmed: u64,
+    pub unconfirmed: i128,
 }
 
 #[derive(Serialize, Deserialize)]

@@ -107,33 +107,14 @@ checksum = "349f9b6a179ed607305526ca489b34ad0a41aed5f7980fa90eb03160b69598fb"
 
 [[package]]
 name = "bitcoin"
-version = "0.20.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "01337c65290ce0c948738d821aa9f87488ca6c2b0f02d672ef778f9ae54f22c8"
-dependencies = [
- "bech32",
- "bitcoin_hashes 0.7.6",
- "byteorder",
- "hex 0.3.2",
- "secp256k1 0.15.5",
-]
-
-[[package]]
-name = "bitcoin"
 version = "0.26.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1ec5f88a446d66e7474a3b8fa2e348320b574463fb78d799d90ba68f79f48e0e"
 dependencies = [
  "bech32",
- "bitcoin_hashes 0.9.6",
- "secp256k1 0.20.2",
+ "bitcoin_hashes",
+ "secp256k1",
 ]
-
-[[package]]
-name = "bitcoin_hashes"
-version = "0.7.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b375d62f341cef9cd9e77793ec8f1db3fc9ce2e4d57e982c8fe697a2c16af3b6"
 
 [[package]]
 name = "bitcoin_hashes"
@@ -532,7 +513,7 @@ dependencies = [
  "ring-algorithm",
  "rust-crypto",
  "rust-gmp-kzen",
- "secp256k1 0.20.2",
+ "secp256k1",
  "serde 1.0.126",
  "serde_derive",
  "sha2 0.8.2",
@@ -607,10 +588,10 @@ checksum = "e78d4f1cc4ae33bbfc157ed5d5a5ef3bc29227303d595861deb238fcec4e9457"
 
 [[package]]
 name = "electrumx_client"
-version = "0.1.0"
-source = "git+https://github.com/KZen-networks/rust-electrumx-client?tag=bitcoin@0.20.0#bc769285da9f4202bca34b540c5434e928a2c47e"
+version = "0.1.1"
+source = "git+https://github.com/KZen-networks/rust-electrumx-client?tag=bitcoin@0.26.0#629a3e0d97fc21564ce5f52195a298f65ea44d8e"
 dependencies = [
- "bitcoin 0.20.0",
+ "bitcoin",
  "clap",
  "hex 0.3.2",
  "serde 1.0.126",
@@ -859,7 +840,7 @@ checksum = "f6503fe142514ca4799d4c26297c4248239fe8838d827db6bd6065c6ed29a6ce"
 name = "gotham-client"
 version = "0.1.4"
 dependencies = [
- "bitcoin 0.26.0",
+ "bitcoin",
  "centipede",
  "clap",
  "config",
@@ -2046,16 +2027,6 @@ name = "scopeguard"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d29ab0c6d3fc0ee92fe66e2d99f700eab17a8d57d1c1d3b748380fb20baa78cd"
-
-[[package]]
-name = "secp256k1"
-version = "0.15.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4d311229f403d64002e9eed9964dfa5a0a0c1ac443344f7546bf48e916c6053a"
-dependencies = [
- "cc",
- "rand 0.6.5",
-]
 
 [[package]]
 name = "secp256k1"
