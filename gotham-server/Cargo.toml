@@ -34,31 +34,39 @@ jsonwebtoken = "6.0.1"
 rust-crypto = "0.2"
 hex = "0.3.2"
 floating-duration = "0.1.2"
-curv = { package = "curv-kzen", version = "0.7" }
+
+[dependencies.curv]
+package = "curv-kzen"
+version = "0.7"
+default-features = false
 
 [dependencies.zk-paillier]
 git = "https://github.com/KZen-networks/zk-paillier"
 tag = "v0.3.12"
+default-features = false
 
 [dependencies.kms]
 git = "https://github.com/KZen-networks/kms-secp256k1"
-tag = "v0.3.0"
+tag = "v0.3.1"
+default-features = false
 
 [dependencies.multi-party-ecdsa]
 git = "https://github.com/KZen-networks/multi-party-ecdsa"
 tag = "v0.4.6"
+default-features = false
 
 [dependencies.multi-party-eddsa]
 git = "https://github.com/KZen-networks/multi-party-eddsa"
 tag = "v0.2.2"
+default-features = false
 
 [dependencies.multi-party-schnorr]
 git = "https://github.com/KZen-networks/multi-party-schnorr"
-tag = "v0.4.4"
-
+tag = "v0.4.5"
+default-features = false
 
 [dependencies.serde_dynamodb]
 git = "https://github.com/KZen-networks/serde_dynamodb"
 
-[patch.crates-io]
-rust-gmp = { version = "0.5.0", features = ["serde_support"], git = "https://github.com/KZen-networks/rust-gmp" }
+[features]
+default = ["curv/rust-gmp-kzen"]
