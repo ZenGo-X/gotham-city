@@ -7,14 +7,14 @@
 // version 3 of the License, or (at your option) any later version.
 //
 
+use std::fs;
+use std::path::Path;
+
 use curv::elliptic::curves::secp256_k1::{FE, GE};
 use curv::elliptic::curves::traits::ECPoint;
 use curv::elliptic::curves::traits::ECScalar;
 
 use serde_json;
-use std::fs;
-
-const ESCROW_SK_FILENAME: &str = "escrow/escrow-sk.json";
 
 pub const SEGMENT_SIZE: usize = 8;
 pub const NUM_SEGMENTS: usize = 32;
@@ -25,12 +25,12 @@ pub struct Escrow {
 }
 
 impl Escrow {
-    pub fn new() -> Escrow {
+    pub fn new(path: impl AsRef<Path>) -> Escrow {
         let secret: FE = ECScalar::new_random();
         let g: GE = ECPoint::generator();
         let public: GE = g * &secret;
         fs::write(
-            ESCROW_SK_FILENAME,
+            path,
             serde_json::to_string(&(secret.clone(), public.clone())).unwrap(),
         )
         .expect("Unable to save escrow secret!");
@@ -38,8 +38,8 @@ impl Escrow {
         Escrow { secret, public }
     }
 
-    pub fn load() -> Escrow {
-        let sec_data = fs::read_to_string(ESCROW_SK_FILENAME).expect("Unable to load wallet!");
+    pub fn load(path: impl AsRef<Path>) -> Escrow {
+        let sec_data = fs::read_to_string(path).expect("Unable to load wallet!");
         let (secret, public): (FE, GE) = serde_json::from_str(&sec_data).unwrap();
         Escrow {
             secret: secret.clone(),
