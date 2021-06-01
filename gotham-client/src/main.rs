@@ -146,16 +146,55 @@ fn main() {
                 return;
             };
 
-            let txid = wallet.send(
-                &electrum_host,
-                args.to.clone(),
-                amount_satoshi,
+            let tx = wallet.prepare_transaction(
                 &client_shim,
+                &electrum_host,
+                &args.to,
+                amount_satoshi,
+                args.estimate_fees,
+                args.subtract_fees,
             );
-            wallet.save(wallet_file);
+            println!("Please, double check transaction below you're going to commit:");
+            println!();
+            println!("Transaction:");
+            println!("  - Funds: {} satoshi", tx.payment_satoshi());
             println!(
-                "Network: [{}], Sent {} satoshi to address {}. Transaction ID: {}",
-                network, amount_satoshi, args.to, txid
+                "  - Fees : {} satoshi (transaction_size × fees_rate = {} bytes × {} satoshi/byte)",
+                tx.fees_satoshi(),
+                tx.transaction_size(),
+                tx.fees_satoshi_per_byte()
+            );
+            println!(
+                "  - Total: {} satoshi (funds + fees)",
+                tx.payment_satoshi() + tx.fees_satoshi(),
+            );
+            println!("  - Recipient: {}", args.to);
+            println!();
+
+            let wants_to_proceed = dialoguer::Confirm::new()
+                .with_prompt("Continue?")
+                .default(false)
+                .interact()
+                .unwrap();
+            if wants_to_proceed {
+                let amount_satoshi = tx.payment_satoshi();
+                let txid = tx.sign_and_send();
+                wallet.save(wallet_file);
+                println!(
+                    "Network: [{}], Sent {} satoshi to address {}. Transaction ID: {}",
+                    network, amount_satoshi, args.to, txid
+                );
+            } else {
+                eprintln!("ABORTED - transaction was not broadcasted to the network");
+            }
+        }
+        args::WalletCommand::EstimateFee(args) => {
+            let fee_btc_per_kilobyte = wallet::Wallet::estimate_fee(&electrum_host, args.number);
+            let fee_satoshi_per_byte =
+                fee_btc_per_kilobyte * Decimal::from(100_000_000_u64) / Decimal::from(1000_u64);
+            println!(
+                "Network: [{}], Estimated fee: {} BTC/kilobyte ({:.2} satoshi/byte)",
+                network, fee_btc_per_kilobyte, fee_satoshi_per_byte
             );
         }
     }

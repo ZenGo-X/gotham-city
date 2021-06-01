@@ -16,7 +16,7 @@ use bitcoin::{
     network::constants::Network,
     secp256k1::Signature,
     util::bip143::SighashComponents,
-    {TxIn, TxOut, Txid},
+    Transaction, {TxIn, TxOut, Txid},
 };
 use centipede::{
     juggling::proof_system::{Helgamalsegmented, Proof},
@@ -31,12 +31,12 @@ use curv::{
 use electrumx_client::{electrumx_client::ElectrumxClient, interface::Electrumx};
 use hex;
 use itertools::Itertools;
-use kms::{
-    chain_code::two_party::party2::ChainCode2, ecdsa::two_party::MasterKey2, ecdsa::two_party::*,
-};
+use kms::{ecdsa::two_party::MasterKey2, ecdsa::two_party::*};
 use uuid::Uuid;
 
 use crate::{ecdsa, ecdsa::types::PrivateShare, escrow, utilities::requests, ClientShim};
+use rust_decimal::Decimal;
+use std::convert::{TryFrom, TryInto};
 
 #[derive(Serialize, Deserialize)]
 pub struct SignSecondMsgRequest {
@@ -222,19 +222,26 @@ impl Wallet {
         wallet
     }
 
-    pub fn send(
-        &mut self,
-        electrum_host: &str,
-        to_address: String,
+    pub fn estimate_fee(electrum_host: &str, number: usize) -> Decimal {
+        let mut electrum = ElectrumxClient::new(electrum_host).unwrap();
+        electrum.estimate_fee(number).unwrap()
+    }
+
+    pub fn prepare_transaction<'t>(
+        &'t mut self,
+        client_shim: &'t ClientShim,
+        electrum_host: &'t str,
+        to_address: &str,
         amount_satoshi: u64,
-        client_shim: &ClientShim,
-    ) -> String {
+        estimate_fees_blocks: usize,
+        subtruct_fees: bool,
+    ) -> UnsignedTransaction<'t> {
         let selected = self.select_tx_in(electrum_host, amount_satoshi);
         if selected.is_empty() {
             panic!("Not enough fund");
         }
 
-        let to_btc_adress = bitcoin::Address::from_str(&to_address).unwrap();
+        let to_btc_adress = bitcoin::Address::from_str(to_address).unwrap();
 
         let txs_in: Vec<TxIn> = selected
             .clone()
@@ -250,82 +257,71 @@ impl Wallet {
             })
             .collect();
 
-        let fees = 10_000;
+        let fees_btc_per_kilobyte = Self::estimate_fee(electrum_host, estimate_fees_blocks);
+        let fees_satoshi_per_byte =
+            fees_btc_per_kilobyte * Decimal::from(100_000_000_u64) / Decimal::from(1000_u64);
 
         let change_address = self.get_new_bitcoin_address();
 
-        let total_selected = selected
-            .clone()
-            .into_iter()
-            .fold(0, |sum, val| sum + val.value) as u64;
-
-        let txs_out = vec![
-            TxOut {
-                value: amount_satoshi,
-                script_pubkey: to_btc_adress.script_pubkey(),
-            },
-            TxOut {
-                value: total_selected - amount_satoshi - fees,
-                script_pubkey: change_address.script_pubkey(),
-            },
-        ];
-
-        let transaction = bitcoin::Transaction {
-            version: 0,
-            lock_time: 0,
-            input: txs_in,
-            output: txs_out,
-        };
-
-        let mut signed_transaction = transaction.clone();
-
-        for i in 0..transaction.input.len() {
-            let address_derivation = self
-                .addresses_derivation_map
-                .get(&selected[i].address)
-                .unwrap();
-
-            let mk = &address_derivation.mk;
-            let pk = mk.public.q.get_element();
-
-            let comp = SighashComponents::new(&transaction);
-            let sig_hash = comp.sighash_all(
-                &transaction.input[i],
-                &bitcoin::Address::p2pkh(&to_bitcoin_public_key(pk), self.get_bitcoin_network())
-                    .script_pubkey(),
-                (selected[i].value as u32).into(),
-            );
-
-            let signature = ecdsa::sign(
-                client_shim,
-                BigInt::from_hex(&hex::encode(&sig_hash[..])).unwrap(),
-                &mk,
-                BigInt::from(0),
-                BigInt::from(address_derivation.pos),
-                &self.private_share.id,
-            )
+        let total_selected: u64 = selected
+            .iter()
+            .map(|i| i.value)
+            .sum::<usize>()
+            .try_into()
             .unwrap();
 
-            let mut v = BigInt::to_bytes(&signature.r);
-            v.extend(BigInt::to_bytes(&signature.s));
-
-            let mut sig_vec = Signature::from_compact(&v[..])
-                .unwrap()
-                .serialize_der()
-                .to_vec();
-            sig_vec.push(01);
-
-            let pk_vec = pk.serialize().to_vec();
-
-            signed_transaction.input[i].witness = vec![sig_vec, pk_vec];
+        if total_selected < amount_satoshi {
+            panic!("Not enough funds")
         }
 
-        let mut electrum = ElectrumxClient::new(electrum_host).unwrap();
+        let construct_transaction = |fees: u64| {
+            let txs_out = vec![
+                TxOut {
+                    value: amount_satoshi - if subtruct_fees { fees } else { 0 },
+                    script_pubkey: to_btc_adress.script_pubkey(),
+                },
+                TxOut {
+                    value: total_selected - amount_satoshi - if subtruct_fees { 0 } else { fees },
+                    script_pubkey: change_address.script_pubkey(),
+                },
+            ];
 
-        let raw_tx_hex = hex::encode(serialize(&signed_transaction));
-        let txid = electrum.broadcast_transaction(raw_tx_hex.clone());
+            bitcoin::Transaction {
+                version: 0,
+                lock_time: 0,
+                input: txs_in.clone(),
+                output: txs_out,
+            }
+        };
 
-        txid.unwrap()
+        let transaction = construct_transaction(0);
+        let transaction_size = Self::transaction_size(&transaction);
+        let fees = fees_satoshi_per_byte * Decimal::from(transaction_size);
+        let fees = fees.floor().mantissa().try_into().unwrap();
+
+        if !subtruct_fees && total_selected < amount_satoshi + fees {
+            panic!("Not enough funds to pay fees")
+        }
+        let transaction = construct_transaction(fees);
+
+        UnsignedTransaction {
+            wallet: self,
+            electrum_host,
+            client_shim,
+            unsigned_transaction: transaction,
+            selected_inputs: selected,
+            fees_per_byte: fees_satoshi_per_byte,
+        }
+    }
+
+    fn transaction_size(unsigned_transaction: &Transaction) -> usize {
+        let dummy_sig = vec![0u8; 72];
+        let dummy_pk = vec![0u8; 33];
+        let mut transaction = unsigned_transaction.clone();
+        for inp in &mut transaction.input {
+            inp.witness = vec![dummy_sig.clone(), dummy_pk.clone()];
+        }
+        transaction.get_size()
     }
 
     pub fn get_new_bitcoin_address(&mut self) -> bitcoin::Address {
@@ -496,6 +492,102 @@ impl Wallet {
     fn to_bitcoin_address(mk: &MasterKey2, network: Network) -> bitcoin::Address {
         bitcoin::Address::p2wpkh(&to_bitcoin_public_key(mk.public.q.get_element()), network)
             .expect("Cannot panic because `to_bitcoin_public_key` creates a compressed address")
+    }
+}
+
+pub struct UnsignedTransaction<'t> {
+    wallet: &'t Wallet,
+    electrum_host: &'t str,
+    client_shim: &'t ClientShim,
+    unsigned_transaction: Transaction,
+    selected_inputs: Vec<GetListUnspentResponse>,
+
+    fees_per_byte: Decimal,
+}
+
+impl<'t> UnsignedTransaction<'t> {
+    pub fn sign_and_send(self) -> String {
+        let mut signed_transaction = self.unsigned_transaction.clone();
+
+        for i in 0..self.unsigned_transaction.input.len() {
+            let address_derivation = self
+                .wallet
+                .addresses_derivation_map
+                .get(&self.selected_inputs[i].address)
+                .unwrap();
+
+            let mk = &address_derivation.mk;
+            let pk = mk.public.q.get_element();
+
+            let comp = SighashComponents::new(&self.unsigned_transaction);
+            let sig_hash = comp.sighash_all(
+                &self.unsigned_transaction.input[i],
+                &bitcoin::Address::p2pkh(
+                    &to_bitcoin_public_key(pk),
+                    self.wallet.get_bitcoin_network(),
+                )
+                .script_pubkey(),
+                (self.selected_inputs[i].value as u32).into(),
+            );
+
+            let signature = ecdsa::sign(
+                self.client_shim,
+                BigInt::from_hex(&hex::encode(&sig_hash[..])).unwrap(),
+                &mk,
+                BigInt::from(0),
+                BigInt::from(address_derivation.pos),
+                &self.wallet.private_share.id,
+            )
+            .unwrap();
+
+            let mut v = BigInt::to_bytes(&signature.r);
+            v.extend(BigInt::to_bytes(&signature.s));
+
+            let mut sig_vec = Signature::from_compact(&v[..])
+                .unwrap()
+                .serialize_der()
+                .to_vec();
+            sig_vec.push(01);
+
+            let pk_vec = pk.serialize().to_vec();
+
+            signed_transaction.input[i].witness = vec![sig_vec, pk_vec];
+        }
+
+        assert!(signed_transaction.get_size() <= self.transaction_size());
+
+        let mut electrum = ElectrumxClient::new(self.electrum_host).unwrap();
+
+        let raw_tx_hex = hex::encode(serialize(&signed_transaction));
+        let txid = electrum.broadcast_transaction(raw_tx_hex.clone());
+
+        txid.unwrap()
+    }
+
+    pub fn fees_satoshi(&self) -> u64 {
+        let total_input: usize = self.selected_inputs.iter().map(|i| i.value).sum();
+        let total_output: u64 = self
+            .unsigned_transaction
+            .output
+            .iter()
+            .map(|o| o.value)
+            .sum();
+        u64::try_from(total_input)
+            .unwrap()
+            .checked_sub(total_output)
+            .expect("negative fee")
+    }
+
+    pub fn fees_satoshi_per_byte(&self) -> Decimal {
+        self.fees_per_byte
+    }
+
+    pub fn transaction_size(&self) -> usize {
+        Wallet::transaction_size(&self.unsigned_transaction)
+    }
+
+    pub fn payment_satoshi(&self) -> u64 {
+        self.unsigned_transaction.output[0].value
     }
 }
 

@@ -295,6 +295,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "console"
+version = "0.14.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3993e6445baa160675931ec041a5e03ca84b9c6e32a056150d3aa2bdda0a1f45"
+dependencies = [
+ "encode_unicode",
+ "lazy_static 1.4.0",
+ "libc",
+ "regex",
+ "terminal_size",
+ "unicode-width",
+ "winapi 0.3.9",
+]
+
+[[package]]
 name = "constant_time_eq"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -581,6 +596,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "dialoguer"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c9dd058f8b65922819fabb4a41e7d1964e56344042c26efbccd465202c23fa0c"
+dependencies = [
+ "console",
+ "lazy_static 1.4.0",
+ "tempfile",
+ "zeroize",
+]
+
+[[package]]
 name = "digest"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -623,12 +650,13 @@ checksum = "e78d4f1cc4ae33bbfc157ed5d5a5ef3bc29227303d595861deb238fcec4e9457"
 
 [[package]]
 name = "electrumx_client"
-version = "0.1.1"
-source = "git+https://github.com/KZen-networks/rust-electrumx-client?tag=bitcoin@0.26.0#629a3e0d97fc21564ce5f52195a298f65ea44d8e"
+version = "0.2.0"
+source = "git+https://github.com/KZen-networks/rust-electrumx-client?branch=satellite#de640511c4739b035a2f82f118457701a4e61889"
 dependencies = [
  "bitcoin",
  "clap",
  "hex 0.3.2",
+ "rust_decimal",
  "serde 1.0.126",
  "serde_derive",
  "serde_json",
@@ -650,6 +678,12 @@ dependencies = [
  "subtle 2.4.0",
  "zeroize",
 ]
+
+[[package]]
+name = "encode_unicode"
+version = "0.3.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a357d28ed41a50f9c765dbfe56cbc04a64e53e5fc58ba79fbc34c10ef3df831f"
 
 [[package]]
 name = "encoding_rs"
@@ -880,6 +914,7 @@ dependencies = [
  "clap",
  "config",
  "curv-kzen",
+ "dialoguer",
  "electrumx_client",
  "failure",
  "floating-duration",
@@ -2434,6 +2469,16 @@ dependencies = [
  "rand 0.8.3",
  "redox_syscall 0.2.8",
  "remove_dir_all",
+ "winapi 0.3.9",
+]
+
+[[package]]
+name = "terminal_size"
+version = "0.1.17"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "633c1a546cee861a1a6d0dc69ebeca693bf4296661ba7852b9d21d159e0506df"
+dependencies = [
+ "libc",
  "winapi 0.3.9",
 ]
 
