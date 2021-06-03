@@ -16,8 +16,8 @@ name = "server_exec"
 path = "src/main.rs"
 
 [dependencies]
-rocket = { version = "0.4.2", default-features = false }
-rocket_contrib = { version = "0.4.2", default-features = false, features = ["json"] }
+rocket = { version = "0.4.10", default-features = false }
+rocket_contrib = { version = "0.4.10", default-features = false, features = ["json"] }
 rocksdb = "0.10.1"
 serde = "1.0"
 serde_json = "1.0"
