@@ -22,8 +22,8 @@ rocksdb = "0.10.1"
 serde = "1.0"
 serde_json = "1.0"
 serde_derive = "1.0"
-rusoto_dynamodb = "0.36.0"
-rusoto_core = "0.36.0"
+rusoto_dynamodb = { version = "0.36.0", optional = true }
+rusoto_core = { version = "0.36.0", optional = true }
 time-test = "0.2.1"
 log = "0.4"
 config = "0.9.2"
@@ -67,6 +67,9 @@ default-features = false
 
 [dependencies.serde_dynamodb]
 git = "https://github.com/KZen-networks/serde_dynamodb"
+optional = true
 
 [features]
-default = ["curv/rust-gmp-kzen"]
+default = ["curv/rust-gmp-kzen", "storage-aws"]
+storage-aws = ["rusoto_core", "rusoto_dynamodb", "serde_dynamodb"]
+

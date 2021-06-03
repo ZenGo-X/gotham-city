@@ -7,5 +7,6 @@
 // version 3 of the License, or (at your option) any later version.
 //
 
+#[cfg(feature = "storage-aws")]
 pub mod aws;
 pub mod db;

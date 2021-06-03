@@ -12,15 +12,11 @@ use rocket;
 use rocket::{Request, Rocket};
 use rocksdb;
 
-use rusoto_core::Region;
-use rusoto_dynamodb::DynamoDbClient;
-
 use super::routes::*;
 use super::storage::db;
 use super::Config;
 
 use std::collections::HashMap;
-use std::str::FromStr;
 
 #[derive(Deserialize)]
 pub struct AuthConfig {
@@ -124,13 +120,19 @@ fn get_db(settings: HashMap<String, String>) -> db::DB {
         .unwrap_or(&"local".to_string())
         .to_uppercase();
     let db_type = db_type_string.as_str();
-    let env = settings
-        .get("env")
-        .unwrap_or(&"dev".to_string())
-        .to_string();
 
     match db_type {
+        #[cfg(feature = "storage-aws")]
         "AWS" => {
+            use std::str::FromStr;
+            use rusoto_core::Region;
+            use rusoto_dynamodb::DynamoDbClient;
+
+            let env = settings
+                .get("env")
+                .unwrap_or(&"dev".to_string())
+                .to_string();
+
             let region_option = settings.get("aws_region");
             match region_option {
                 Some(s) => {
@@ -142,6 +144,10 @@ fn get_db(settings: HashMap<String, String>) -> db::DB {
                 }
                 None => panic!("Set 'DB = AWS' but 'region' is empty"),
             }
+        }
+        #[cfg(not(feature = "storage-aws"))]
+        "AWS" => {
+            panic!("AWS support was excluded from this binary (use 'storage-aws' feature to enable it)")
         }
         _ => db::DB::Local(rocksdb::DB::open_default("./db").unwrap()),
     }

@@ -10,10 +10,12 @@ use super::super::Result;
 use rocksdb;
 use serde;
 
+#[cfg(feature = "storage-aws")]
 use super::aws;
 
 pub enum DB {
     Local(rocksdb::DB),
+    #[cfg(feature = "storage-aws")]
     AWS(rusoto_dynamodb::DynamoDbClient, String),
 }
 
@@ -38,6 +40,7 @@ where
     T: serde::ser::Serialize,
 {
     match db {
+        #[cfg(feature = "storage-aws")]
         DB::AWS(dynamodb_client, env) => {
             let table_name = name.to_table_name(env);
             aws::dynamodb::insert(&dynamodb_client, user_id, id, &table_name, v)?;
@@ -57,6 +60,7 @@ where
     T: serde::de::DeserializeOwned,
 {
     match db {
+        #[cfg(feature = "storage-aws")]
         DB::AWS(dynamodb_client, env) => {
             let table_name = name.to_table_name(env);
             println!("table_name = {}", table_name);

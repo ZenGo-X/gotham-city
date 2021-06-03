@@ -22,7 +22,7 @@ extern crate zk_paillier;
 #[macro_use]
 extern crate failure;
 
-#[macro_use]
+#[cfg_attr(feature = "storage-aws", macro_use)]
 extern crate error_chain;
 
 #[macro_use]
@@ -40,7 +40,9 @@ extern crate floating_duration;
 
 extern crate crypto;
 extern crate jsonwebtoken as jwt;
+#[cfg(feature = "storage-aws")]
 extern crate rusoto_dynamodb;
+#[cfg(feature = "storage-aws")]
 extern crate serde_dynamodb;
 
 extern crate hex;
