@@ -54,22 +54,25 @@ default-features = false
 git = "https://github.com/KZen-networks/multi-party-ecdsa"
 tag = "v0.4.6"
 default-features = false
+optional = true
 
 [dependencies.multi-party-eddsa]
 git = "https://github.com/KZen-networks/multi-party-eddsa"
 tag = "v0.2.2"
 default-features = false
+optional = true
 
 [dependencies.multi-party-schnorr]
 git = "https://github.com/KZen-networks/multi-party-schnorr"
 tag = "v0.4.5"
 default-features = false
+optional = true
 
 [dependencies.serde_dynamodb]
 git = "https://github.com/KZen-networks/serde_dynamodb"
 optional = true
 
 [features]
-default = ["curv/rust-gmp-kzen", "storage-aws"]
+default = ["curv/rust-gmp-kzen", "storage-aws", "multi-party-ecdsa", "multi-party-eddsa", "multi-party-schnorr"]
 storage-aws = ["rusoto_core", "rusoto_dynamodb", "serde_dynamodb"]
 

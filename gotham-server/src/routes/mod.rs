@@ -7,7 +7,10 @@
 // version 3 of the License, or (at your option) any later version.
 //
 
+#[cfg(feature = "multi-party-ecdsa")]
 pub mod ecdsa;
+#[cfg(feature = "multi-party-schnorr")]
 pub mod schnorr;
+#[cfg(feature = "multi-party-eddsa")]
 pub mod eddsa;
 pub mod ping;

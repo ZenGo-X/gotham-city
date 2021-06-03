@@ -71,29 +71,45 @@ pub fn get_server() -> Rocket {
 
     let auth_config = AuthConfig::load(settings.clone());
 
+    #[cfg(feature = "multi-party-ecdsa")]
+    let ecdsa_routes = routes![
+        ecdsa::first_message,
+        ecdsa::second_message,
+        ecdsa::chain_code_first_message,
+        ecdsa::chain_code_second_message,
+        ecdsa::sign_first,
+        ecdsa::sign_second,
+        ecdsa::rotate_first,
+        ecdsa::rotate_second,
+        ecdsa::recover,
+    ];
+    #[cfg(feature = "multi-party-eddsa")]
+    let eddsa_routes = routes![
+        eddsa::keygen,
+        eddsa::sign_first,
+        eddsa::sign_second,
+    ];
+    #[cfg(feature = "multi-party-schnorr")]
+    let schnorr_routes = routes![
+        schnorr::keygen_first,
+        schnorr::keygen_second,
+        schnorr::keygen_third,
+        schnorr::sign,
+    ];
+
     rocket::ignite()
         .register(catchers![internal_error, not_found, bad_request])
         .mount(
             "/",
-            routes![
-                ping::ping,
-                ecdsa::first_message,
-                ecdsa::second_message,
-                ecdsa::chain_code_first_message,
-                ecdsa::chain_code_second_message,
-                ecdsa::sign_first,
-                ecdsa::sign_second,
-                ecdsa::rotate_first,
-                ecdsa::rotate_second,
-                ecdsa::recover,
-                schnorr::keygen_first,
-                schnorr::keygen_second,
-                schnorr::keygen_third,
-                schnorr::sign,
-                eddsa::keygen,
-                eddsa::sign_first,
-                eddsa::sign_second,
-            ],
+            vec![
+                routes![ping::ping],
+                #[cfg(feature = "multi-party-ecdsa")]
+                ecdsa_routes,
+                #[cfg(feature = "multi-party-eddsa")]
+                eddsa_routes,
+                #[cfg(feature = "multi-party-schnorr")]
+                schnorr_routes,
+            ].into_iter().flatten().collect::<Vec<_>>(),
         )
         .manage(db_config)
         .manage(auth_config)

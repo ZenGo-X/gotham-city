@@ -9,12 +9,12 @@
 #![recursion_limit = "128"]
 #![feature(proc_macro_hygiene)]
 #![feature(decl_macro)]
+
 #[macro_use]
 extern crate rocket;
 extern crate config;
 extern crate curv;
 extern crate kms;
-extern crate multi_party_ecdsa;
 extern crate rocket_contrib;
 extern crate rocksdb;
 extern crate uuid;
