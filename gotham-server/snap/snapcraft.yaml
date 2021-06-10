@@ -1,0 +1,24 @@
+name: gotham-server
+base: core20
+version: '0.1.4'
+summary: RESTful web service for two party key generation and signing
+description: |
+  Exposes API for two party ECDSA key generation and signing
+
+grade: devel
+confinement: devmode
+
+apps:
+  gotham-server:
+    command: bin/server_exec
+
+build-packages:
+  - clang
+
+parts:
+  gotham-server:
+    plugin: rust
+    source: .
+    rust-features:
+      - curv/num-bigint
+      - multi-party-ecdsa
