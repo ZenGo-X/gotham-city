@@ -27,7 +27,7 @@ pub struct Args {
     pub network: Network,
 
     /// Path to file with wallet credentials (being created via `cli wallet create`)
-    #[structopt(long, default_value = "wallet/wallet.data", env = "ELECTRUM_HOST")]
+    #[structopt(long, default_value = "wallet/wallet.data", env = "GOTHAM_WALLET")]
     pub wallet_file: PathBuf,
 
     /// Path to file with Escrow secret key (being created via `cli wallet create`)
