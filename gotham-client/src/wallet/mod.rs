@@ -290,7 +290,7 @@ impl Wallet {
                 version: 1,
                 lock_time: 0,
                 input: txs_in.clone(),
-                output: txs_out,
+                output: txs_out.into_iter().filter(|out| out.value > 0).collect(),
             }
         };
 
