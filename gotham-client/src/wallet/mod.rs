@@ -287,7 +287,7 @@ impl Wallet {
             ];
 
             bitcoin::Transaction {
-                version: 0,
+                version: 1,
                 lock_time: 0,
                 input: txs_in.clone(),
                 output: txs_out,
