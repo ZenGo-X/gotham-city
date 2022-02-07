@@ -1,3 +1,7 @@
+use std::collections::HashSet;
+
+use jsonwebtoken::DecodingKey;
+
 // Gotham-city
 //
 // Copyright 2018 by Kzen Networks (kzencorp.com)
@@ -21,16 +25,12 @@ pub fn get_claims(
     secret: &[u8],
     algorithms: Vec<Algorithm>,
 ) -> Result<Claims, ()> {
-    let mut validation = Validation {
-        iss: Some(issuer.to_string()),
-        ..Validation::default()
-    };
+    let mut validation = Validation::new(algorithms[0]);
 
-    validation.algorithms = algorithms;
-
+    validation.iss = Some(HashSet::from([issuer.to_owned()]));
     // Setting audience
-    validation.set_audience(audience);
-
+    validation.set_audience(&[audience]);
+    let secret = &DecodingKey::from_secret(secret.as_ref());
     let token_data = match decode::<Claims>(token, secret, &validation) {
         Ok(c) => c,
         Err(_) => return Err(()),

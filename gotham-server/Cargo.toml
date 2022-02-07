@@ -1,11 +1,11 @@
 [package]
 name = "gotham-server"
-version = "0.1.4"
 authors = [
     "gbenattar <g.benattar@gmail.com>",
     "Oded Leiba <odedleiba5@gmail.com"
 ]
-edition = "2018"
+version = "0.1.0"
+edition = "2021"
 
 [lib]
 name = "server_lib"
@@ -18,47 +18,47 @@ path = "src/main.rs"
 [dependencies]
 rocket = { version = "0.4.2", default-features = false }
 rocket_contrib = { version = "0.4.2", default-features = false, features = ["json"] }
-rocksdb = "0.10.1"
+rocksdb = "0.17.0"
 serde = "1.0"
 serde_json = "1.0"
 serde_derive = "1.0"
-rusoto_dynamodb = "0.36.0"
-rusoto_core = "0.36.0"
+# rusoto_dynamodb = "0.47.0"
+# rusoto_core = "0.47.0"
 time-test = "0.2.1"
 log = "0.4"
-config = "0.9.2"
-uuid = { version = "0.7", features = ["v4"] }
+config = "0.11.0"
+uuid = { version = "0.8.2", features = ["v4"] }
 error-chain = "0.12.0"
 failure = "0.1.5"
-jsonwebtoken = "6.0.1"
+jsonwebtoken = "8.0.1"
 rust-crypto = "0.2"
-hex = "0.3.2"
+hex = "0.4.3"
 floating-duration = "0.1.2"
-curv = { package = "curv-kzen", version = "0.7" }
-
+curv = { package = "curv-kzen", version = "0.7.0" }
+gmp-mpfr-sys = "1.4.7"
 [dependencies.zk-paillier]
 git = "https://github.com/KZen-networks/zk-paillier"
 tag = "v0.3.12"
 
 [dependencies.kms]
 git = "https://github.com/KZen-networks/kms-secp256k1"
-tag = "v0.3.0"
+tag = "v0.3.1"
 
 [dependencies.multi-party-ecdsa]
 git = "https://github.com/KZen-networks/multi-party-ecdsa"
 tag = "v0.4.6"
 
-[dependencies.multi-party-eddsa]
-git = "https://github.com/KZen-networks/multi-party-eddsa"
-tag = "v0.2.2"
+# [dependencies.multi-party-eddsa]
+# git = "https://github.com/KZen-networks/multi-party-eddsa"
+# tag = "v0.2.3"
 
 [dependencies.multi-party-schnorr]
 git = "https://github.com/KZen-networks/multi-party-schnorr"
-tag = "v0.4.4"
+tag = "v0.4.5"
 
 
-[dependencies.serde_dynamodb]
-git = "https://github.com/KZen-networks/serde_dynamodb"
+# [dependencies.serde_dynamodb]
+# git = "https://github.com/KZen-networks/serde_dynamodb"
 
-[patch.crates-io]
-rust-gmp = { version = "0.5.0", features = ["serde_support"], git = "https://github.com/KZen-networks/rust-gmp" }
+# [patch.crates-io]
+# rust-gmp = { version = "0.5.1", features = ["serde_support"], git = "https://github.com/KZen-networks/rust-gmp" }

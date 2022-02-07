@@ -22,8 +22,6 @@ extern crate zk_paillier;
 #[macro_use]
 extern crate failure;
 
-#[macro_use]
-extern crate error_chain;
 
 #[macro_use]
 extern crate serde_derive;
@@ -40,8 +38,8 @@ extern crate floating_duration;
 
 extern crate crypto;
 extern crate jsonwebtoken as jwt;
-extern crate rusoto_dynamodb;
-extern crate serde_dynamodb;
+// extern crate rusoto_dynamodb;
+// extern crate serde_dynamodb;
 
 extern crate hex;
 

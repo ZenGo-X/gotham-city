@@ -12,15 +12,14 @@ use rocket;
 use rocket::{Request, Rocket};
 use rocksdb;
 
-use rusoto_core::Region;
-use rusoto_dynamodb::DynamoDbClient;
+// use rusoto_core::Region;
+// use rusoto_dynamodb::DynamoDbClient;
 
 use super::routes::*;
 use super::storage::db;
 use super::Config;
 
 use std::collections::HashMap;
-use std::str::FromStr;
 
 #[derive(Deserialize)]
 pub struct AuthConfig {
@@ -90,13 +89,13 @@ pub fn get_server() -> Rocket {
                 ecdsa::rotate_first,
                 ecdsa::rotate_second,
                 ecdsa::recover,
-                schnorr::keygen_first,
-                schnorr::keygen_second,
-                schnorr::keygen_third,
-                schnorr::sign,
-                eddsa::keygen,
-                eddsa::sign_first,
-                eddsa::sign_second,
+                // schnorr::keygen_first,
+                // schnorr::keygen_second,
+                // schnorr::keygen_third,
+                // schnorr::sign,
+                // eddsa::keygen,
+                // eddsa::sign_first,
+                // eddsa::sign_second,
             ],
         )
         .manage(db_config)
@@ -124,25 +123,25 @@ fn get_db(settings: HashMap<String, String>) -> db::DB {
         .unwrap_or(&"local".to_string())
         .to_uppercase();
     let db_type = db_type_string.as_str();
-    let env = settings
-        .get("env")
-        .unwrap_or(&"dev".to_string())
-        .to_string();
+    // let env = settings
+    //     .get("env")
+    //     .unwrap_or(&"dev".to_string())
+    //     .to_string();
 
     match db_type {
-        "AWS" => {
-            let region_option = settings.get("aws_region");
-            match region_option {
-                Some(s) => {
-                    let region_res = Region::from_str(&s);
-                    match region_res {
-                        Ok(region) => db::DB::AWS(DynamoDbClient::new(region), env),
-                        Err(_e) => panic!("Set 'DB = AWS' but 'region' is not a valid value"),
-                    }
-                }
-                None => panic!("Set 'DB = AWS' but 'region' is empty"),
-            }
-        }
+        // "AWS" => {
+        //     let region_option = settings.get("aws_region");
+        //     match region_option {
+        //         Some(s) => {
+        //             let region_res = Region::from_str(&s);
+        //             match region_res {
+        //                 Ok(region) => db::DB::AWS(DynamoDbClient::new(region), env),
+        //                 Err(_e) => panic!("Set 'DB = AWS' but 'region' is not a valid value"),
+        //             }
+        //         }
+        //         None => panic!("Set 'DB = AWS' but 'region' is empty"),
+        //     }
+        // }
         _ => db::DB::Local(rocksdb::DB::open_default("./db").unwrap()),
     }
 }
