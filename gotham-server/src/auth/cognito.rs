@@ -149,6 +149,6 @@ mod tests {
             &POOL_ID.to_string(),
             &authorization_header
         )
-        .is_err());
+        .is_none());
     }
 }
