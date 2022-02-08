@@ -17,7 +17,6 @@ path = "src/main.rs"
 
 [dependencies]
 rocket = { version = "0.5.0-rc.1", default-features = false, features=["json"]}
-# rocket_contrib = { version = "0.4.2", default-features = false, features = ["json"] }
 rocksdb = "0.17.0"
 serde = "1.0"
 serde_json = "1.0"
