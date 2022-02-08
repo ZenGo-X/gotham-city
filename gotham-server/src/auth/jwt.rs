@@ -84,7 +84,7 @@ mod tests {
         let issuer: String = "issuer".to_string();
         let audience: String = "audience".to_string();
         let algorithms = vec![Algorithm::RS256];
-        assert!(get_claims(&issuer, &audience, &token, der.as_ref(), algorithms).is_ok());
+        assert!(get_claims(&issuer, &audience, &token, der.as_ref(), algorithms).is_some());
     }
 
     #[test]
