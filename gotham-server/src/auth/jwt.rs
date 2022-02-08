@@ -1,3 +1,5 @@
+use jsonwebtoken::DecodingKey;
+
 // Gotham-city
 //
 // Copyright 2018 by Kzen Networks (kzencorp.com)
@@ -15,37 +17,34 @@ pub struct Claims {
 }
 
 pub fn get_claims(
-    issuer: &String,
-    audience: &String,
-    token: &String,
+    issuer: &str,
+    audience: &str,
+    token: &str,
     secret: &[u8],
     algorithms: Vec<Algorithm>,
-) -> Result<Claims, ()> {
-    let mut validation = Validation {
-        iss: Some(issuer.to_string()),
-        ..Validation::default()
-    };
-
+) -> Option<Claims> {
+    let mut validation = Validation::default();
+    validation.set_issuer(&[issuer]);
     validation.algorithms = algorithms;
 
     // Setting audience
-    validation.set_audience(audience);
-
-    let token_data = match decode::<Claims>(token, secret, &validation) {
+    validation.set_audience(&[audience]);
+    let key = DecodingKey::from_secret(secret);
+    let token_data = match decode::<Claims>(token, &key, &validation) {
         Ok(c) => c,
-        Err(_) => return Err(()),
+        Err(_) => return None,
     };
 
-    Ok(token_data.claims)
+    Some(token_data.claims)
 }
 
-pub fn decode_header_from_token(token: String) -> Result<Header, ()> {
+pub fn decode_header_from_token(token: String) -> Option<Header> {
     let header = match decode_header(&token) {
         Ok(h) => h,
-        Err(_) => return Err(()),
+        Err(_) => return None,
     };
 
-    Ok(header)
+    Some(header)
 }
 
 #[cfg(test)]

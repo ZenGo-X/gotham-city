@@ -1,6 +1,7 @@
 use super::error::*;
 use super::*;
 use failure;
+use rusoto_core::RusotoError;
 use rusoto_dynamodb::*;
 use serde;
 use serde_json;
@@ -21,7 +22,7 @@ struct DBItemIdentifier {
     id: String,
 }
 
-pub fn insert<T>(
+pub async fn insert<T>(
     dynamodb_client: &DynamoDbClient,
     user_id: &str,
     id: &str,
@@ -43,7 +44,7 @@ where
     println!("item #2 = {:?}", item);
 
     let put_item_input = PutItemInput {
-        item: item,
+        item,
         table_name: table_name.to_string(),
         ..Default::default()
     };
@@ -51,16 +52,16 @@ where
     // Put item
     dynamodb_client
         .put_item(put_item_input)
-        .sync()
+        .await
         .map_err(|e| format_err!("DynamoDB error while inserting item: {}", e))
 }
 
-pub fn get<'a, T>(
+pub async fn get<'a, T>(
     dynamodb_client: &rusoto_dynamodb::DynamoDbClient,
     user_id: &str,
     id: &str,
     table_name: String,
-    require_customer_id: bool
+    require_customer_id: bool,
 ) -> std::result::Result<Option<T>, failure::Error>
 where
     T: serde::de::Deserialize<'a>,
@@ -93,7 +94,7 @@ where
         ..Default::default()
     };
 
-    match dynamodb_client.get_item(query_item).sync() {
+    match dynamodb_client.get_item(query_item).await {
         Ok(item_from_dynamo) => match item_from_dynamo.item {
             None => {
                 println!("nothing received from Dynamo, item may not exist");
@@ -116,11 +117,11 @@ where
                     Ok(s) => {
                         println!("#4");
                         Ok(Some(s))
-                    },
+                    }
                     Err(_e) => {
                         println!("#5, {}", _e);
                         Ok(None)
-                    },
+                    }
                 }
             }
         },
@@ -131,10 +132,10 @@ where
     }
 }
 
-pub fn list_tables(client: &DynamoDbClient) -> Result<Vec<String>> {
+pub async fn list_tables(client: &DynamoDbClient) -> Result<Vec<String>> {
     let list_tables_input: ListTablesInput = Default::default();
 
-    let result = client.list_tables(list_tables_input).sync();
+    let result = client.list_tables(list_tables_input).await;
 
     if let Ok(output) = result {
         Ok(output.table_names.unwrap())
@@ -143,9 +144,9 @@ pub fn list_tables(client: &DynamoDbClient) -> Result<Vec<String>> {
     }
 }
 
-pub fn wait_for_table(client: &DynamoDbClient, name: &str) -> Result<TableDescription> {
+pub async fn wait_for_table(client: &DynamoDbClient, name: &str) -> Result<TableDescription> {
     loop {
-        let table_desc = describe_table(client, name)?;
+        let table_desc = describe_table(client, name).await?;
 
         match table_desc.table_status.as_ref().map(|s| &s[..]) {
             Some("ACTIVE") => {
@@ -164,14 +165,14 @@ pub fn wait_for_table(client: &DynamoDbClient, name: &str) -> Result<TableDescri
     }
 }
 
-pub fn create_table_if_needed(
+pub async fn create_table_if_needed(
     client: &DynamoDbClient,
     name: &str,
     read_capacity: i64,
     write_capacity: i64,
 ) -> Result<TableDescription> {
     loop {
-        match describe_table(client, name).map_err(Error::from) {
+        match describe_table(client, name).await.map_err(Error::from) {
             Err(Error(ErrorKind::TableNotFound(_), _)) => {
                 info!("table {} not found. creating..", name);
             }
@@ -184,7 +185,7 @@ pub fn create_table_if_needed(
         }
 
         info!("Continuing to create...");
-        match create_table(client, name, read_capacity, write_capacity) {
+        match create_table(client, name, read_capacity, write_capacity).await {
             Err(Error(ErrorKind::TableAlreadyExists(_), _)) => {
                 info!("table {} already exists. getting info..", name);
             }
@@ -198,14 +199,15 @@ pub fn create_table_if_needed(
     }
 }
 
-pub fn describe_table(client: &DynamoDbClient, name: &str) -> Result<TableDescription> {
+pub async fn describe_table(client: &DynamoDbClient, name: &str) -> Result<TableDescription> {
     let describe_table_input = DescribeTableInput {
         table_name: name.to_owned(),
-        ..Default::default()
     };
 
-    match client.describe_table(describe_table_input).sync() {
-        Err(DescribeTableError::ResourceNotFound(s)) => {
+    match client.describe_table(describe_table_input).await {
+        Err(RusotoError::<DescribeTableError>::Service(DescribeTableError::ResourceNotFound(
+            s,
+        ))) => {
             if s.starts_with("Requested resource not found: Table:") {
                 bail!(ErrorKind::TableNotFound(name.to_string()))
             }
@@ -214,7 +216,8 @@ pub fn describe_table(client: &DynamoDbClient, name: &str) -> Result<TableDescri
                 DescribeTableError::ResourceNotFound(s)
             ))
         }
-        Err(e) => bail!(ErrorKind::DescribeTable(e)),
+        Err(RusotoError::<DescribeTableError>::Service(e)) => bail!(ErrorKind::DescribeTable(e)),
+        Err(_) => bail!("Other error"),
         Ok(table) => {
             if let Some(table_desc) = table.table {
                 info!("table created at {:?}", table_desc.creation_date_time);
@@ -230,9 +233,8 @@ pub fn describe_table(client: &DynamoDbClient, name: &str) -> Result<TableDescri
 macro_rules! attributes {
     ($($val:expr => $attr_type:expr),*) => {
         {
-            let mut temp_vec = Vec::new();
             $(
-                temp_vec.push(AttributeDefinition { attribute_name: String::from($val), attribute_type: String::from($attr_type) });
+                let temp_vec = vec![AttributeDefinition { attribute_name: String::from($val), attribute_type: String::from($attr_type) }];
             )*
             temp_vec
         }
@@ -243,16 +245,15 @@ macro_rules! attributes {
 macro_rules! key_schema {
     ($($name:expr => $key_type:expr),*) => {
         {
-            let mut temp_vec = Vec::new();
             $(
-                temp_vec.push(KeySchemaElement { key_type: String::from($key_type), attribute_name: String::from($name) });
+                let temp_vec = vec![(KeySchemaElement { key_type: String::from($key_type), attribute_name: String::from($name) })];
             )*
             temp_vec
         }
     }
 }
 
-pub fn create_table(
+pub async fn create_table(
     client: &DynamoDbClient,
     name: &str,
     read_capacity: i64,
@@ -262,15 +263,15 @@ pub fn create_table(
         table_name: name.to_string(),
         attribute_definitions: attributes!("id" => "S"),
         key_schema: key_schema!("id" => "HASH"),
-        provisioned_throughput: ProvisionedThroughput {
+        provisioned_throughput: Some(ProvisionedThroughput {
             read_capacity_units: read_capacity,
             write_capacity_units: write_capacity,
-        },
+        }),
         ..Default::default()
     };
 
-    match client.create_table(create_table_input).sync() {
-        Err(CreateTableError::ResourceInUse(s)) => {
+    match client.create_table(create_table_input).await {
+        Err(RusotoError::Service(CreateTableError::ResourceInUse(s))) => {
             let maybe_value = serde_json::from_str::<AWSError>(&s);
 
             if let Ok(value) = maybe_value {
@@ -281,7 +282,8 @@ pub fn create_table(
 
             bail!(ErrorKind::CreateTable(CreateTableError::ResourceInUse(s)))
         }
-        Err(e) => bail!(ErrorKind::CreateTable(e)),
+        Err(RusotoError::Service(e)) => bail!(ErrorKind::CreateTable(e)),
+        Err(_) => bail!("Unknown Error!"),
         Ok(table) => {
             if let Some(table_desc) = table.table_description {
                 info!("table created at {:?}", table_desc.creation_date_time);
