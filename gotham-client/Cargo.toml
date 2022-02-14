@@ -32,6 +32,7 @@ bitcoin = "0.26.0"
 config = "0.9"
 floating-duration = "0.1.2"
 curv = { package = "curv-kzen", version = "0.7" }
+mockall = "0.11"
 
 [dependencies.zk-paillier]
 git = "https://github.com/KZen-networks/zk-paillier"

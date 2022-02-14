@@ -9,7 +9,9 @@
 
 #[cfg(test)]
 mod tests {
+    use mockall::predicate::*;
     use super::super::wallet::Wallet;
+    use crate::wallet::{MockBalanceFetcher, GetBalanceResponse};
 
     const TEST_WALLET_FILENAME: &str = "test-assets/wallet.data";
 
@@ -28,7 +30,13 @@ mod tests {
     #[test]
     fn get_balance_test() {
         let  mut w : Wallet = Wallet::load_from(TEST_WALLET_FILENAME);
-        let b = w.get_balance();
+        let mut mock_balance = MockBalanceFetcher::new();
+        mock_balance.expect_get_balance().returning(|a| GetBalanceResponse{
+           address: a.to_string(),
+           confirmed: 5000,
+           unconfirmed: 6000 
+        });
+        let b = w.get_balance(&mut mock_balance);
         assert!(b.confirmed > 0);
     }
 
