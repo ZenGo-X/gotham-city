@@ -32,8 +32,8 @@ pub fn generate_key(client_shim: &ClientShim) -> Result<Share> {
         &PARAMS,
         &vec![party1_msg2.clone(), msg2],
         &vec![party1_msg1, msg1],
-        &vec![PARTY1_INDEX, PARTY2_INDEX])
-        .or_else(|e| Err(e))?;
+        &[PARTY1_INDEX, PARTY2_INDEX])
+        ?;
     let msg3 = KeyGenMessage3 {
         vss_scheme,
         secret_share: secret_shares[PARTY1_INDEX - 1],
@@ -51,7 +51,7 @@ pub fn generate_key(client_shim: &ClientShim) -> Result<Share> {
         &vec![party1_msg3.secret_share, secret_shares[key.party_index - 1]],
         &vss_scheme_vec,
         &key.party_index)
-        .or_else(|e| Err(e))?;
+        ?;
 
     let share: Share = Share {
         id,
@@ -67,7 +67,7 @@ pub fn sign(
     share: &Share,
 ) -> Result<Signature> {
     let eph_share = generate_key(client_shim)
-        .or_else(|e| Err(e))?;
+        ?;
     let message_vec = BigInt::to_bytes(&message);
     let message_slice = message_vec.as_slice();
     let local_sig = LocalSig::compute(
@@ -89,20 +89,20 @@ pub fn sign(
     let local_sig_vec = &vec![party1_local_sig, local_sig];
     let vss_sum_local_sigs: VerifiableSS<GE> = LocalSig::verify_local_sigs(
         local_sig_vec,
-        &vec![PARTY1_INDEX - 1, PARTY2_INDEX - 1],
+        &[PARTY1_INDEX - 1, PARTY2_INDEX - 1],
         &share.vss_scheme_vec,
         &eph_share.vss_scheme_vec)
-        .or_else(|e| Err(e))?;
+        ?;
 
     let signature = Signature::generate(
         &vss_sum_local_sigs,
         local_sig_vec,
-        &vec![PARTY1_INDEX - 1, PARTY2_INDEX - 1],
+        &[PARTY1_INDEX - 1, PARTY2_INDEX - 1],
         &eph_share.shared_key.y,
         &share.shared_key.y,
         message_slice,
     );
     signature.verify(message_slice, &share.shared_key.y)
-        .or_else(|e| Err(format_err!("{}", e)))
-        .and_then(|()| Ok(signature))
+        .map_err(|e| format_err!("{}", e))
+        .map(|()| signature)
 }

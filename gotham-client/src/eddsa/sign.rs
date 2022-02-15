@@ -16,7 +16,7 @@ use super::super::ClientShim;
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
 
-use curv::elliptic::curves::ed25519::{FE, GE};
+use curv::elliptic::curves::ed25519::{FE};
 use curv::BigInt;
 use multi_party_eddsa::protocols::aggsig::*;
 
@@ -26,12 +26,12 @@ pub fn sign(
     message: BigInt,
     party2_key_pair: &KeyPair,
     key_agg: &KeyAgg,
-    id: &String
+    id: &str
 ) -> Result<Signature> {
     // round 1: send commitments to ephemeral public keys
     let (party2_ephemeral_key, party2_sign_first_msg, party2_sign_second_msg) =
         Signature::create_ephemeral_key_and_commit(
-            &party2_key_pair,
+            party2_key_pair,
             BigInt::to_bytes(&message).as_slice(),
         );
 
@@ -53,10 +53,10 @@ pub fn sign(
             None => return Err(failure::err_msg("party1 sign second message request failed"))
         };
 
-    let eight: FE = ECScalar::from(&BigInt::from(8));
-    let eight_inverse: FE = eight.invert();
-    party1_sign_second_msg.R = party1_sign_second_msg.R * &eight_inverse;
-    s1.R = s1.R * &eight_inverse;
+    let eight: FE = ECScalar::from(&BigInt::from(8u32));
+    let eight_inverse: FE  = eight.invert();
+    party1_sign_second_msg.R = party1_sign_second_msg.R * eight_inverse;
+    s1.R = s1.R * eight_inverse;
     assert!(test_com(
         &party1_sign_second_msg.R,
         &party1_sign_second_msg.blind_factor,
@@ -65,29 +65,25 @@ pub fn sign(
 
     // round 3:
     // compute R' = sum(Ri):
-    let mut Ri: Vec<GE> = Vec::new();
-    Ri.push(party1_sign_second_msg.R.clone());
-    Ri.push(party2_sign_second_msg.R.clone());
+    let Ri = vec![ party1_sign_second_msg.R, party2_sign_second_msg.R];
     // each party i should run this:
     let R_tot = Signature::get_R_tot(Ri);
     let k = Signature::k(&R_tot, &key_agg.apk, BigInt::to_bytes(&message).as_slice());
     let s2 = Signature::partial_sign(
         &party2_ephemeral_key.r,
-        &party2_key_pair,
+        party2_key_pair,
         &k,
         &key_agg.hash,
         &R_tot,
     );
 
-    let mut s: Vec<Signature> = Vec::new();
-    s.push(s1);
-    s.push(s2);
+    let s = vec![ s1, s2];
     let signature = Signature::add_signature_parts(s);
 
     // verify:
     verify(&signature, BigInt::to_bytes(&message).as_slice(), &key_agg.apk)
-        .or_else(|e| Err(format_err!("verifying signature failed: {}", e)))
-        .and_then(|_| Ok(signature))
+        .map_err(|e| format_err!("verifying signature failed: {}", e))
+        .map(|_| signature)
 }
 
 #[no_mangle]
@@ -146,8 +142,8 @@ pub extern "C" fn sign_message_eddsa(
     let eight: FE = ECScalar::from(&BigInt::from(8));
     let eight_inverse: FE = eight.invert();
 
-    key_pair.public_key = key_pair.public_key * &eight_inverse;
-    key_agg.apk = key_agg.apk * &eight_inverse;
+    key_pair.public_key = key_pair.public_key * eight_inverse;
+    key_agg.apk = key_agg.apk * eight_inverse;
 
     let sig = match sign(&client_shim, message, &key_pair, &key_agg, &id.to_string()) {
         Ok(s) => s,
@@ -159,5 +155,5 @@ pub extern "C" fn sign_message_eddsa(
         Err(e) => return error_to_c_string(format_err!("encoding signature failed: {}", e)),
     };
 
-    CString::new(signature_json.to_owned()).unwrap().into_raw()
+    CString::new(signature_json).unwrap().into_raw()
 }

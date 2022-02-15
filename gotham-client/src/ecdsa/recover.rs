@@ -48,14 +48,14 @@ pub extern "C" fn decrypt_party_one_master_key(
     let r = Msegmentation::decrypt(
         &encryptions_secret_party1, &G, &y, &segment_size);
 
-    if r.is_ok() {
+    if let Ok(v) = r  {
         let party_one_master_key_recovered = party_two_master_key
-            .counter_master_key_from_recovered_secret(r.unwrap().clone());
+            .counter_master_key_from_recovered_secret(v);
 
         let s = serde_json::to_string(&party_one_master_key_recovered).unwrap();
-        return CString::new(s).unwrap().into_raw();
+        CString::new(s).unwrap().into_raw()
     } else {
-        return CString::new("").unwrap().into_raw();
+        CString::new("").unwrap().into_raw()
     }
 }
 
@@ -79,7 +79,7 @@ pub extern "C" fn get_child_mk1(
         Err(_) => panic!("Error while get_child_mk1"),
     };
 
-    CString::new(derived_mk1_json.to_owned()).unwrap().into_raw()
+    CString::new(derived_mk1_json).unwrap().into_raw()
 }
 
 #[no_mangle]
@@ -102,7 +102,7 @@ pub extern "C" fn get_child_mk2(
         Err(_) => panic!("Error while get_child_mk1"),
     };
 
-    CString::new(derived_mk2_json.to_owned()).unwrap().into_raw()
+    CString::new(derived_mk2_json).unwrap().into_raw()
 }
 
 #[no_mangle]
@@ -121,7 +121,7 @@ pub extern "C" fn construct_single_private_key(
         Err(_) => panic!("Error while construct_single_private_key"),
     };
 
-    CString::new(sk_json.to_owned()).unwrap().into_raw()
+    CString::new(sk_json).unwrap().into_raw()
 }
 
 fn get_str_from_c_char(c: *const c_char) -> String {

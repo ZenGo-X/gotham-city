@@ -25,17 +25,15 @@ pub fn generate_key(client_shim: &ClientShim) -> Result<(KeyPair, KeyAgg, String
     let party2_key_pair: KeyPair = KeyPair::create();
     let (id, mut party1_public_key): (String, GE) = requests::postb(
         client_shim,
-        &format!("eddsa/keygen"),
+        "eddsa/keygen",
         &party2_key_pair.public_key)
         .unwrap();
     let eight: FE = ECScalar::from(&BigInt::from(8));
     let eight_inverse: FE = eight.invert();
-    party1_public_key = party1_public_key * &eight_inverse;
+    party1_public_key = party1_public_key * eight_inverse;
 
     // compute apk:
-    let mut pks: Vec<GE> = Vec::new();
-    pks.push(party1_public_key.clone());
-    pks.push(party2_key_pair.public_key.clone());
+    let pks: Vec<GE> = vec![ party1_public_key, party2_key_pair.public_key];
     let key_agg = KeyPair::key_aggregation_n(&pks, &PARTY2_INDEX);
 
     Ok((party2_key_pair, key_agg, id))
@@ -70,7 +68,7 @@ pub extern "C" fn generate_client_key(
         Err(_) => panic!("Error while encoding key"),
     };
 
-    CString::new(key_json.to_owned())
+    CString::new(key_json)
         .unwrap()
         .into_raw()
 }

@@ -7,9 +7,9 @@
 // version 3 of the License, or (at your option) any later version.
 //
 
+use floating_duration::TimeFormat;
 use serde_json;
 use std::time::Instant;
-use floating_duration::TimeFormat;
 
 use curv::cryptographic_primitives::twoparty::dh_key_exchange_variant_with_pok_comm::*;
 use curv::elliptic::curves::secp256_k1::GE;
@@ -19,9 +19,9 @@ use kms::ecdsa::two_party::*;
 use multi_party_ecdsa::protocols::two_party_ecdsa::lindell_2017::*;
 use zk_paillier::zkproofs::SALT_STRING;
 
-use super::types::PrivateShare;
 use super::super::utilities::requests;
 use super::super::ClientShim;
+use super::types::PrivateShare;
 
 // iOS bindings
 use std::ffi::{CStr, CString};
@@ -48,8 +48,7 @@ pub fn get_master_key(client_shim: &ClientShim) -> PrivateShare {
         SALT_STRING,
     );
 
-    let (_, party_two_paillier) =
-        key_gen_second_message.unwrap();
+    let (_, party_two_paillier) = key_gen_second_message.unwrap();
 
     let cc_party_one_first_message: Party1FirstMessage = requests::post(
         client_shim,
@@ -97,18 +96,23 @@ pub fn get_master_key(client_shim: &ClientShim) -> PrivateShare {
     PrivateShare { id, master_key }
 }
 
+/// # Safety
+///
+/// - This function should only be called with valid C pointers.
+/// - Arguments are accessed in arbitrary locations.
+/// - Strings should be null terminated array of bytes.
 #[no_mangle]
-pub extern "C" fn get_client_master_key(
+pub unsafe extern "C" fn get_client_master_key(
     c_endpoint: *const c_char,
     c_auth_token: *const c_char,
 ) -> *mut c_char {
-    let raw_endpoint = unsafe { CStr::from_ptr(c_endpoint) };
+    let raw_endpoint = CStr::from_ptr(c_endpoint);
     let endpoint = match raw_endpoint.to_str() {
         Ok(s) => s,
         Err(_) => panic!("Error while decoding raw endpoint"),
     };
 
-    let raw_auth_token = unsafe { CStr::from_ptr(c_auth_token) };
+    let raw_auth_token = CStr::from_ptr(c_auth_token);
     let auth_token = match raw_auth_token.to_str() {
         Ok(s) => s,
         Err(_) => panic!("Error while decoding auth token"),
@@ -123,7 +127,5 @@ pub extern "C" fn get_client_master_key(
         Err(_) => panic!("Error while performing keygen to endpoint {}", endpoint),
     };
 
-    CString::new(private_share_json.to_owned())
-        .unwrap()
-        .into_raw()
+    CString::new(private_share_json).unwrap().into_raw()
 }

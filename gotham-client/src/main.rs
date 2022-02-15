@@ -25,7 +25,7 @@ fn main() {
     let matches = App::from_yaml(yaml).get_matches();
     let electrum_address = matches.value_of("electrum-address").expect("Missing elecrtrum-address");
 
-    let mut fetcher = ElectrumxBalanceFetcher::new(&electrum_address);
+    let mut fetcher = ElectrumxBalanceFetcher::new(electrum_address);
 
     let mut settings = config::Config::default();
     settings
@@ -56,7 +56,7 @@ fn main() {
 
         if matches.is_present("new-address") {
             let address = wallet.get_new_bitcoin_address();
-            println!("Network: [{}], Address: [{}]", network, address.to_string());
+            println!("Network: [{}], Address: [{}]", network, address);
             wallet.save();
         } else if matches.is_present("get-balance") {
             let balance = wallet.get_balance(&mut fetcher);
