@@ -8,6 +8,7 @@
 //
 #[cfg(test)]
 mod tests {
+    extern crate floating_duration;
 
     use super::super::routes::ecdsa;
     use super::super::server;
@@ -20,16 +21,14 @@ mod tests {
     use std::collections::HashMap;
     use std::env;
     use std::time::Instant;
-    use zk_paillier::zkproofs::SALT_STRING;
 
-    use curv::arithmetic::traits::Converter;
-    use curv::cryptographic_primitives::twoparty::dh_key_exchange_variant_with_pok_comm::*;
-    use curv::elliptic::curves::secp256_k1::GE;
-    use curv::BigInt;
+    use two_party_ecdsa::curv::arithmetic::traits::Converter;
+    use two_party_ecdsa::curv::cryptographic_primitives::twoparty::dh_key_exchange_variant_with_pok_comm::*;
+    use two_party_ecdsa::curv::BigInt;
     use floating_duration::TimeFormat;
     use kms::chain_code::two_party as chain_code;
     use kms::ecdsa::two_party::*;
-    use multi_party_ecdsa::protocols::two_party_ecdsa::lindell_2017::*;
+    use two_party_ecdsa::*;
 
     fn key_gen(client: &Client) -> (String, MasterKey2) {
         time_test!();
@@ -89,7 +88,6 @@ mod tests {
         let key_gen_second_message = MasterKey2::key_gen_second_message(
             &kg_party_one_first_message,
             &kg_party_one_second_message,
-            SALT_STRING,
         );
         assert!(key_gen_second_message.is_ok());
 
@@ -98,7 +96,7 @@ mod tests {
             TimeFormat(start.elapsed())
         );
 
-        let (_, party_two_paillier) = key_gen_second_message.unwrap();
+        let party_two_paillier = key_gen_second_message.unwrap();
 
         /*************** END: SECOND MESSAGE ***************/
 
@@ -148,7 +146,7 @@ mod tests {
         );
 
         let res_body = response.into_string().unwrap();
-        let cc_party_one_second_message: Party1SecondMessage<GE> =
+        let cc_party_one_second_message: Party1SecondMessage =
             serde_json::from_str(&res_body).unwrap();
 
         let start = Instant::now();
