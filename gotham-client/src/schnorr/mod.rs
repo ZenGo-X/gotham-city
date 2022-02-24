@@ -3,7 +3,7 @@ use super::Result;
 use super::ClientShim;
 use multi_party_schnorr::protocols::thresholdsig::zilliqa_schnorr::*;
 pub use multi_party_schnorr::protocols::thresholdsig::zilliqa_schnorr::{Signature, Share};
-use curv::elliptic::curves::secp256_k1::GE;
+use two_party_ecdsa::curv::elliptic::curves::secp256_k1::GE;
 
 const PREFIX: &str = "schnorr";
 const PARTY1_INDEX: usize = 1; // server
@@ -87,7 +87,7 @@ pub fn sign(
         .unwrap();
 
     let local_sig_vec = &vec![party1_local_sig, local_sig];
-    let vss_sum_local_sigs: VerifiableSS<GE> = LocalSig::verify_local_sigs(
+    let vss_sum_local_sigs: VerifiableSS = LocalSig::verify_local_sigs(
         local_sig_vec,
         &[PARTY1_INDEX - 1, PARTY2_INDEX - 1],
         &share.vss_scheme_vec,

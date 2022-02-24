@@ -10,14 +10,14 @@
 use super::super::utilities::requests;
 use super::super::utilities::error_to_c_string;
 use super::super::Result;
-use super::super::ClientShim;
+use crate::ClientShim;
 
 // iOS bindings
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
 
-use curv::elliptic::curves::ed25519::{FE};
-use curv::BigInt;
+use two_party_ecdsa::curv::elliptic::curves::ed25519::{FE};
+use two_party_ecdsa::curv::BigInt;
 use multi_party_eddsa::protocols::aggsig::*;
 
 #[allow(non_snake_case)]

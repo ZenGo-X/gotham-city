@@ -9,10 +9,10 @@
 
 use super::super::utilities::requests;
 use super::super::Result;
-use super::super::ClientShim;
+use crate::ClientShim;
 
-use curv::elliptic::curves::ed25519::{FE, GE};
-use curv::BigInt;
+use two_party_ecdsa::curv::elliptic::curves::ed25519::{FE, GE};
+use two_party_ecdsa::curv::BigInt;
 // iOS bindings
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
