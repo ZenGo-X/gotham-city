@@ -11,17 +11,15 @@ use floating_duration::TimeFormat;
 use serde_json;
 use std::time::Instant;
 
-use curv::cryptographic_primitives::twoparty::dh_key_exchange_variant_with_pok_comm::*;
-use curv::elliptic::curves::secp256_k1::GE;
+use two_party_ecdsa::curv::cryptographic_primitives::twoparty::dh_key_exchange_variant_with_pok_comm::*;
 
 use kms::chain_code::two_party as chain_code;
 use kms::ecdsa::two_party::*;
-use multi_party_ecdsa::protocols::two_party_ecdsa::lindell_2017::*;
-use zk_paillier::zkproofs::SALT_STRING;
+use two_party_ecdsa::*;
 
 use super::super::utilities::requests;
-use super::super::ClientShim;
 use super::types::PrivateShare;
+use crate::ClientShim;
 
 // iOS bindings
 use std::ffi::{CStr, CString};
@@ -45,10 +43,9 @@ pub fn get_master_key(client_shim: &ClientShim) -> PrivateShare {
     let key_gen_second_message = MasterKey2::key_gen_second_message(
         &kg_party_one_first_message,
         &kg_party_one_second_message,
-        SALT_STRING,
     );
 
-    let (_, party_two_paillier) = key_gen_second_message.unwrap();
+    let party_two_paillier = key_gen_second_message.unwrap();
 
     let cc_party_one_first_message: Party1FirstMessage = requests::post(
         client_shim,
@@ -61,7 +58,7 @@ pub fn get_master_key(client_shim: &ClientShim) -> PrivateShare {
 
     let body = &cc_party_two_first_message.d_log_proof;
 
-    let cc_party_one_second_message: Party1SecondMessage<GE> = requests::postb(
+    let cc_party_one_second_message: Party1SecondMessage = requests::postb(
         client_shim,
         &format!("{}/{}/chaincode/second", KG_PATH_PRE, id),
         body,

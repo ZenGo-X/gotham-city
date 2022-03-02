@@ -8,18 +8,15 @@
 // version 3 of the License, or (at your option) any later version.
 //
 
-use curv::cryptographic_primitives::proofs::sigma_dlog::*;
-use curv::cryptographic_primitives::twoparty::coin_flip_optimal_rounds;
-use curv::cryptographic_primitives::twoparty::dh_key_exchange_variant_with_pok_comm::{
+use two_party_ecdsa::curv::cryptographic_primitives::proofs::sigma_dlog::*;
+use two_party_ecdsa::curv::cryptographic_primitives::twoparty::dh_key_exchange_variant_with_pok_comm::{
     CommWitness, EcKeyPair, Party1FirstMessage, Party1SecondMessage,
 };
-use curv::elliptic::curves::secp256_k1::Secp256k1Scalar;
-use curv::elliptic::curves::secp256_k1::GE;
-use curv::BigInt;
+use two_party_ecdsa::curv::elliptic::curves::secp256_k1::GE;
+use two_party_ecdsa::curv::BigInt;
 use kms::chain_code::two_party as chain_code;
 use kms::ecdsa::two_party::*;
-use kms::rotation::two_party::party1::Rotation1;
-use multi_party_ecdsa::protocols::two_party_ecdsa::lindell_2017::*;
+use two_party_ecdsa::*;
 use rocket::serde::json::Json;
 use rocket::State;
 use std::string::ToString;
@@ -48,11 +45,6 @@ pub enum EcdsaStruct {
     Party1Private,
     Party2Public,
 
-    PDLProver,
-    PDLDecommit,
-    Alpha,
-    Party2PDLFirstMsg,
-
     CCKeyGenFirstMsg,
     CCCommWitness,
     CCEcKeyPair,
@@ -62,15 +54,6 @@ pub enum EcdsaStruct {
 
     EphEcKeyPair,
     EphKeyGenFirstMsg,
-
-    RotateCommitMessage1M,
-    RotateCommitMessage1R,
-    RotateRandom1,
-    RotateFirstMsg,
-    RotatePrivateNew,
-    RotatePdlDecom,
-    RotateParty2First,
-    RotateParty1Second,
 
     POS,
 }
@@ -152,7 +135,7 @@ pub async fn second_message(
     state: &State<Config>,
     claim: Claims,
     id: String,
-    dlog_proof: Json<DLogProof<GE>>,
+    dlog_proof: Json<DLogProof>,
 ) -> Result<Json<party1::KeyGenParty1Message2>, String> {
     let party2_public: GE = dlog_proof.0.pk;
     db::insert(
@@ -252,9 +235,9 @@ pub async fn chain_code_second_message(
     state: &State<Config>,
     claim: Claims,
     id: String,
-    cc_party_two_first_message_d_log_proof: Json<DLogProof<GE>>,
-) -> Result<Json<Party1SecondMessage<GE>>, String> {
-    let cc_comm_witness: CommWitness<GE> =
+    cc_party_two_first_message_d_log_proof: Json<DLogProof>,
+) -> Result<Json<Party1SecondMessage>, String> {
+    let cc_comm_witness: CommWitness =
         db::get(&state.db, &claim.sub, &id, &EcdsaStruct::CCCommWitness)
             .await
             .or(Err("Failed to get from db"))?
@@ -277,7 +260,7 @@ pub async fn chain_code_compute_message(
     id: String,
     cc_party2_public: &GE,
 ) -> Result<Json<()>, String> {
-    let cc_ec_key_pair_party1: EcKeyPair<GE> =
+    let cc_ec_key_pair_party1: EcKeyPair =
         db::get(&state.db, &claim.sub, &id, &EcdsaStruct::CCEcKeyPair)
             .await
             .or(Err("Failed to get from db"))?
@@ -438,107 +421,6 @@ pub async fn get_mk(
     db::get(&state.db, &claim.sub, id, &EcdsaStruct::Party1MasterKey)
         .await?
         .ok_or_else(|| format_err!("No data for such identifier {}", id))
-}
-
-#[post("/ecdsa/rotate/<id>/first", format = "json")]
-pub async fn rotate_first(
-    state: &State<Config>,
-    claim: Claims,
-    id: String,
-) -> Result<Json<coin_flip_optimal_rounds::Party1FirstMessage<GE>>, String> {
-    let (party1_coin_flip_first_message, m1, r1) = Rotation1::key_rotate_first_message();
-    db::insert(
-        &state.db,
-        &claim.sub,
-        &id,
-        &EcdsaStruct::RotateCommitMessage1M,
-        &m1,
-    )
-    .await
-    .or(Err("Failed to insert into db"))?;
-    db::insert(
-        &state.db,
-        &claim.sub,
-        &id,
-        &EcdsaStruct::RotateCommitMessage1R,
-        &r1,
-    )
-    .await
-    .or(Err("Failed to insert into db"))?;
-
-    Ok(Json(party1_coin_flip_first_message))
-}
-
-#[post(
-    "/ecdsa/rotate/<id>/second",
-    format = "json",
-    data = "<party2_first_message>"
-)]
-pub async fn rotate_second(
-    state: &State<Config>,
-    id: String,
-    claim: Claims,
-    party2_first_message: Json<coin_flip_optimal_rounds::Party2FirstMessage<GE>>,
-) -> Result<
-    Json<(
-        coin_flip_optimal_rounds::Party1SecondMessage<GE>,
-        party1::RotationParty1Message1,
-    )>,
-    String,
-> {
-    let party_one_master_key = get_mk(state, claim.clone(), &id)
-        .await
-        .map_err(|e| e.to_string())?;
-
-    let m1: Secp256k1Scalar = db::get(
-        &state.db,
-        &claim.sub,
-        &id,
-        &EcdsaStruct::RotateCommitMessage1M,
-    )
-    .await
-    .or(Err("Failed to get from db"))?
-    .ok_or(format!("No data for such identifier {}", id))?;
-
-    let r1: Secp256k1Scalar = db::get(
-        &state.db,
-        &claim.sub,
-        &id,
-        &EcdsaStruct::RotateCommitMessage1R,
-    )
-    .await
-    .or(Err("Failed to get from db"))?
-    .ok_or(format!("No data for such identifier {}", id))?;
-
-    let (party1_second_message, random1) =
-        Rotation1::key_rotate_second_message(&party2_first_message.0, &m1, &r1);
-    db::insert(
-        &state.db,
-        &claim.sub,
-        &id,
-        &EcdsaStruct::RotateRandom1,
-        &random1,
-    )
-    .await
-    .or(Err("Failed to insert into db"))?;
-
-    let (rotation_party_one_first_message, party_one_master_key_rotated) =
-        party_one_master_key.rotation_first_message(&random1);
-
-    db::insert(
-        &state.db,
-        &claim.sub,
-        &id,
-        &EcdsaStruct::Party1MasterKey,
-        &party_one_master_key_rotated,
-    )
-    .await
-    .or(Err("Failed to insert into db"))?;
-
-    Ok(Json((
-        party1_second_message,
-        rotation_party_one_first_message,
-    )))
 }
 
 #[post("/ecdsa/<id>/recover", format = "json")]

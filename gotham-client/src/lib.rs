@@ -7,13 +7,9 @@
 // version 3 of the License, or (at your option) any later version.
 //
 
-extern crate centipede;
-extern crate config;
-extern crate curv;
 extern crate kms;
-extern crate multi_party_ecdsa;
 extern crate reqwest;
-extern crate zk_paillier;
+extern crate two_party_ecdsa;
 
 #[macro_use]
 extern crate serde_derive;
@@ -27,20 +23,13 @@ extern crate log;
 extern crate failure;
 
 extern crate bitcoin;
-extern crate electrumx_client;
-extern crate hex;
-extern crate itertools;
-extern crate uuid;
 
 pub mod ecdsa;
 pub mod escrow;
-pub mod wallet;
 
-pub mod eddsa;
-pub mod schnorr;
+// pub mod eddsa;
 
 mod utilities;
-mod tests;
 
 type Result<T> = std::result::Result<T, failure::Error>;
 
@@ -62,5 +51,5 @@ impl ClientShim {
     }
 }
 
-pub use curv::{BigInt, arithmetic::traits::Converter};
-pub use multi_party_eddsa::protocols::aggsig::*;
+pub use two_party_ecdsa::curv::{arithmetic::traits::Converter, BigInt};
+// pub use multi_party_eddsa::protocols::aggsig::*;

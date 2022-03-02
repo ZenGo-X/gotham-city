@@ -9,13 +9,13 @@
 
 use kms::ecdsa::two_party::{MasterKey1, MasterKey2};
 use serde_json;
-use centipede::juggling::segmentation::Msegmentation;
-use centipede::juggling::proof_system::Helgamalsegmented;
-use curv::elliptic::curves::traits::{ECScalar, ECPoint};
-use crate::curv::arithmetic::{Converter, Modulo};
-use curv::elliptic::curves::secp256_k1::{FE, GE};
-use curv::BigInt;
 use serde_json::Error;
+use two_party_ecdsa::centipede::juggling::proof_system::Helgamalsegmented;
+use two_party_ecdsa::centipede::juggling::segmentation::Msegmentation;
+use two_party_ecdsa::curv::arithmetic::traits::{Converter, Modulo};
+use two_party_ecdsa::curv::elliptic::curves::secp256_k1::{FE, GE};
+use two_party_ecdsa::curv::elliptic::curves::traits::{ECPoint, ECScalar};
+use two_party_ecdsa::curv::BigInt;
 // iOS bindings
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
@@ -25,19 +25,19 @@ use std::os::raw::c_char;
 pub extern "C" fn decrypt_party_one_master_key(
     c_master_key_two_json: *const c_char,
     c_helgamal_segmented_json: *const c_char,
-    c_private_key: *const c_char
+    c_private_key: *const c_char,
 ) -> *mut c_char {
     let segment_size = 8; // This is hardcoded on both client and server side
 
     let G: GE = GE::generator();
 
-    let party_two_master_key: MasterKey2 = serde_json::from_str(
-        &get_str_from_c_char(c_master_key_two_json)).unwrap();
+    let party_two_master_key: MasterKey2 =
+        serde_json::from_str(&get_str_from_c_char(c_master_key_two_json)).unwrap();
 
-    let encryptions_secret_party1 : Helgamalsegmented = serde_json::from_str(
-        &get_str_from_c_char(c_helgamal_segmented_json)).unwrap();
+    let encryptions_secret_party1: Helgamalsegmented =
+        serde_json::from_str(&get_str_from_c_char(c_helgamal_segmented_json)).unwrap();
 
-    let y_b : Result<BigInt, Error> = serde_json::from_str(&get_str_from_c_char(c_private_key));
+    let y_b: Result<BigInt, Error> = serde_json::from_str(&get_str_from_c_char(c_private_key));
     if y_b.is_err() {
         // Invalid BigInt Private key
         return CString::new("").unwrap().into_raw();
@@ -45,12 +45,11 @@ pub extern "C" fn decrypt_party_one_master_key(
 
     let y: FE = ECScalar::from(&y_b.unwrap());
 
-    let r = Msegmentation::decrypt(
-        &encryptions_secret_party1, &G, &y, &segment_size);
+    let r = Msegmentation::decrypt(&encryptions_secret_party1, &G, &y, &segment_size);
 
-    if let Ok(v) = r  {
-        let party_one_master_key_recovered = party_two_master_key
-            .counter_master_key_from_recovered_secret(v);
+    if let Ok(v) = r {
+        let party_one_master_key_recovered =
+            party_two_master_key.counter_master_key_from_recovered_secret(v);
 
         let s = serde_json::to_string(&party_one_master_key_recovered).unwrap();
         CString::new(s).unwrap().into_raw()
@@ -63,10 +62,10 @@ pub extern "C" fn decrypt_party_one_master_key(
 pub extern "C" fn get_child_mk1(
     c_master_key_one_json: *const c_char,
     c_x_pos: i32,
-    c_y_pos: i32
+    c_y_pos: i32,
 ) -> *mut c_char {
-    let party_one_master_key: MasterKey1 = serde_json::from_str(
-        &get_str_from_c_char(c_master_key_one_json)).unwrap();
+    let party_one_master_key: MasterKey1 =
+        serde_json::from_str(&get_str_from_c_char(c_master_key_one_json)).unwrap();
 
     let x: BigInt = BigInt::from(c_x_pos);
 
@@ -86,10 +85,10 @@ pub extern "C" fn get_child_mk1(
 pub extern "C" fn get_child_mk2(
     c_master_key_two_json: *const c_char,
     c_x_pos: i32,
-    c_y_pos: i32
+    c_y_pos: i32,
 ) -> *mut c_char {
-    let party_two_master_key: MasterKey2 = serde_json::from_str(
-        &get_str_from_c_char(c_master_key_two_json)).unwrap();
+    let party_two_master_key: MasterKey2 =
+        serde_json::from_str(&get_str_from_c_char(c_master_key_two_json)).unwrap();
 
     let x: BigInt = BigInt::from(c_x_pos);
 
@@ -108,11 +107,11 @@ pub extern "C" fn get_child_mk2(
 #[no_mangle]
 pub extern "C" fn construct_single_private_key(
     c_mk1_x1: *const c_char,
-    c_mk2_x2: *const c_char
+    c_mk2_x2: *const c_char,
 ) -> *mut c_char {
-    let mk1_x1: BigInt = BigInt::from_hex(&get_str_from_c_char(c_mk1_x1)).unwrap();
+    let mk1_x1: BigInt = BigInt::from_hex(&get_str_from_c_char(c_mk1_x1));
 
-    let mk2_x2: BigInt =  BigInt::from_hex(&get_str_from_c_char(c_mk2_x2)).unwrap();
+    let mk2_x2: BigInt = BigInt::from_hex(&get_str_from_c_char(c_mk2_x2));
 
     let sk = BigInt::mod_mul(&mk1_x1, &mk2_x2, &FE::q());
 

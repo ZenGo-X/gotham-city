@@ -7,9 +7,9 @@
 // version 3 of the License, or (at your option) any later version.
 //
 
-use curv::elliptic::curves::secp256_k1::{FE, GE};
-use curv::elliptic::curves::traits::ECPoint;
-use curv::elliptic::curves::traits::ECScalar;
+use two_party_ecdsa::curv::elliptic::curves::secp256_k1::{FE, GE};
+use two_party_ecdsa::curv::elliptic::curves::traits::ECPoint;
+use two_party_ecdsa::curv::elliptic::curves::traits::ECScalar;
 
 use serde_json;
 use std::fs;
@@ -47,10 +47,7 @@ impl Escrow {
     pub fn load() -> Escrow {
         let sec_data = fs::read_to_string(ESCROW_SK_FILENAME).expect("Unable to load wallet!");
         let (secret, public): (FE, GE) = serde_json::from_str(&sec_data).unwrap();
-        Escrow {
-            secret,
-            public
-        }
+        Escrow { secret, public }
     }
 
     pub fn get_public_key(&self) -> GE {

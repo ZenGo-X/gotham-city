@@ -9,7 +9,7 @@
 
 use super::super::utilities::requests;
 use super::super::Result;
-use super::super::ClientShim;
+use crate::ClientShim;
 
 use two_party_musig2_eddsa::{KeyPair, AggPublicKeyAndMusigCoeff};
 

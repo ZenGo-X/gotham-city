@@ -10,57 +10,24 @@ edition = "2018"
 [lib]
 name = "client_lib"
 path = "src/lib.rs"
-#crate-type = ["staticlib", "cdylib"]
-
-[[bin]]
-name = "cli"
-path = "src/main.rs"
 
 [dependencies]
 serde = "1.0"
 serde_json = "1.0"
 serde_derive = "1.0"
 log = "0.4"
-clap = { version = "2.32", features = ["yaml"] }
 reqwest = "0.9.5"
 failure = "0.1.5"
-uuid = { version = "0.7", features = ["v4"] }
-electrumx_client = { git = "https://github.com/KZen-networks/rust-electrumx-client", tag = "bitcoin@0.20.0" }
-itertools = "0.8.0"
-hex = "0.3.2"
 bitcoin = "0.26.0"
-config = "0.9"
 floating-duration = "0.1.2"
-curv = { package = "curv-kzen", version = "0.7" }
-mockall = "0.11"
 
-[dependencies.zk-paillier]
-git = "https://github.com/KZen-networks/zk-paillier"
-tag = "v0.3.12"
+two-party-ecdsa = { git = "https://github.com/ZenGo-X/two-party-ecdsa.git" }
+kms = { git = "https://github.com/ZenGo-X/kms-secp256k1.git", branch = "2.0" }
 
-[dependencies.kms]
-git = "https://github.com/KZen-networks/kms-secp256k1"
-tag = "v0.3.0"
-
-[dependencies.multi-party-ecdsa]
-git = "https://github.com/KZen-networks/multi-party-ecdsa"
-tag = "v0.4.6"
-
-[dependencies.multi-party-eddsa]
-git = "https://github.com/KZen-networks/multi-party-eddsa"
-tag = "v0.2.2"
 
 [dependencies.two-party-musig2-eddsa]
 git = "https://github.com/ZenGo-X/two-party-musig2-eddsa"
 tag = "v0.1.2"
 
-[dependencies.multi-party-schnorr]
-git = "https://github.com/KZen-networks/multi-party-schnorr"
-tag = "v0.4.4"
-
-[dependencies.centipede]
-git = "https://github.com/KZen-networks/centipede"
-tag = "v0.2.12"
-
-[patch.crates-io]
-rust-gmp = { version = "0.5.0", features = ["serde_support"], git = "https://github.com/KZen-networks/rust-gmp" }
+[dev-dependencies]
+mockall = "0.11"

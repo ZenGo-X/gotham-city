@@ -25,7 +25,7 @@ use super::passthrough;
 const ALGORITHM: Algorithm = Algorithm::RS256;
 const TOKEN_TYPE: &str = "Bearer";
 
-pub fn verify(
+fn verify(
     issuer: &str,
     audience: &str,
     region: &str,
