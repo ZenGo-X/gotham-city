@@ -27,7 +27,7 @@ extern crate bitcoin;
 pub mod ecdsa;
 pub mod escrow;
 
-// pub mod eddsa;
+pub mod eddsa;
 
 mod utilities;
 

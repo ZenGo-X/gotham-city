@@ -40,23 +40,6 @@ mod tests {
     }
 
     #[rocket::async_test]
-    async fn test_schnorr() {
-        rocket::tokio::spawn(spawn_server(8001, "schnorr"));
-
-        let client_shim = ClientShim::new("http://localhost:8001".to_string(), None);
-
-        let five_seconds = time::Duration::from_millis(5000);
-        thread::sleep(five_seconds);
-
-        let share: schnorr::Share = schnorr::generate_key(&client_shim).unwrap();
-
-        let msg: BigInt = BigInt::from(1234); // arbitrary message
-        let signature = schnorr::sign(&client_shim, msg, &share).expect("Schnorr signature failed");
-
-        println!("signature = (e: {:?}, s: {:?})", signature.e, signature.s);
-    }
-
-    #[rocket::async_test]
     async fn test_eddsa() {
         rocket::tokio::spawn(spawn_server(8002, "eddsa"));
 
