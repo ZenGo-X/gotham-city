@@ -16,7 +16,7 @@ use self::EddsaStruct::*;
 #[derive(Debug)]
 pub enum EddsaStruct {
     ClientPublicKey,
-    ServerKeyPair,
+    ServerSecret,
     AggregatedPublicKey,
     ClientPublicPartialNonce,
     Message,
@@ -44,7 +44,7 @@ pub async fn keygen(
     client_public_key_json: Json<[u8; 32]>,
 ) -> Result<Json<(String, [u8; 32])>, String> {
     let id = Uuid::new_v4().to_string();
-    let (server_key_pair, _) = KeyPair::create();
+    let (server_key_pair, server_secret) = KeyPair::create();
 
     // Compute aggregated pubkey and a "musig coefficient" used later for signing - fails if received invalid pubkey!
     let agg_pubkey = AggPublicKeyAndMusigCoeff::aggregate_public_keys(
@@ -63,7 +63,7 @@ pub async fn keygen(
     )
     .await
     .or(Err("Failed to insert into db"))?;
-    db::insert(&state.db, &claim.sub, &id, &ServerKeyPair, &server_key_pair)
+    db::insert(&state.db, &claim.sub, &id, &ServerSecret, &server_secret)
         .await
         .or(Err("Failed to insert into db"))?;
     db::insert(
@@ -96,10 +96,12 @@ pub async fn sign_first(
         None => return Err("Received invalid public nonces from client!".to_string()),
     }
 
-    let server_key_pair: KeyPair = db::get(&state.db, &claim.sub, &id, &ServerKeyPair)
+    let server_secret: [u8; 32] = db::get(&state.db, &claim.sub, &id, &ServerSecret)
         .await
         .or(Err("Failed to get from db"))?
         .ok_or(format!("No data for such identifier {}", id))?;
+    
+    let server_key_pair = KeyPair::create_from_private_key(server_secret);
 
     // Generate partial nonces.
     let (private_nonces, public_nonces) =
@@ -163,10 +165,12 @@ pub async fn sign_second(
     }
 
     // Retrieve state from db
-    let server_keypair: KeyPair = db::get(&state.db, &claim.sub, &id, &ServerKeyPair)
+    let server_secret: [u8; 32] = db::get(&state.db, &claim.sub, &id, &ServerSecret)
         .await
         .or(Err("Failed to get from db"))?
         .ok_or(format!("No data for such identifier {}", id))?;
+    
+    let server_key_pair = KeyPair::create_from_private_key(server_secret);
 
     let server_private_nonces: PrivatePartialNonces = db::get(&state.db, &claim.sub, &id, &ServerPrivatePartialNonces)
         .await
@@ -194,7 +198,7 @@ pub async fn sign_second(
     .ok_or(format!("No data for such identifier {}", id))?;
 
     // Compute server partial sig
-    let (server_partial_sig, agg_nonce) = server_keypair.partial_sign(
+    let (server_partial_sig, agg_nonce) = server_key_pair.partial_sign(
         server_private_nonces,
         [client_public_nonces, server_public_nonces],
         &agg_pubkey,
