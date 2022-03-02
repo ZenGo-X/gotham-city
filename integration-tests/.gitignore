@@ -1,8 +1,5 @@
 db/
 target/
-integration-tests/ecdsa/
-integration-tests/eddsa/
-integration-tests/schnorr/
-gotham-server/AuthenticationTestExpiredToken/
-gotham-server/AuthenticationTestInvalidToken/
-gotham-server/KeyGenAndSign/
+ecdsa/
+eddsa/
+schnorr/
