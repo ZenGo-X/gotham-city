@@ -50,6 +50,10 @@ tag = "v0.4.6"
 git = "https://github.com/KZen-networks/multi-party-eddsa"
 tag = "v0.2.2"
 
+[dependencies.two-party-musig2-eddsa]
+git = "https://github.com/ZenGo-X/two-party-musig2-eddsa"
+tag = "v0.1.2"
+
 [dependencies.multi-party-schnorr]
 git = "https://github.com/KZen-networks/multi-party-schnorr"
 tag = "v0.4.4"

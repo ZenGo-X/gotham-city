@@ -9,8 +9,6 @@
 
 mod keygen;
 mod sign;
-mod types;
 
 pub use keygen::generate_key;
 pub use sign::sign;
-pub use types::*;

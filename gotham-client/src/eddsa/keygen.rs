@@ -11,32 +11,30 @@ use super::super::utilities::requests;
 use super::super::Result;
 use super::super::ClientShim;
 
-use curv::elliptic::curves::ed25519::{FE, GE};
-use curv::BigInt;
+use two_party_musig2_eddsa::{KeyPair, AggPublicKeyAndMusigCoeff};
+
 // iOS bindings
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
 
-use multi_party_eddsa::protocols::aggsig::*;
-
-const PARTY2_INDEX: usize = 1; // client (self)
-
-pub fn generate_key(client_shim: &ClientShim) -> Result<(KeyPair, KeyAgg, String)> {
-    let party2_key_pair: KeyPair = KeyPair::create();
-    let (id, mut party1_public_key): (String, GE) = requests::postb(
+/// Generate a keypair for 2-party Ed25519 signing
+pub fn generate_key(client_shim: &ClientShim) -> Result<(KeyPair, AggPublicKeyAndMusigCoeff, String)> {
+    let (client_key_pair, _) = KeyPair::create();
+    
+    // Send public key to server and receive its public key
+    let (id, server_pubkey): (String, [u8; 32]) = requests::postb(
         client_shim,
         "eddsa/keygen",
-        &party2_key_pair.public_key)
+        &client_key_pair.pubkey())
         .unwrap();
-    let eight: FE = ECScalar::from(&BigInt::from(8));
-    let eight_inverse: FE = eight.invert();
-    party1_public_key = party1_public_key * eight_inverse;
-
-    // compute apk:
-    let pks: Vec<GE> = vec![ party1_public_key, party2_key_pair.public_key];
-    let key_agg = KeyPair::key_aggregation_n(&pks, &PARTY2_INDEX);
-
-    Ok((party2_key_pair, key_agg, id))
+    
+    // Compute aggregated pubkey and a "musig coefficient" used later for signing - fails if received invalid pubkey!
+    let agg_pubkey = AggPublicKeyAndMusigCoeff::aggregate_public_keys(client_key_pair.pubkey(), server_pubkey);
+    
+    match agg_pubkey {
+        Ok(agg_pubkey) => Ok((client_key_pair, agg_pubkey, id)),
+        Err(e) => Err(e.into()),
+    }
 }
 
 #[no_mangle]
@@ -58,7 +56,7 @@ pub extern "C" fn generate_client_key(
 
     let client_shim = ClientShim::new(endpoint.to_string(), Some(auth_token.to_string()));
 
-    let key: (KeyPair, KeyAgg, String) = match generate_key(&client_shim) {
+    let key: (KeyPair, AggPublicKeyAndMusigCoeff, String) = match generate_key(&client_shim) {
         Ok(k) => k,
         Err(_) => panic!("Error while performing keygen to endpoint {}", endpoint),
     };

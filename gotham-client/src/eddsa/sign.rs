@@ -7,83 +7,81 @@
 // version 3 of the License, or (at your option) any later version.
 //
 
-use super::super::utilities::requests;
 use super::super::utilities::error_to_c_string;
-use super::super::Result;
+use super::super::utilities::requests;
 use super::super::ClientShim;
+use super::super::Result;
 
 // iOS bindings
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
 
-use curv::elliptic::curves::ed25519::{FE};
-use curv::BigInt;
-use multi_party_eddsa::protocols::aggsig::*;
+use two_party_musig2_eddsa::{
+    generate_partial_nonces, AggPublicKeyAndMusigCoeff, KeyPair, PartialSignature,
+    PublicPartialNonces, Signature,
+};
 
 #[allow(non_snake_case)]
 pub fn sign(
     client_shim: &ClientShim,
-    message: BigInt,
-    party2_key_pair: &KeyPair,
-    key_agg: &KeyAgg,
-    id: &str
+    message: &[u8],
+    client_keypair: &KeyPair,
+    agg_pubkey: &AggPublicKeyAndMusigCoeff,
+    id: &str,
 ) -> Result<Signature> {
-    // round 1: send commitments to ephemeral public keys
-    let (party2_ephemeral_key, party2_sign_first_msg, party2_sign_second_msg) =
-        Signature::create_ephemeral_key_and_commit(
-            party2_key_pair,
-            BigInt::to_bytes(&message).as_slice(),
-        );
+    // Generate partial nonces.
+    let (private_nonces, public_nonces) = generate_partial_nonces(client_keypair, Some(message));
 
-    let party1_sign_first_msg: SignFirstMsg = match requests::postb(
+    // Send your public nonces to the server and recv their nonces.
+    let server_nonces: PublicPartialNonces = match requests::postb(
         client_shim,
         &format!("eddsa/sign/{}/first", id),
-        &(party2_sign_first_msg, message.clone())) {
-            Some(s) => s,
-            None => return Err(failure::err_msg("party1 sign first message request failed"))
-        };
+        &(public_nonces.clone(), message.to_vec()),
+    ) {
+        Some(s) => s,
+        None => return Err(failure::err_msg("eddsa first message(nonces) failed!")),
+    };
 
-    // round 2: send ephemeral public keys and check commitments.
-    // in the two-party setting, the counterparty can immediately return its local signature.
-    let (mut party1_sign_second_msg, mut s1): (SignSecondMsg, Signature) = match requests::postb(
-        client_shim,
-        &format!("eddsa/sign/{}/second", id),
-        &party2_sign_second_msg) {
-            Some(s) => s,
-            None => return Err(failure::err_msg("party1 sign second message request failed"))
-        };
+    // Validates server's response
+    let server_nonces_bytes = server_nonces.serialize();
+    match PublicPartialNonces::deserialize(server_nonces_bytes) {
+        Some(_) => (),
+        None => return Err(failure::err_msg("Received invalid public nonces from server!")),
+    }
 
-    let eight: FE = ECScalar::from(&BigInt::from(8u32));
-    let eight_inverse: FE  = eight.invert();
-    party1_sign_second_msg.R = party1_sign_second_msg.R * eight_inverse;
-    s1.R = s1.R * eight_inverse;
-    assert!(test_com(
-        &party1_sign_second_msg.R,
-        &party1_sign_second_msg.blind_factor,
-        &party1_sign_first_msg.commitment
-    ));
-
-    // round 3:
-    // compute R' = sum(Ri):
-    let Ri = vec![ party1_sign_second_msg.R, party2_sign_second_msg.R];
-    // each party i should run this:
-    let R_tot = Signature::get_R_tot(Ri);
-    let k = Signature::k(&R_tot, &key_agg.apk, BigInt::to_bytes(&message).as_slice());
-    let s2 = Signature::partial_sign(
-        &party2_ephemeral_key.r,
-        party2_key_pair,
-        &k,
-        &key_agg.hash,
-        &R_tot,
+    // Create a partial signature
+    let (partial_sig, agg_nonce) = client_keypair.partial_sign(
+        private_nonces,
+        [public_nonces, server_nonces],
+        agg_pubkey,
+        message,
     );
 
-    let s = vec![ s1, s2];
-    let signature = Signature::add_signature_parts(s);
+    // Send your partial signature to the server and recv their partial signature.
+    let server_partial_sig: PartialSignature = match requests::postb(
+        client_shim,
+        &format!("eddsa/sign/{}/second", id),
+        &(partial_sig),
+    ) {
+        Some(s) => s,
+        None => return Err(failure::err_msg("eddsa second message failed!")),
+    };
 
-    // verify:
-    verify(&signature, BigInt::to_bytes(&message).as_slice(), &key_agg.apk)
-        .map_err(|e| format_err!("verifying signature failed: {}", e))
-        .map(|_| signature)
+    // Validate server partial signature
+    let server_partial_sig_bytes = server_partial_sig.serialize();
+    match PartialSignature::deserialize(server_partial_sig_bytes) {
+        Some(_) => (),
+        None => return Err(failure::err_msg("Received invalid partial signature from server!")),
+    }
+
+    // Aggregate the partial signatures together
+    let signature = Signature::aggregate_partial_signatures(agg_nonce, [partial_sig, server_partial_sig]);
+
+    // Make sure the signature verifies against the aggregated public key
+    match signature.verify(message, agg_pubkey.aggregated_pubkey()) {
+        Ok(_) => Ok(signature),
+        Err(e) => Err(e.into()),
+    }
 }
 
 #[no_mangle]
@@ -116,7 +114,9 @@ pub extern "C" fn sign_message_eddsa(
     let raw_key_pair_json = unsafe { CStr::from_ptr(c_key_pair_json) };
     let key_pair_json = match raw_key_pair_json.to_str() {
         Ok(s) => s,
-        Err(e) => return error_to_c_string(format_err!("decoding raw key_pair_json failed: {}", e)),
+        Err(e) => {
+            return error_to_c_string(format_err!("decoding raw key_pair_json failed: {}", e))
+        }
     };
 
     let raw_key_agg_json = unsafe { CStr::from_ptr(c_key_agg_json) };
@@ -133,21 +133,21 @@ pub extern "C" fn sign_message_eddsa(
 
     let client_shim = ClientShim::new(endpoint.to_string(), Some(auth_token.to_string()));
 
-    let message: BigInt = serde_json::from_str(message_hex).unwrap();
+    let message: Vec<u8> = serde_json::from_str(message_hex).unwrap();
 
-    let mut key_pair: KeyPair = serde_json::from_str(key_pair_json).unwrap();
+    let key_pair: KeyPair = serde_json::from_str(key_pair_json).unwrap();
 
-    let mut key_agg: KeyAgg = serde_json::from_str(key_agg_json).unwrap();
+    let key_agg: AggPublicKeyAndMusigCoeff = serde_json::from_str(key_agg_json).unwrap();
 
-    let eight: FE = ECScalar::from(&BigInt::from(8));
-    let eight_inverse: FE = eight.invert();
-
-    key_pair.public_key = key_pair.public_key * eight_inverse;
-    key_agg.apk = key_agg.apk * eight_inverse;
-
-    let sig = match sign(&client_shim, message, &key_pair, &key_agg, &id.to_string()) {
+    let sig = match sign(&client_shim, &message[..], &key_pair, &key_agg, &id.to_string()) {
         Ok(s) => s,
-        Err(e) => return error_to_c_string(format_err!("signing to endpoint {} failed: {}", endpoint, e))
+        Err(e) => {
+            return error_to_c_string(format_err!(
+                "signing to endpoint {} failed: {}",
+                endpoint,
+                e
+            ))
+        }
     };
 
     let signature_json = match serde_json::to_string(&sig) {
