@@ -1,28 +1,25 @@
 # syntax = docker/dockerfile:1.2
 FROM rust:latest
 ENV GMP_VERSION=6.2.1
-ENV NDK_VERSION=24
-ENV MIN_SDK_VERSION=31
+ENV NDK_VERSION=21e
+ENV MIN_SDK_VERSION=26
 ENV ANDROID_NDK_HOME=/android-ndk/
 ENV PATH="/android-ndk/toolchains/llvm/prebuilt/linux-x86_64/bin/:${PATH}"
 ENV OPENSSL_VERSION=1.1.1n
 ENV TARGET_CXXFLAGS=-mno-outline-atomics
 ENV PKG_CONFIG_SYSROOT_DIR="${ANDROID_NDK_HOME}toolchains/llvm/prebuilt/linux-x86_64/sysroot"
 RUN apt update
-RUN 	wget https://dl.google.com/android/repository/android-ndk-r${NDK_VERSION}-linux.zip && \
-	unzip android-ndk-r*-linux.zip && \
-	rm android-ndk-r*-linux.zip && \
+RUN 	wget https://dl.google.com/android/repository/android-ndk-r${NDK_VERSION}-linux-x86_64.zip && \
+	unzip android-ndk-r*.zip && \
+	rm android-ndk-r*.zip && \
 	mv android-ndk-r* android-ndk && \
 	git clone https://github.com/ZenGo-X/gotham-city.git && \
 	cd gotham-city && git checkout server_fix && \
-	rustup install nightly && \
-	rustup default nightly && \
 	rustup target add \
     		aarch64-linux-android \
     		armv7-linux-androideabi \
     		x86_64-linux-android \
     		i686-linux-android && \
-	rustup component add rust-src --toolchain nightly-x86_64-unknown-linux-gnu && \
 	cargo install cargo-ndk
 
 # libGMP
@@ -75,5 +72,5 @@ RUN 	cp -r /openssl/include/* ${ANDROID_NDK_HOME}toolchains/llvm/prebuilt/linux-
 	cp /gmp/build/x86_64-linux-android/.libs/libgmp.so ${ANDROID_NDK_HOME}toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/x86_64-linux-android/
 
 # compile
-RUN 	cd /gotham-city/gotham-client && cargo +nightly ndk -t arm64-v8a -t armeabi-v7a -t x86_64 -o ./jniLibs_debug build -Zbuild-std && \
-	cd /gotham-city/gotham-client && cargo +nightly ndk -t arm64-v8a -t armeabi-v7a -t x86_64 -o ./jniLibs build --release -Zbuild-std
+RUN 	cd /gotham-city/gotham-client && cargo ndk -t arm64-v8a -t armeabi-v7a -t x86_64 -o ./jniLibs_debug build && \
+	cd /gotham-city/gotham-client && cargo ndk -t arm64-v8a -t armeabi-v7a -t x86_64 -o ./jniLibs build --release
