@@ -11,7 +11,7 @@ edition = "2021"
 jni = { version = "0.5", default-features = false }
 
 [lib]
-crate-type = ["cdylib", "lib"]
+crate-type = ["staticlib", "cdylib", "lib"]
 name = "client_lib"
 path = "src/lib.rs"
 
