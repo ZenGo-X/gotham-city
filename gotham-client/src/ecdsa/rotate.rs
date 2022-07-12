@@ -100,7 +100,7 @@ pub fn rotate_master_key(wallet: wallet::Wallet, client_shim: &ClientShim) -> wa
         id: wallet.id.clone(),
         network: wallet.network.clone(),
         private_share,
-        last_derived_pos: wallet.last_derived_pos.clone(),
+        last_derived_pos: wallet.last_derived_pos,
         addresses_derivation_map,
     };
     wallet_after_rotate.derived();

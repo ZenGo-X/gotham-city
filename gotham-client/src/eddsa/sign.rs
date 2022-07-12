@@ -7,22 +7,24 @@
 // version 3 of the License, or (at your option) any later version.
 //
 
-use super::super::utilities::requests;
 use super::super::utilities::error_to_c_string;
-use super::super::Result;
+use super::super::utilities::requests;
 use super::super::ClientShim;
+use super::super::Result;
 
 // iOS bindings
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
 
 // Android bindings
-use jni::JNIEnv;
 use jni::objects::{JClass, JString};
-use jni::sys::jstring;
 use jni::strings::JavaStr;
+use jni::sys::jstring;
+use jni::JNIEnv;
 use std::ops::Deref;
 
+use curv::elliptic::curves::ed25519::FE;
+use curv::BigInt;
 use multi_party_ed25519::protocols::aggsig::*;
 
 #[allow(non_snake_case)]
@@ -31,34 +33,43 @@ pub fn sign(
     message: BigInt,
     party2_key_pair: &KeyPair,
     key_agg: &KeyAgg,
-    id: &String
+    id: &str,
 ) -> Result<Signature> {
     // round 1: send commitments to ephemeral public keys
     let (party2_ephemeral_key, party2_sign_first_msg, party2_sign_second_msg) =
-        Signature::create_ephemeral_key_and_commit(&party2_key_pair, BigInt::to_vec(&message).as_slice());
+        Signature::create_ephemeral_key_and_commit(
+            party2_key_pair,
+            BigInt::to_bytes(&message).as_slice(),
+        );
 
     let party1_sign_first_msg: SignFirstMsg = match requests::postb(
         client_shim,
         &format!("eddsa/sign/{}/first", id),
-        &(party2_sign_first_msg, message.clone())) {
-            Some(s) => s,
-            None => return Err(failure::err_msg("party1 sign first message request failed"))
-        };
+        &(party2_sign_first_msg, message.clone()),
+    ) {
+        Some(s) => s,
+        None => return Err(failure::err_msg("party1 sign first message request failed")),
+    };
 
     // round 2: send ephemeral public keys and check commitments.
     // in the two-party setting, the counterparty can immediately return its local signature.
     let (mut party1_sign_second_msg, mut s1): (SignSecondMsg, Signature) = match requests::postb(
         client_shim,
         &format!("eddsa/sign/{}/second", id),
-        &party2_sign_second_msg) {
-            Some(s) => s,
-            None => return Err(failure::err_msg("party1 sign second message request failed"))
-        };
+        &party2_sign_second_msg,
+    ) {
+        Some(s) => s,
+        None => {
+            return Err(failure::err_msg(
+                "party1 sign second message request failed",
+            ))
+        }
+    };
 
-    let eight: FE = ECScalar::from(&BigInt::from(8));
+    let eight: FE = ECScalar::from(&BigInt::from(8u32));
     let eight_inverse: FE = eight.invert();
-    party1_sign_second_msg.R = party1_sign_second_msg.R * &eight_inverse;
-    s1.R = s1.R * &eight_inverse;
+    party1_sign_second_msg.R = party1_sign_second_msg.R * eight_inverse;
+    s1.R = s1.R * eight_inverse;
     assert!(test_com(
         &party1_sign_second_msg.R,
         &party1_sign_second_msg.blind_factor,
@@ -67,29 +78,29 @@ pub fn sign(
 
     // round 3:
     // compute R' = sum(Ri):
-    let mut Ri: Vec<GE> = Vec::new();
-    Ri.push(party1_sign_second_msg.R.clone());
-    Ri.push(party2_sign_second_msg.R.clone());
+    let Ri = vec![party1_sign_second_msg.R, party2_sign_second_msg.R];
     // each party i should run this:
     let R_tot = Signature::get_R_tot(Ri);
     let k = Signature::k(&R_tot, &key_agg.apk, BigInt::to_vec(&message).as_slice());
     let s2 = Signature::partial_sign(
         &party2_ephemeral_key.r,
-        &party2_key_pair,
+        party2_key_pair,
         &k,
         &key_agg.hash,
         &R_tot,
     );
 
-    let mut s: Vec<Signature> = Vec::new();
-    s.push(s1);
-    s.push(s2);
+    let s = vec![s1, s2];
     let signature = Signature::add_signature_parts(s);
 
     // verify:
-    verify(&signature, BigInt::to_vec(&message).as_slice(), &key_agg.apk)
-        .or_else(|e| Err(format_err!("verifying signature failed: {}", e)))
-        .and_then(|_| Ok(signature))
+    verify(
+        &signature,
+        BigInt::to_bytes(&message).as_slice(),
+        &key_agg.apk,
+    )
+    .map_err(|e| format_err!("verifying signature failed: {}", e))
+    .map(|_| signature)
 }
 
 #[no_mangle]
@@ -122,7 +133,9 @@ pub extern "C" fn sign_message_eddsa(
     let raw_key_pair_json = unsafe { CStr::from_ptr(c_key_pair_json) };
     let key_pair_json = match raw_key_pair_json.to_str() {
         Ok(s) => s,
-        Err(e) => return error_to_c_string(format_err!("decoding raw key_pair_json failed: {}", e)),
+        Err(e) => {
+            return error_to_c_string(format_err!("decoding raw key_pair_json failed: {}", e))
+        }
     };
 
     let raw_key_agg_json = unsafe { CStr::from_ptr(c_key_agg_json) };
@@ -148,12 +161,18 @@ pub extern "C" fn sign_message_eddsa(
     let eight: FE = ECScalar::from(&BigInt::from(8));
     let eight_inverse: FE = eight.invert();
 
-    key_pair.public_key = key_pair.public_key * &eight_inverse;
-    key_agg.apk = key_agg.apk * &eight_inverse;
+    key_pair.public_key = key_pair.public_key * eight_inverse;
+    key_agg.apk = key_agg.apk * eight_inverse;
 
     let sig = match sign(&client_shim, message, &key_pair, &key_agg, &id.to_string()) {
         Ok(s) => s,
-        Err(e) => return error_to_c_string(format_err!("signing to endpoint {} failed: {}", endpoint, e))
+        Err(e) => {
+            return error_to_c_string(format_err!(
+                "signing to endpoint {} failed: {}",
+                endpoint,
+                e
+            ))
+        }
     };
 
     let signature_json = match serde_json::to_string(&sig) {
@@ -161,14 +180,13 @@ pub extern "C" fn sign_message_eddsa(
         Err(e) => return error_to_c_string(format_err!("encoding signature failed: {}", e)),
     };
 
-    CString::new(signature_json.to_owned()).unwrap().into_raw()
+    CString::new(signature_json).unwrap().into_raw()
 }
 
-#[cfg(target_os="android")]
+#[cfg(target_os = "android")]
 #[no_mangle]
 #[allow(non_snake_case)]
-pub extern fn
-Java_com_zengo_components_kms_gotham_EdDSA_signMessageEddsa(
+pub extern "C" fn Java_com_zengo_components_kms_gotham_EdDSA_signMessageEddsa(
     env: JNIEnv,
     _class: JClass,
     j_endpoint: JString,
@@ -180,27 +198,75 @@ Java_com_zengo_components_kms_gotham_EdDSA_signMessageEddsa(
 ) -> jstring {
     let endpoint = match get_String_from_JString(&env, j_endpoint) {
         Ok(s) => s,
-        Err(e) => return env.new_string(format!("Error from Rust in signMessageEddsa: {}", e.to_string())).unwrap().into_inner()
+        Err(e) => {
+            return env
+                .new_string(format!(
+                    "Error from Rust in signMessageEddsa: {}",
+                    e.to_string()
+                ))
+                .unwrap()
+                .into_inner()
+        }
     };
     let auth_token = match get_String_from_JString(&env, j_auth_token) {
         Ok(s) => s,
-        Err(e) => return env.new_string(format!("Error from Rust in signMessageEddsa: {}", e.to_string())).unwrap().into_inner()
+        Err(e) => {
+            return env
+                .new_string(format!(
+                    "Error from Rust in signMessageEddsa: {}",
+                    e.to_string()
+                ))
+                .unwrap()
+                .into_inner()
+        }
     };
     let message_hex = match get_String_from_JString(&env, j_message_le_hex) {
         Ok(s) => s,
-        Err(e) => return env.new_string(format!("Error from Rust in signMessageEddsa: {}", e.to_string())).unwrap().into_inner()
+        Err(e) => {
+            return env
+                .new_string(format!(
+                    "Error from Rust in signMessageEddsa: {}",
+                    e.to_string()
+                ))
+                .unwrap()
+                .into_inner()
+        }
     };
     let key_pair_json = match get_String_from_JString(&env, j_key_pair_json) {
         Ok(s) => s,
-        Err(e) => return env.new_string(format!("Error from Rust in signMessageEddsa: {}", e.to_string())).unwrap().into_inner()
+        Err(e) => {
+            return env
+                .new_string(format!(
+                    "Error from Rust in signMessageEddsa: {}",
+                    e.to_string()
+                ))
+                .unwrap()
+                .into_inner()
+        }
     };
     let key_agg_json = match get_String_from_JString(&env, j_key_agg_json) {
         Ok(s) => s,
-        Err(e) => return env.new_string(format!("Error from Rust in signMessageEddsa: {}", e.to_string())).unwrap().into_inner()
+        Err(e) => {
+            return env
+                .new_string(format!(
+                    "Error from Rust in signMessageEddsa: {}",
+                    e.to_string()
+                ))
+                .unwrap()
+                .into_inner()
+        }
     };
     let id = match get_String_from_JString(&env, j_id) {
         Ok(s) => s,
-        Err(e) => return env.new_string(format!("Error from Rust in signMessageEddsa: {}", e.to_string())).unwrap().into_inner()
+        Err(e) => {
+            return env
+                .new_string(format!(
+                    "Error from Rust in signMessageEddsa: {}",
+                    e.to_string()
+                ))
+                .unwrap()
+                .into_inner()
+        }
     };
 
     let client_shim = ClientShim::new(endpoint.to_string(), Some(auth_token.to_string()));
@@ -219,12 +285,28 @@ Java_com_zengo_components_kms_gotham_EdDSA_signMessageEddsa(
 
     let sig = match sign(&client_shim, message, &key_pair, &key_agg, &id) {
         Ok(s) => s,
-        Err(e) => return env.new_string(format!("Error from Rust in signMessageEddsa: {}", e.to_string())).unwrap().into_inner()
+        Err(e) => {
+            return env
+                .new_string(format!(
+                    "Error from Rust in signMessageEddsa: {}",
+                    e.to_string()
+                ))
+                .unwrap()
+                .into_inner()
+        }
     };
 
     let signature_json = match serde_json::to_string(&sig) {
         Ok(share) => share,
-        Err(e) => return env.new_string(format!("Error from Rust in signMessageEddsa: {}", e.to_string())).unwrap().into_inner()
+        Err(e) => {
+            return env
+                .new_string(format!(
+                    "Error from Rust in signMessageEddsa: {}",
+                    e.to_string()
+                ))
+                .unwrap()
+                .into_inner()
+        }
     };
 
     env.new_string(signature_json.to_owned())
@@ -236,12 +318,12 @@ Java_com_zengo_components_kms_gotham_EdDSA_signMessageEddsa(
 fn get_String_from_JString(env: &JNIEnv, j_string: JString) -> Result<String> {
     let java_str_string = match env.get_string(j_string) {
         Ok(java_string) => java_string,
-        Err(e) => unimplemented!()
+        Err(e) => unimplemented!(),
     };
 
     let string_ref = match JavaStr::deref(&java_str_string).to_str() {
         Ok(string_ref) => string_ref,
-        Err(e) => unimplemented!()
+        Err(e) => unimplemented!(),
     };
 
     Ok(string_ref.to_string())

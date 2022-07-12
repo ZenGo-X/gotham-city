@@ -7,17 +7,18 @@
 // version 3 of the License, or (at your option) any later version.
 //
 
+use floating_duration::TimeFormat;
 use serde_json;
-use time::PreciseTime;
+use std::time::Instant;
 
 use curv::cryptographic_primitives::twoparty::dh_key_exchange_variant_with_pok_comm::*;
 use kms::chain_code::two_party as chain_code;
 use kms::ecdsa::two_party::*;
 use multi_party_ecdsa::protocols::two_party_ecdsa::lindell_2017::*;
 
-use super::types::PrivateShare;
 use super::super::utilities::requests;
 use super::super::ClientShim;
+use super::types::PrivateShare;
 
 // iOS bindings
 use std::ffi::{CStr, CString};
@@ -25,10 +26,10 @@ use std::os::raw::c_char;
 
 // Android bindings
 
-use jni::JNIEnv;
 use jni::objects::{JClass, JString};
-use jni::sys::jstring;
 use jni::strings::JavaStr;
+use jni::sys::jstring;
+use jni::JNIEnv;
 use std::ops::Deref;
 
 const KG_PATH_PRE: &str = "ecdsa/keygen";
@@ -122,18 +123,23 @@ pub fn get_master_key(client_shim: &ClientShim) -> PrivateShare {
     PrivateShare { id, master_key }
 }
 
+/// # Safety
+///
+/// - This function should only be called with valid C pointers.
+/// - Arguments are accessed in arbitrary locations.
+/// - Strings should be null terminated array of bytes.
 #[no_mangle]
-pub extern "C" fn get_client_master_key(
+pub unsafe extern "C" fn get_client_master_key(
     c_endpoint: *const c_char,
     c_auth_token: *const c_char,
 ) -> *mut c_char {
-    let raw_endpoint = unsafe { CStr::from_ptr(c_endpoint) };
+    let raw_endpoint = CStr::from_ptr(c_endpoint);
     let endpoint = match raw_endpoint.to_str() {
         Ok(s) => s,
         Err(_) => panic!("Error while decoding raw endpoint"),
     };
 
-    let raw_auth_token = unsafe { CStr::from_ptr(c_auth_token) };
+    let raw_auth_token = CStr::from_ptr(c_auth_token);
     let auth_token = match raw_auth_token.to_str() {
         Ok(s) => s,
         Err(_) => panic!("Error while decoding auth token"),
@@ -148,16 +154,13 @@ pub extern "C" fn get_client_master_key(
         Err(_) => panic!("Error while performing keygen to endpoint {}", endpoint),
     };
 
-    CString::new(private_share_json.to_owned())
-        .unwrap()
-        .into_raw()
+    CString::new(private_share_json).unwrap().into_raw()
 }
 
-#[cfg(target_os="android")]
+#[cfg(target_os = "android")]
 #[no_mangle]
 #[allow(non_snake_case)]
-pub extern fn
-Java_com_zengo_components_kms_gotham_ECDSA_getClientMasterKey(
+pub extern "C" fn Java_com_zengo_components_kms_gotham_ECDSA_getClientMasterKey(
     env: JNIEnv,
     // this is the class that owns our
     // static method. Not going to be
@@ -167,34 +170,57 @@ Java_com_zengo_components_kms_gotham_ECDSA_getClientMasterKey(
     j_endpoint: JString,
     j_auth_token: JString,
 ) -> jstring {
-
     // Convert j_endpoint JString to &str
     let JavaStr_endpoint = match env.get_string(j_endpoint) {
         Ok(java_endpoint) => java_endpoint,
-        Err(e) => return env.new_string(format!("Error from Rust in getClientMasterKey: {}", e.to_string()))
-                                            .unwrap()
-                                            .into_inner()
+        Err(e) => {
+            return env
+                .new_string(format!(
+                    "Error from Rust in getClientMasterKey: {}",
+                    e.to_string()
+                ))
+                .unwrap()
+                .into_inner()
+        }
     };
 
     let endpoint = match JavaStr::deref(&JavaStr_endpoint).to_str() {
         Ok(endpoint) => endpoint,
-        Err(e) => return env.new_string(format!("Error from Rust in getClientMasterKey: {}", e.to_string()))
-                                            .unwrap()
-                                            .into_inner()
+        Err(e) => {
+            return env
+                .new_string(format!(
+                    "Error from Rust in getClientMasterKey: {}",
+                    e.to_string()
+                ))
+                .unwrap()
+                .into_inner()
+        }
     };
 
     // Convert j_auth_token JString to &str
-    let JavaStr_auth_token= match env.get_string(j_auth_token) {
+    let JavaStr_auth_token = match env.get_string(j_auth_token) {
         Ok(java_auth_token) => java_auth_token,
-        Err(e) => return env.new_string(format!("Error from Rust in getClientMasterKey: {}", e.to_string()))
-                                            .unwrap()
-                                            .into_inner()
+        Err(e) => {
+            return env
+                .new_string(format!(
+                    "Error from Rust in getClientMasterKey: {}",
+                    e.to_string()
+                ))
+                .unwrap()
+                .into_inner()
+        }
     };
     let auth_token = match JavaStr::deref(&JavaStr_auth_token).to_str() {
         Ok(auth_token) => auth_token,
-        Err(e) => return env.new_string(format!("Error from Rust in getClientMasterKey: {}", e.to_string()))
-                                            .unwrap()
-                                            .into_inner()
+        Err(e) => {
+            return env
+                .new_string(format!(
+                    "Error from Rust in getClientMasterKey: {}",
+                    e.to_string()
+                ))
+                .unwrap()
+                .into_inner()
+        }
     };
 
     let client_shim = ClientShim::new(endpoint.to_string(), Some(auth_token.to_string()));
@@ -203,12 +229,16 @@ Java_com_zengo_components_kms_gotham_ECDSA_getClientMasterKey(
 
     let private_share_json = match serde_json::to_string(&private_share) {
         Ok(share) => share.to_owned(),
-        Err(e) => return env.new_string(format!("Error from Rust in getClientMasterKey: {}", e.to_string()))
-            .unwrap()
-            .into_inner()
+        Err(e) => {
+            return env
+                .new_string(format!(
+                    "Error from Rust in getClientMasterKey: {}",
+                    e.to_string()
+                ))
+                .unwrap()
+                .into_inner()
+        }
     };
 
-    env.new_string(private_share_json)
-        .unwrap()
-        .into_inner()
+    env.new_string(private_share_json).unwrap().into_inner()
 }
