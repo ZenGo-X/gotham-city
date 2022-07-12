@@ -15,14 +15,18 @@ mod tests {
     use rocket::http::ContentType;
     use rocket::http::Header;
     use rocket::http::Status;
-    use rocket::local::Client;
+    use rocket::local::blocking::Client;
     use serde_json;
+    use std::collections::HashMap;
     use std::env;
-    use time::PreciseTime;
+    use std::time::Instant;
+    use zk_paillier::zkproofs::SALT_STRING;
 
     use curv::arithmetic::traits::Converter;
     use curv::cryptographic_primitives::twoparty::dh_key_exchange_variant_with_pok_comm::*;
+    use curv::elliptic::curves::secp256_k1::GE;
     use curv::BigInt;
+    use floating_duration::TimeFormat;
     use kms::chain_code::two_party as chain_code;
     use kms::ecdsa::two_party::*;
     use multi_party_ecdsa::protocols::two_party_ecdsa::lindell_2017::*;
@@ -33,16 +37,18 @@ mod tests {
         /*************** START: FIRST MESSAGE ***************/
         let start = PreciseTime::now();
 
-        let mut response = client
+        let response = client
             .post("/ecdsa/keygen/first")
             .header(ContentType::JSON)
             .dispatch();
         assert_eq!(response.status(), Status::Ok);
 
-        let end = PreciseTime::now();
-        println!("{} Network/Server: party1 first message", start.to(end));
+        println!(
+            "{} Network/Server: party1 first message",
+            TimeFormat(start.elapsed())
+        );
+        let res_body = response.into_string().unwrap();
 
-        let res_body = response.body_string().unwrap();
         let (id, kg_party_one_first_message): (String, party_one::KeyGenFirstMsg) =
             serde_json::from_str(&res_body).unwrap();
 
@@ -51,8 +57,10 @@ mod tests {
         let (kg_party_two_first_message, kg_ec_key_pair_party2) =
             MasterKey2::key_gen_first_message();
 
-        let end = PreciseTime::now();
-        println!("{} Client: party2 first message", start.to(end));
+        println!(
+            "{} Client: party2 first message",
+            TimeFormat(start.elapsed())
+        );
         /*************** END: FIRST MESSAGE ***************/
 
         /*************** START: SECOND MESSAGE ***************/
@@ -60,17 +68,19 @@ mod tests {
 
         let start = PreciseTime::now();
 
-        let mut response = client
+        let response = client
             .post(format!("/ecdsa/keygen/{}/second", id))
             .body(body)
             .header(ContentType::JSON)
             .dispatch();
         assert_eq!(response.status(), Status::Ok);
 
-        let end = PreciseTime::now();
-        println!("{} Network/Server: party1 second message", start.to(end));
+        println!(
+            "{} Network/Server: party1 second message",
+            TimeFormat(start.elapsed())
+        );
 
-        let res_body = response.body_string().unwrap();
+        let res_body = response.into_string().unwrap();
         let kg_party_one_second_message: party1::KeyGenParty1Message2 =
             serde_json::from_str(&res_body).unwrap();
 
@@ -82,11 +92,14 @@ mod tests {
         );
         assert!(key_gen_second_message.is_ok());
 
-        let end = PreciseTime::now();
-        println!("{} Client: party2 second message", start.to(end));
+        println!(
+            "{} Client: party2 second message",
+            TimeFormat(start.elapsed())
+        );
 
         let (party_two_second_message, party_two_paillier, party_two_pdl_chal) =
             key_gen_second_message.unwrap();
+
         /*************** END: SECOND MESSAGE ***************/
 
         /*************** START: THIRD MESSAGE ***************/
@@ -154,7 +167,7 @@ mod tests {
         /*************** START: CHAINCODE FIRST MESSAGE ***************/
         let start = PreciseTime::now();
 
-        let mut response = client
+        let response = client
             .post(format!("/ecdsa/keygen/{}/chaincode/first", id))
             .header(ContentType::JSON)
             .dispatch();
@@ -166,15 +179,18 @@ mod tests {
             start.to(end)
         );
 
-        let res_body = response.body_string().unwrap();
+        let res_body = response.into_string().unwrap();
         let cc_party_one_first_message: Party1FirstMessage =
             serde_json::from_str(&res_body).unwrap();
 
         let start = PreciseTime::now();
         let (cc_party_two_first_message, cc_ec_key_pair2) =
             chain_code::party2::ChainCode2::chain_code_first_message();
-        let end = PreciseTime::now();
-        println!("{} Client: party2 chain code first message", start.to(end));
+
+        println!(
+            "{} Client: party2 chain code first message",
+            TimeFormat(start.elapsed())
+        );
         /*************** END: CHAINCODE FIRST MESSAGE ***************/
 
         /*************** START: CHAINCODE SECOND MESSAGE ***************/
@@ -182,7 +198,7 @@ mod tests {
 
         let start = PreciseTime::now();
 
-        let mut response = client
+        let response = client
             .post(format!("/ecdsa/keygen/{}/chaincode/second", id))
             .body(body)
             .header(ContentType::JSON)
@@ -195,8 +211,8 @@ mod tests {
             start.to(end)
         );
 
-        let res_body = response.body_string().unwrap();
-        let cc_party_one_second_message: Party1SecondMessage =
+        let res_body = response.into_string().unwrap();
+        let cc_party_one_second_message: Party1SecondMessage<GE> =
             serde_json::from_str(&res_body).unwrap();
 
         let start = PreciseTime::now();
@@ -206,8 +222,10 @@ mod tests {
                 &cc_party_one_second_message,
             );
 
-        let end = PreciseTime::now();
-        println!("{} Client: party2 chain code second message", start.to(end));
+        println!(
+            "{} Client: party2 chain code second message",
+            TimeFormat(start.elapsed())
+        );
         /*************** END: CHAINCODE SECOND MESSAGE ***************/
 
         let start = PreciseTime::now();
@@ -217,8 +235,10 @@ mod tests {
         )
         .chain_code;
 
-        let end = PreciseTime::now();
-        println!("{} Client: party2 chain code second message", start.to(end));
+        println!(
+            "{} Client: party2 chain code second message",
+            TimeFormat(start.elapsed())
+        );
         /*************** END: CHAINCODE COMPUTE MESSAGE ***************/
 
         let end = PreciseTime::now();
@@ -258,7 +278,7 @@ mod tests {
 
         let start = PreciseTime::now();
 
-        let mut response = client
+        let response = client
             .post(format!("/ecdsa/sign/{}/first", id))
             .body(body)
             .header(ContentType::JSON)
@@ -271,12 +291,12 @@ mod tests {
             start.to(end)
         );
 
-        let res_body = response.body_string().unwrap();
+        let res_body = response.into_string().unwrap();
         let sign_party_one_first_message: party_one::EphKeyGenFirstMsg =
             serde_json::from_str(&res_body).unwrap();
 
-        let x_pos = BigInt::from(0);
-        let y_pos = BigInt::from(21);
+        let x_pos = BigInt::from(0u32);
+        let y_pos = BigInt::from(21u32);
 
         let child_party_two_master_key = master_key_2.get_child(vec![x_pos.clone(), y_pos.clone()]);
 
@@ -289,8 +309,10 @@ mod tests {
             &message,
         );
 
-        let end = PreciseTime::now();
-        println!("{} Client: party2 sign second message", start.to(end));
+        println!(
+            "{} Client: party2 sign second message",
+            TimeFormat(start.elapsed())
+        );
 
         let request: ecdsa::SignSecondMsgRequest = ecdsa::SignSecondMsgRequest {
             message,
@@ -303,7 +325,7 @@ mod tests {
 
         let start = PreciseTime::now();
 
-        let mut response = client
+        let response = client
             .post(format!("/ecdsa/sign/{}/second", id))
             .body(body)
             .header(ContentType::JSON)
@@ -316,7 +338,7 @@ mod tests {
             start.to(end)
         );
 
-        let res_body = response.body_string().unwrap();
+        let res_body = response.into_string().unwrap();
         let signature_recid: party_one::SignatureRecid = serde_json::from_str(&res_body).unwrap();
 
         signature_recid
@@ -332,11 +354,15 @@ mod tests {
 
         time_test!();
 
-        let client = Client::new(server::get_server()).expect("valid rocket instance");
+        let settings = HashMap::<String, String>::from([
+            ("db".to_string(), "local".to_string()),
+            ("db_name".to_string(), "KeyGenAndSign".to_string()),
+        ]);
+        let client = Client::tracked(server::get_server(settings)).expect("valid rocket instance");
 
         let (id, master_key_2): (String, MasterKey2) = key_gen(&client);
 
-        let message = BigInt::from(1234);
+        let message = BigInt::from(1234u32);
 
         let signature: party_one::SignatureRecid = sign(&client, id, master_key_2, message);
 
@@ -355,7 +381,14 @@ mod tests {
         env::set_var("issuer", "issuer");
         env::set_var("audience", "audience");
 
-        let client = Client::new(server::get_server()).expect("valid rocket instance");
+        let settings = HashMap::<String, String>::from([
+            ("db".to_string(), "local".to_string()),
+            (
+                "db_name".to_string(),
+                "AuthenticationTestInvalidToken".to_string(),
+            ),
+        ]);
+        let client = Client::tracked(server::get_server(settings)).expect("valid rocket instance");
 
         let auth_header = Header::new("Authorization", "Bearer a");
         let response = client
@@ -374,7 +407,14 @@ mod tests {
         env::set_var("issuer", "issuer");
         env::set_var("audience", "audience");
 
-        let client = Client::new(server::get_server()).expect("valid rocket instance");
+        let settings = HashMap::<String, String>::from([
+            ("db".to_string(), "local".to_string()),
+            (
+                "db_name".to_string(),
+                "AuthenticationTestExpiredToken".to_string(),
+            ),
+        ]);
+        let client = Client::tracked(server::get_server(settings)).expect("valid rocket instance");
 
         let token: String = "Bearer eyJraWQiOiJZeEdoUlhsTytZSWpjU2xWZFdVUFA1dHhWd\
                              FRSTTNmTndNZTN4QzVnXC9YZz0iLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJjNDAz\

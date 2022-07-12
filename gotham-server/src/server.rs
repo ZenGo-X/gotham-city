@@ -7,8 +7,7 @@
 // version 3 of the License, or (at your option) any later version.
 //
 
-use config;
-use rocket;
+use rocket::{self, Build};
 use rocket::{Request, Rocket};
 use rocksdb;
 
@@ -67,16 +66,16 @@ fn not_found(req: &Request) -> String {
     format!("Unknown route '{}'.", req.uri())
 }
 
-pub fn get_server() -> Rocket {
-    let settings = get_settings_as_map();
+pub fn get_server(settings: HashMap<String, String>) -> Rocket<Build> {
+    // let settings = get_settings_as_map();
     let db_config = Config {
         db: get_db(settings.clone()),
     };
 
-    let auth_config = AuthConfig::load(settings.clone());
+    let auth_config = AuthConfig::load(settings);
 
-    rocket::ignite()
-        .register(catchers![internal_error, not_found, bad_request])
+    rocket::Rocket::build()
+        .register("/", catchers![internal_error, not_found, bad_request])
         .mount(
             "/",
             routes![
@@ -132,6 +131,10 @@ fn get_db(settings: HashMap<String, String>) -> db::DB {
         .get("db")
         .unwrap_or(&"local".to_string())
         .to_uppercase();
+    let db_name = settings.get("db_name").unwrap_or(&"db".to_string()).clone();
+    if !db_name.chars().all(|e| char::is_ascii_alphanumeric(&e)) {
+        panic!("DB name is illegal, may only contain alphanumeric characters");
+    }
     let db_type = db_type_string.as_str();
     let env = settings
         .get("env")
@@ -143,7 +146,7 @@ fn get_db(settings: HashMap<String, String>) -> db::DB {
             let region_option = settings.get("aws_region");
             match region_option {
                 Some(s) => {
-                    let region_res = Region::from_str(&s);
+                    let region_res = Region::from_str(s);
                     match region_res {
                         Ok(region) => db::DB::AWS(DynamoDbClient::new(region), env),
                         Err(_e) => panic!("Set 'DB = AWS' but 'region' is not a valid value"),
@@ -152,6 +155,6 @@ fn get_db(settings: HashMap<String, String>) -> db::DB {
                 None => panic!("Set 'DB = AWS' but 'region' is empty"),
             }
         }
-        _ => db::DB::Local(rocksdb::DB::open_default("./db").unwrap()),
+        _ => db::DB::Local(rocksdb::DB::open_default(format!("./{}", db_name)).unwrap()),
     }
 }

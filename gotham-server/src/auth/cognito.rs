@@ -12,8 +12,8 @@ use super::PublicKey;
 use hex;
 use jwt::Algorithm;
 use rocket::http::Status;
+use rocket::outcome::Outcome;
 use rocket::request::{self, FromRequest, Request};
-use rocket::Outcome;
 use rocket::State;
 use serde_json;
 use std::collections::HashMap;
@@ -26,12 +26,12 @@ const ALGORITHM: Algorithm = Algorithm::RS256;
 const TOKEN_TYPE: &str = "Bearer";
 
 pub fn verify(
-    issuer: &String,
-    audience: &String,
-    region: &String,
-    pool_id: &String,
-    authorization_header: &String,
-) -> Result<Claims, ()> {
+    issuer: &str,
+    audience: &str,
+    region: &str,
+    pool_id: &str,
+    authorization_header: &str,
+) -> Option<Claims> {
     let mut header_parts = authorization_header.split_whitespace();
     let token_type = header_parts.next();
     assert_eq!(token_type, Some(TOKEN_TYPE));
@@ -39,24 +39,24 @@ pub fn verify(
     let token = header_parts.next().unwrap();
 
     let header = match decode_header_from_token(token.to_string()) {
-        Ok(h) => h,
-        Err(_) => return Err(()),
+        Some(h) => h,
+        None => return None,
     };
 
     let key_set_str: String = match get_jwt_to_pems(region, pool_id) {
         Ok(k) => k,
-        Err(_) => return Err(()),
+        Err(_) => return None,
     };
 
     let key_set: HashMap<String, PublicKey> = match serde_json::from_str(&key_set_str) {
         Ok(k) => k,
-        Err(_) => return Err(()),
+        Err(_) => return None,
     };
 
     let header_kid = header.kid.unwrap();
 
     if !key_set.contains_key(&header_kid) {
-        return Err(());
+        return None;
     }
 
     let key = key_set.get(&header_kid).unwrap();
@@ -67,7 +67,7 @@ pub fn verify(
     get_claims(issuer, audience, &token.to_string(), &secret, algorithms)
 }
 
-fn get_jwt_to_pems(region: &String, pool_id: &String) -> Result<String, ()> {
+fn get_jwt_to_pems(region: &str, pool_id: &str) -> Result<String, ()> {
     match Command::new("node")
         .arg("jwt-to-pems.js")
         .arg(format!("--region={}", region))
@@ -75,17 +75,21 @@ fn get_jwt_to_pems(region: &String, pool_id: &String) -> Result<String, ()> {
         .current_dir("../gotham-utilities/server/cognito")
         .output()
     {
-        Ok(o) => return Ok(String::from_utf8_lossy(&o.stdout).to_string()),
-        Err(_) => return Err(()),
-    };
+        Ok(o) => Ok(String::from_utf8_lossy(&o.stdout).to_string()),
+        Err(_) => Err(()),
+    }
 }
 
-impl<'a, 'r> FromRequest<'a, 'r> for Claims {
+#[rocket::async_trait]
+impl<'a> FromRequest<'a> for Claims {
     type Error = ();
 
-    fn from_request(request: &'a Request<'r>) -> request::Outcome<Claims, ()> {
+    async fn from_request(request: &'a Request<'_>) -> request::Outcome<Self, Self::Error> {
         let auths: Vec<_> = request.headers().get("Authorization").collect();
-        let config = request.guard::<State<AuthConfig>>()?;
+        let config = match request.guard::<&State<AuthConfig>>().await {
+            Outcome::Success(s) => s,
+            _ => return Outcome::Failure((Status::BadRequest, ())),
+        };
 
         if config.issuer.is_empty()
             && config.audience.is_empty()
@@ -114,8 +118,8 @@ impl<'a, 'r> FromRequest<'a, 'r> for Claims {
             &config.pool_id,
             &auths[0].to_string(),
         ) {
-            Ok(claim) => claim,
-            Err(_) => {
+            Some(claim) => claim,
+            None => {
                 error!("!!! Auth error: Unauthorized (401) !!!");
                 return Outcome::Failure((Status::Unauthorized, ()));
             }

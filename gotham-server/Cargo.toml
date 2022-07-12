@@ -16,14 +16,14 @@ name = "server_exec"
 path = "src/main.rs"
 
 [dependencies]
-rocket = { git = "https://github.com/SergioBenitez/Rocket.git", rev = "fc78eaf8363f1d3346ed9f51a6168f4b55152e8a" }
-rocket_contrib = { git = "https://github.com/SergioBenitez/Rocket.git", rev = "fc78eaf8363f1d3346ed9f51a6168f4b55152e8a" }
-rocksdb = "0.10.1"
+rocket = { version = "0.5.0-rc.1", default-features = false, features=["json"]}
+# rocket_contrib = { version = "0.4.2", default-features = false, features = ["json"] }
+rocksdb = "0.17.0"
 serde = "1.0"
 serde_json = "1.0"
 serde_derive = "1.0"
-rusoto_dynamodb = "0.36.0"
-rusoto_core = "0.36.0"
+rusoto_dynamodb = "0.47.0"
+rusoto_core = "0.47.0"
 time-test = "0.2.1"
 chrono = "0.4.19"
 env_logger = { version = "0.8.1", default-features = false }
@@ -32,8 +32,8 @@ time = "0.1.42"
 config = "0.9.2"
 uuid = { version = "0.7", features = ["v4"] }
 error-chain = "0.12.0"
-failure = { version = "0.1.8", git = "https://github.com/ZenGo-X/failure" }
-jsonwebtoken = "6.0.1"
+failure = "0.1.5"
+jsonwebtoken = "8.0.1"
 rust-crypto = "0.2"
 hex = "0.3.2"
 
@@ -64,6 +64,8 @@ features =  ["ec_secp256k1"]
 
 [dependencies.serde_dynamodb]
 git = "https://github.com/KZen-networks/serde_dynamodb"
+features = ["native-tls"]
+default-features = false
 
 [patch.crates-io]
 rust-gmp = { version = "0.5.0", features = ["serde_support"], git = "https://github.com/KZen-networks/rust-gmp" }
