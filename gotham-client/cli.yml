@@ -7,6 +7,13 @@ args:
       short: v
       multiple: true
       help: Sets the level of verbosity
+  - electrum-address:
+      short: e
+      multiple: false
+      required: true
+      value_name: ADDRESS
+      takes_value: true
+      help: Address of an electrum address to use. In the format of a sockaddress (url:port)
 subcommands:
   - create-wallet:
       about: Create an MPC wallet

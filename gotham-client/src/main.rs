@@ -14,13 +14,22 @@ use clap::App;
 use client_lib::ClientShim;
 use client_lib::escrow;
 use client_lib::wallet;
+<<<<<<< HEAD
 use time::PreciseTime;
+=======
+use client_lib::wallet::ElectrumxBalanceFetcher;
+use std::time::Instant;
+use floating_duration::TimeFormat;
+>>>>>>> 4f61f3c (support fetch mocking and electrum address from cli)
 
 use std::collections::HashMap;
 
 fn main() {
     let yaml = load_yaml!("../cli.yml");
     let matches = App::from_yaml(yaml).get_matches();
+    let electrum_address = matches.value_of("electrum-address").expect("Missing elecrtrum-address");
+
+    let mut fetcher = ElectrumxBalanceFetcher::new(&electrum_address);
 
     let mut settings = config::Config::default();
     settings
@@ -54,7 +63,7 @@ fn main() {
             println!("Network: [{}], Address: [{}]", network, address.to_string());
             wallet.save();
         } else if matches.is_present("get-balance") {
-            let balance = wallet.get_balance();
+            let balance = wallet.get_balance(&mut fetcher);
             println!(
                 "Network: [{}], Balance: [balance: {}, pending: {}]",
                 network, balance.confirmed, balance.unconfirmed
@@ -115,6 +124,7 @@ fn main() {
                     to.to_string(),
                     amount_btc.to_string().parse::<f32>().unwrap(),
                     &client_shim,
+                    &mut fetcher
                 );
                 wallet.save();
                 println!(
