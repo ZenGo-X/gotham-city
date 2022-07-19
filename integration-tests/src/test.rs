@@ -40,23 +40,6 @@ mod tests {
     }
 
     #[rocket::async_test]
-    async fn test_schnorr() {
-        rocket::tokio::spawn(spawn_server(8001, "schnorr"));
-
-        let client_shim = ClientShim::new("http://localhost:8001".to_string(), None);
-
-        let five_seconds = time::Duration::from_millis(5000);
-        thread::sleep(five_seconds);
-
-        let share: schnorr::Share = schnorr::generate_key(&client_shim).unwrap();
-
-        let msg: BigInt = BigInt::from(1234); // arbitrary message
-        let signature = schnorr::sign(&client_shim, msg, &share).expect("Schnorr signature failed");
-
-        println!("signature = (e: {:?}, s: {:?})", signature.e, signature.s);
-    }
-
-    #[rocket::async_test]
     async fn test_eddsa() {
         rocket::tokio::spawn(spawn_server(8002, "eddsa"));
 
@@ -67,14 +50,13 @@ mod tests {
 
         let (key_pair, key_agg, id) = client_lib::eddsa::generate_key(&client_shim).unwrap();
 
-        let message = BigInt::from(1234);
-        let signature = client_lib::eddsa::sign(&client_shim, message, &key_pair, &key_agg, &id)
+        let message = [74u8, 24u8, 37u8, 20u8, 12u8, 3u8, 14u8];
+        let signature = client_lib::eddsa::sign(&client_shim, &message, &key_pair, &key_agg, &id)
             .expect("EdDSA signature failed");
 
         println!(
-            "signature = (R: {}, s: {})",
-            signature.R.bytes_compressed_to_big_int().to_hex(),
-            signature.s.to_big_int().to_hex()
+            "signature = {:?}",
+            signature
         );
     }
 

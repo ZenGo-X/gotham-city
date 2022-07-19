@@ -8,43 +8,32 @@
 //
 
 use super::super::utilities::error_to_c_string;
+use super::super::utilities::requests;
+use super::super::ClientShim;
 use super::super::Result;
-use crate::ClientShim;
 
 // iOS bindings
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
 
-// Android bindings
-use jni::objects::{JClass, JString};
-use jni::strings::JavaStr;
-use jni::sys::jstring;
-use jni::JNIEnv;
-use std::ops::Deref;
-
-use curv::elliptic::curves::ed25519::FE;
-use curv::BigInt;
-use multi_party_ed25519::protocols::aggsig::*;
-use two_party_ecdsa::curv::elliptic::curves::ed25519::{FE};
-use two_party_ecdsa::curv::BigInt;
-use multi_party_eddsa::protocols::aggsig::*;
+use two_party_musig2_eddsa::{
+    generate_partial_nonces, AggPublicKeyAndMusigCoeff, KeyPair, PartialSignature,
+    PublicPartialNonces, Signature,
+};
 
 #[allow(non_snake_case)]
 pub fn sign(
     client_shim: &ClientShim,
-    message: BigInt,
-    party2_key_pair: &KeyPair,
-    key_agg: &KeyAgg,
+    message: &[u8],
+    client_keypair: &KeyPair,
+    agg_pubkey: &AggPublicKeyAndMusigCoeff,
     id: &str,
 ) -> Result<Signature> {
-    // round 1: send commitments to ephemeral public keys
-    let (party2_ephemeral_key, party2_sign_first_msg, party2_sign_second_msg) =
-        Signature::create_ephemeral_key_and_commit(
-            party2_key_pair,
-            BigInt::to_bytes(&message).as_slice(),
-        );
+    // Generate partial nonces.
+    let (private_nonces, public_nonces) = generate_partial_nonces(client_keypair, Some(message));
 
-    let party1_sign_first_msg: SignFirstMsg = match requests::postb(
+    // Send your public nonces to the server and recv their nonces.
+    let server_nonces: PublicPartialNonces = match requests::postb(
         client_shim,
         &format!("eddsa/sign/{}/first", id),
         &(party2_sign_first_msg, message.clone()),
@@ -154,19 +143,19 @@ pub extern "C" fn sign_message_eddsa(
 
     let client_shim = ClientShim::new(endpoint.to_string(), Some(auth_token.to_string()));
 
-    let message: BigInt = serde_json::from_str(message_hex).unwrap();
+    let message: Vec<u8> = serde_json::from_str(message_hex).unwrap();
 
-    let mut key_pair: KeyPair = serde_json::from_str(key_pair_json).unwrap();
+    let key_pair: KeyPair = serde_json::from_str(key_pair_json).unwrap();
 
-    let mut key_agg: KeyAgg = serde_json::from_str(key_agg_json).unwrap();
+    let key_agg: AggPublicKeyAndMusigCoeff = serde_json::from_str(key_agg_json).unwrap();
 
-    let eight: FE = ECScalar::from(&BigInt::from(8));
-    let eight_inverse: FE = eight.invert();
-
-    key_pair.public_key = key_pair.public_key * eight_inverse;
-    key_agg.apk = key_agg.apk * eight_inverse;
-
-    let sig = match sign(&client_shim, message, &key_pair, &key_agg, &id.to_string()) {
+    let sig = match sign(
+        &client_shim,
+        &message[..],
+        &key_pair,
+        &key_agg,
+        &id.to_string(),
+    ) {
         Ok(s) => s,
         Err(e) => {
             return error_to_c_string(format_err!(

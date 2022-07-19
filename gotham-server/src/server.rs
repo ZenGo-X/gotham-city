@@ -93,9 +93,9 @@ pub fn get_server(settings: HashMap<String, String>) -> Rocket<Build> {
                 // schnorr::keygen_second,
                 // schnorr::keygen_third,
                 // schnorr::sign,
-                // eddsa::keygen,
-                // eddsa::sign_first,
-                // eddsa::sign_second,
+                eddsa::keygen,
+                eddsa::sign_first,
+                eddsa::sign_second,
             ],
         )
         .manage(db_config)
