@@ -1,0 +1,6 @@
+[workspace]
+members = [
+    "gotham-server",
+    "gotham-client",
+    "integration-tests",
+]

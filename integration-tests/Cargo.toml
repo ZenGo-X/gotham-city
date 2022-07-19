@@ -1,24 +1,16 @@
 [package]
 name = "tests"
-version = "0.1.0"
-authors = ["oleiba <oded@kzencorp.com>"]
-edition = "2018"
+version = "0.1.2"
+authors = []
+edition = "2021"
 
 [dependencies]
-serde = "1.0"
-serde_json = "1.0"
-serde_derive = "1.0"
-time-test = "0.2.1"
-log = "0.4.11"
-time = "*"
 rocket = { version="0.5.0-rc.1", default-features=false, features=["json"]}
 secp256k1 = "0.20"
 ed25519-dalek = "1.0"
-two-party-ecdsa = { git = "https://github.com/ZenGo-X/two-party-ecdsa.git" }
 rand = "0.8"
+two-party-ecdsa = { git = "https://github.com/ZenGo-X/two-party-ecdsa.git" }
+gotham-server = { path = "../gotham-server" }
+gotham-client = { path = "../gotham-client" }
 
-[dependencies.gotham-server]
-path = "../gotham-server"
 
-[dependencies.gotham-client]
-path = "../gotham-client"
