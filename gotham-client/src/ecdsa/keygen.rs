@@ -11,14 +11,15 @@ use floating_duration::TimeFormat;
 use serde_json;
 use std::time::Instant;
 
-use curv::cryptographic_primitives::twoparty::dh_key_exchange_variant_with_pok_comm::*;
+use two_party_ecdsa::curv::cryptographic_primitives::twoparty::dh_key_exchange_variant_with_pok_comm::*;
+
 use kms::chain_code::two_party as chain_code;
 use kms::ecdsa::two_party::*;
-use multi_party_ecdsa::protocols::two_party_ecdsa::lindell_2017::*;
+use two_party_ecdsa::*;
 
 use super::super::utilities::requests;
-use super::super::ClientShim;
 use super::types::PrivateShare;
+use crate::ClientShim;
 
 // iOS bindings
 use std::ffi::{CStr, CString};

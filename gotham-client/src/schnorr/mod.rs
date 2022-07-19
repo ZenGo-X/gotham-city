@@ -3,6 +3,7 @@ use super::ClientShim;
 use super::Result;
 use multi_party_schnorr::protocols::thresholdsig::zilliqa_schnorr::*;
 pub use multi_party_schnorr::protocols::thresholdsig::zilliqa_schnorr::{Share, Signature};
+use two_party_ecdsa::curv::elliptic::curves::secp256_k1::GE;
 
 const PREFIX: &str = "schnorr";
 const PARTY1_INDEX: usize = 1; // server

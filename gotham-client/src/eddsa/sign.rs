@@ -8,9 +8,8 @@
 //
 
 use super::super::utilities::error_to_c_string;
-use super::super::utilities::requests;
-use super::super::ClientShim;
 use super::super::Result;
+use crate::ClientShim;
 
 // iOS bindings
 use std::ffi::{CStr, CString};
@@ -26,6 +25,9 @@ use std::ops::Deref;
 use curv::elliptic::curves::ed25519::FE;
 use curv::BigInt;
 use multi_party_ed25519::protocols::aggsig::*;
+use two_party_ecdsa::curv::elliptic::curves::ed25519::{FE};
+use two_party_ecdsa::curv::BigInt;
+use multi_party_eddsa::protocols::aggsig::*;
 
 #[allow(non_snake_case)]
 pub fn sign(

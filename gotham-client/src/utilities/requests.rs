@@ -6,12 +6,14 @@
 // License as published by the Free Software Foundation, either
 // version 3 of the License, or (at your option) any later version.
 //
+use crate::ClientShim;
+use floating_duration::TimeFormat;
 use serde;
-use time::PreciseTime;
-use super::super::ClientShim;
+use std::time::Instant;
 
 pub fn post<V>(client_shim: &ClientShim, path: &str) -> Option<V>
-    where V: serde::de::DeserializeOwned
+where
+    V: serde::de::DeserializeOwned,
 {
     _postb(client_shim, path, "{}")
 }
@@ -19,15 +21,15 @@ pub fn post<V>(client_shim: &ClientShim, path: &str) -> Option<V>
 pub fn postb<T, V>(client_shim: &ClientShim, path: &str, body: T) -> Option<V>
 where
     T: serde::ser::Serialize,
-    V: serde::de::DeserializeOwned
+    V: serde::de::DeserializeOwned,
 {
     _postb(client_shim, path, body)
 }
 
 fn _postb<T, V>(client_shim: &ClientShim, path: &str, body: T) -> Option<V>
-    where
-        T: serde::ser::Serialize,
-        V: serde::de::DeserializeOwned
+where
+    T: serde::ser::Serialize,
+    V: serde::de::DeserializeOwned,
 {
     let start = PreciseTime::now();
 
@@ -47,7 +49,7 @@ fn _postb<T, V>(client_shim: &ClientShim, path: &str, body: T) -> Option<V>
 
     let value = match res {
         Ok(mut v) => v.text().unwrap(),
-        Err(_) => return None
+        Err(_) => return None,
     };
 
     Some(serde_json::from_str(value.as_str()).unwrap())
