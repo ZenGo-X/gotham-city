@@ -8,7 +8,6 @@
 //
 
 pub mod ecdsa;
-pub mod eddsa;
 pub mod escrow;
 
 mod utilities;

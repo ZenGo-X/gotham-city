@@ -43,7 +43,7 @@ fn key_gen(client: &Client) -> (String, MasterKey2) {
     let (id, kg_party_one_first_message): (String, party_one::KeyGenFirstMsg) =
         serde_json::from_str(&res_body).unwrap();
 
-    let start = PreciseTime::now();
+    let start = Instant::now();
 
     let (kg_party_two_first_message, kg_ec_key_pair_party2) = MasterKey2::key_gen_first_message();
 
@@ -56,7 +56,7 @@ fn key_gen(client: &Client) -> (String, MasterKey2) {
     /*************** START: SECOND MESSAGE ***************/
     let body = serde_json::to_string(&kg_party_two_first_message.d_log_proof).unwrap();
 
-    let start = PreciseTime::now();
+    let start = Instant::now();
 
     let response = client
         .post(format!("/ecdsa/keygen/{}/second", id))
@@ -74,7 +74,7 @@ fn key_gen(client: &Client) -> (String, MasterKey2) {
     let kg_party_one_second_message: party1::KeyGenParty1Message2 =
         serde_json::from_str(&res_body).unwrap();
 
-    let start = PreciseTime::now();
+    let start = Instant::now();
 
     let key_gen_second_message = MasterKey2::key_gen_second_message(
         &kg_party_one_first_message,
@@ -95,28 +95,32 @@ fn key_gen(client: &Client) -> (String, MasterKey2) {
     /*************** START: THIRD MESSAGE ***************/
     let body = serde_json::to_string(&party_two_second_message.pdl_first_message).unwrap();
 
-    let start = PreciseTime::now();
+    let start = Instant::now();
 
-    let mut response = client
+    let response = client
         .post(format!("/ecdsa/keygen/{}/third", id))
         .body(body)
         .header(ContentType::JSON)
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
 
-    let end = PreciseTime::now();
-    println!("{} Network/Server: party1 third message", start.to(end));
+    println!(
+        "{} Network/Server: party1 third message",
+        TimeFormat(start.elapsed())
+    );
 
-    let res_body = response.body_string().unwrap();
+    let res_body = response.into_string().unwrap();
     let party_one_third_message: party_one::PDLFirstMessage =
         serde_json::from_str(&res_body).unwrap();
 
-    let start = PreciseTime::now();
+    let start = Instant::now();
 
     let pdl_decom_party2 = MasterKey2::key_gen_third_message(&party_two_pdl_chal);
 
-    let end = PreciseTime::now();
-    println!("{} Client: party2 third message", start.to(end));
+    println!(
+        "{} Client: party2 third message",
+        TimeFormat(start.elapsed())
+    );
     /*************** END: THIRD MESSAGE ***************/
 
     /*************** START: FOURTH MESSAGE ***************/
@@ -125,23 +129,25 @@ fn key_gen(client: &Client) -> (String, MasterKey2) {
     let request = party_2_pdl_second_message;
     let body = serde_json::to_string(&request).unwrap();
 
-    let start = PreciseTime::now();
+    let start = Instant::now();
 
-    let mut response = client
+    let response = client
         .post(format!("/ecdsa/keygen/{}/fourth", id))
         .body(body)
         .header(ContentType::JSON)
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
 
-    let end = PreciseTime::now();
-    println!("{} Network/Server: party1 fourth message", start.to(end));
+    println!(
+        "{} Network/Server: party1 fourth message",
+        TimeFormat(start.elapsed())
+    );
 
-    let res_body = response.body_string().unwrap();
+    let res_body = response.into_string().unwrap();
     let party_one_pdl_second_message: party_one::PDLSecondMessage =
         serde_json::from_str(&res_body).unwrap();
 
-    let start = PreciseTime::now();
+    let start = Instant::now();
 
     MasterKey2::key_gen_fourth_message(
         &party_two_pdl_chal,
@@ -150,12 +156,14 @@ fn key_gen(client: &Client) -> (String, MasterKey2) {
     )
     .expect("pdl error party1");
 
-    let end = PreciseTime::now();
-    println!("{} Client: party2 fourth message", start.to(end));
+    println!(
+        "{} Client: party2 fourth message",
+        TimeFormat(start.elapsed())
+    );
     /*************** END: FOURTH MESSAGE ***************/
 
     /*************** START: CHAINCODE FIRST MESSAGE ***************/
-    let start = PreciseTime::now();
+    let start = Instant::now();
 
     let response = client
         .post(format!("/ecdsa/keygen/{}/chaincode/first", id))
@@ -163,16 +171,15 @@ fn key_gen(client: &Client) -> (String, MasterKey2) {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
 
-    let end = PreciseTime::now();
     println!(
         "{} Network/Server: party1 chain code first message",
-        start.to(end)
+        TimeFormat(start.elapsed())
     );
 
     let res_body = response.into_string().unwrap();
     let cc_party_one_first_message: Party1FirstMessage = serde_json::from_str(&res_body).unwrap();
 
-    let start = PreciseTime::now();
+    let start = Instant::now();
     let (cc_party_two_first_message, cc_ec_key_pair2) =
         chain_code::party2::ChainCode2::chain_code_first_message();
 
@@ -185,7 +192,7 @@ fn key_gen(client: &Client) -> (String, MasterKey2) {
     /*************** START: CHAINCODE SECOND MESSAGE ***************/
     let body = serde_json::to_string(&cc_party_two_first_message.d_log_proof).unwrap();
 
-    let start = PreciseTime::now();
+    let start = Instant::now();
 
     let response = client
         .post(format!("/ecdsa/keygen/{}/chaincode/second", id))
@@ -194,16 +201,15 @@ fn key_gen(client: &Client) -> (String, MasterKey2) {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
 
-    let end = PreciseTime::now();
     println!(
         "{} Network/Server: party1 chain code second message",
-        start.to(end)
+        TimeFormat(start.elapsed())
     );
 
     let res_body = response.into_string().unwrap();
     let cc_party_one_second_message: Party1SecondMessage = serde_json::from_str(&res_body).unwrap();
 
-    let start = PreciseTime::now();
+    let start = Instant::now();
     let _cc_party_two_second_message = chain_code::party2::ChainCode2::chain_code_second_message(
         &cc_party_one_first_message,
         &cc_party_one_second_message,
@@ -215,7 +221,7 @@ fn key_gen(client: &Client) -> (String, MasterKey2) {
     );
     /*************** END: CHAINCODE SECOND MESSAGE ***************/
 
-    let start = PreciseTime::now();
+    let start = Instant::now();
     let party2_cc = chain_code::party2::ChainCode2::compute_chain_code(
         &cc_ec_key_pair2,
         &cc_party_one_second_message.comm_witness.public_share,
@@ -228,10 +234,12 @@ fn key_gen(client: &Client) -> (String, MasterKey2) {
     );
     /*************** END: CHAINCODE COMPUTE MESSAGE ***************/
 
-    let end = PreciseTime::now();
-    println!("{} Network/Server: party1 master key", start.to(end));
+    println!(
+        "{} Network/Server: party1 master key",
+        TimeFormat(start.elapsed())
+    );
 
-    let start = PreciseTime::now();
+    let start = Instant::now();
     let party_two_master_key = MasterKey2::set_master_key(
         &party2_cc,
         &kg_ec_key_pair_party2,
@@ -242,8 +250,7 @@ fn key_gen(client: &Client) -> (String, MasterKey2) {
         &party_two_paillier,
     );
 
-    let end = PreciseTime::now();
-    println!("{} Client: party2 master_key", start.to(end));
+    println!("{} Client: party2 master_key", TimeFormat(start.elapsed()));
     /*************** END: MASTER KEYS MESSAGE ***************/
 
     (id, party_two_master_key)
@@ -263,7 +270,7 @@ fn sign(
 
     let body = serde_json::to_string(&request).unwrap();
 
-    let start = PreciseTime::now();
+    let start = Instant::now();
 
     let response = client
         .post(format!("/ecdsa/sign/{}/first", id))
@@ -272,10 +279,9 @@ fn sign(
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
 
-    let end = PreciseTime::now();
     println!(
         "{} Network/Server: party1 sign first message",
-        start.to(end)
+        TimeFormat(start.elapsed())
     );
 
     let res_body = response.into_string().unwrap();
@@ -287,7 +293,7 @@ fn sign(
 
     let child_party_two_master_key = master_key_2.get_child(vec![x_pos.clone(), y_pos.clone()]);
 
-    let start = PreciseTime::now();
+    let start = Instant::now();
 
     let party_two_sign_message = child_party_two_master_key.sign_second_message(
         &eph_ec_key_pair_party2,
@@ -310,7 +316,7 @@ fn sign(
 
     let body = serde_json::to_string(&request).unwrap();
 
-    let start = PreciseTime::now();
+    let start = Instant::now();
 
     let response = client
         .post(format!("/ecdsa/sign/{}/second", id))
@@ -319,10 +325,9 @@ fn sign(
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
 
-    let end = PreciseTime::now();
     println!(
         "{} Network/Server: party1 sign second message",
-        start.to(end)
+        TimeFormat(start.elapsed())
     );
 
     let res_body = response.into_string().unwrap();

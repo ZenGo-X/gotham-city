@@ -5,6 +5,7 @@ use rusoto_dynamodb::{
 };
 use serde::{self, Deserialize, Serialize};
 
+use log::{debug, error};
 use std::collections::HashMap;
 
 const CUSTOMER_ID_IDENTIFIER: &str = "customerId";
@@ -104,12 +105,8 @@ where
                     serde_dynamodb::from_hashmap(attributes_map);
 
                 match raw_item {
-                    Ok(s) => {
-                        Ok(Some(s))
-                    }
-                    Err(_e) => {
-                        Ok(None)
-                    }
+                    Ok(s) => Ok(Some(s)),
+                    Err(_e) => Ok(None),
                 }
             }
         },

@@ -8,6 +8,7 @@
 // version 3 of the License, or (at your option) any later version.
 //
 
+use rusoto_dynamodb::DynamoDb;
 use two_party_ecdsa::curv::cryptographic_primitives::proofs::sigma_dlog::*;
 use two_party_ecdsa::curv::cryptographic_primitives::twoparty::dh_key_exchange_variant_with_pok_comm::{
     CommWitness, EcKeyPair, Party1FirstMessage, Party1SecondMessage,
@@ -20,6 +21,9 @@ use rocket::{State, post, serde::json::Json};
 use uuid::Uuid;
 use serde::{Serialize, Deserialize};
 use failure::format_err;
+use log::{warn,error};
+use rusoto_dynamodb::{QueryInput,AttributeValue};
+use std::collections::HashMap;
 
 use crate::{auth::jwt::Claims, storage::db, Config};
 

@@ -33,7 +33,7 @@ where
     T: serde::ser::Serialize,
     V: serde::de::DeserializeOwned,
 {
-    let start = PreciseTime::now();
+    let start = Instant::now();
 
     let mut b = client_shim
         .client
@@ -45,9 +45,7 @@ where
 
     let res = b.json(&body).send();
 
-    let end = PreciseTime::now();
-
-    info!("(req {}, took: {:?})", path, start.to(end));
+    info!("(req {}, took: {:?})", path, TimeFormat(start.elapsed()));
 
     let value = match res {
         Ok(mut v) => v.text().unwrap(),

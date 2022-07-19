@@ -32,7 +32,7 @@ use std::ops::Deref;
 const KG_PATH_PRE: &str = "ecdsa/keygen";
 
 pub fn get_master_key(client_shim: &ClientShim) -> PrivateShare {
-    let start = PreciseTime::now();
+    let start = Instant::now();
 
     let (id, kg_party_one_first_message): (String, party_one::KeyGenFirstMsg) =
         requests::post(client_shim, &format!("{}/first", KG_PATH_PRE)).unwrap();
@@ -114,8 +114,7 @@ pub fn get_master_key(client_shim: &ClientShim) -> PrivateShare {
         &party_two_paillier,
     );
 
-    let end = PreciseTime::now();
-    println!("(id: {}) Took: {:?}", id, start.to(end));
+    println!("(id: {}) Took: {:?}", id, TimeFormat(start.elapsed()));
 
     PrivateShare { id, master_key }
 }

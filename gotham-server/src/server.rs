@@ -7,6 +7,7 @@
 // version 3 of the License, or (at your option) any later version.
 //
 
+use log::info;
 use rocket::{self, catch, catchers, routes, Build, Request, Rocket};
 use rusoto_core::Region;
 use rusoto_dynamodb::DynamoDbClient;
@@ -85,9 +86,6 @@ pub fn get_server(settings: HashMap<String, String>) -> Rocket<Build> {
                 crate::routes::ecdsa::sign_first,
                 crate::routes::ecdsa::sign_second,
                 crate::routes::ecdsa::recover,
-                crate::routes::eddsa::keygen,
-                crate::routes::eddsa::sign_first,
-                crate::routes::eddsa::sign_second,
             ],
         )
         .manage(db_config)
