@@ -6,10 +6,12 @@
 // License as published by the Free Software Foundation, either
 // version 3 of the License, or (at your option) any later version.
 //
-use crate::ClientShim;
 use floating_duration::TimeFormat;
-use serde;
+use log::info;
+
 use std::time::Instant;
+
+use crate::ClientShim;
 
 pub fn post<V>(client_shim: &ClientShim, path: &str) -> Option<V>
 where

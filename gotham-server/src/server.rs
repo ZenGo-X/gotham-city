@@ -7,16 +7,12 @@
 // version 3 of the License, or (at your option) any later version.
 //
 
-use rocket::{self, Build};
-use rocket::{Request, Rocket};
-use rocksdb;
-
+use rocket::{self, catch, catchers, routes, Build, Request, Rocket};
 use rusoto_core::Region;
 use rusoto_dynamodb::DynamoDbClient;
+use serde::Deserialize;
 
-use super::routes::*;
-use super::storage::db;
-use super::Config;
+use super::{storage::db, Config};
 
 use std::collections::HashMap;
 use std::str::FromStr;
@@ -79,23 +75,19 @@ pub fn get_server(settings: HashMap<String, String>) -> Rocket<Build> {
         .mount(
             "/",
             routes![
-                ping::ping,
-                ecdsa::first_message,
-                ecdsa::second_message,
-                ecdsa::third_message,
-                ecdsa::fourth_message,
-                ecdsa::chain_code_first_message,
-                ecdsa::chain_code_second_message,
-                ecdsa::sign_first,
-                ecdsa::sign_second,
-                ecdsa::recover,
-                // schnorr::keygen_first,
-                // schnorr::keygen_second,
-                // schnorr::keygen_third,
-                // schnorr::sign,
-                eddsa::keygen,
-                eddsa::sign_first,
-                eddsa::sign_second,
+                crate::routes::ping::ping,
+                crate::routes::ecdsa::first_message,
+                crate::routes::ecdsa::second_message,
+                crate::routes::ecdsa::third_message,
+                crate::routes::ecdsa::fourth_message,
+                crate::routes::ecdsa::chain_code_first_message,
+                crate::routes::ecdsa::chain_code_second_message,
+                crate::routes::ecdsa::sign_first,
+                crate::routes::ecdsa::sign_second,
+                crate::routes::ecdsa::recover,
+                crate::routes::eddsa::keygen,
+                crate::routes::eddsa::sign_first,
+                crate::routes::eddsa::sign_second,
             ],
         )
         .manage(db_config)

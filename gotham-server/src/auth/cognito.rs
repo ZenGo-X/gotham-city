@@ -9,15 +9,12 @@
 
 use super::jwt::{decode_header_from_token, get_claims, Claims};
 use super::PublicKey;
-use hex;
-use jwt::Algorithm;
-use rocket::http::Status;
-use rocket::outcome::Outcome;
+use jsonwebtoken::Algorithm;
+use log::{debug, error};
 use rocket::request::{self, FromRequest, Request};
-use rocket::State;
-use serde_json;
-use std::collections::HashMap;
-use std::process::Command;
+use rocket::{http::Status, outcome::Outcome, State};
+
+use std::{collections::HashMap, process::Command};
 
 use super::super::server::AuthConfig;
 use super::passthrough;
@@ -64,7 +61,7 @@ fn verify(
     let secret = hex::decode(&key.der).unwrap();
     let algorithms: Vec<Algorithm> = vec![ALGORITHM];
 
-    get_claims(issuer, audience, &token.to_string(), &secret, algorithms)
+    get_claims(issuer, audience, token, &secret, algorithms)
 }
 
 fn get_jwt_to_pems(region: &str, pool_id: &str) -> Result<String, ()> {
@@ -116,7 +113,7 @@ impl<'a> FromRequest<'a> for Claims {
             &config.audience,
             &config.region,
             &config.pool_id,
-            &auths[0].to_string(),
+            auths[0],
         ) {
             Some(claim) => claim,
             None => {
@@ -131,24 +128,15 @@ impl<'a> FromRequest<'a> for Claims {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
-    const ISSUER: &str = "issuer";
-    const AUDIENCE: &str = "audience";
-    const REGION: &str = "region";
-    const POOL_ID: &str = "pool_id";
-
+    use super::verify;
     #[test]
     pub fn get_user_id_test() {
-        let authorization_header = "Bearer .a.b-c-d-e-f-g-h-i".to_string();
+        let authorization_header = "Bearer .a.b-c-d-e-f-g-h-i";
+        let issuer = "issuer";
+        let audience = "audience";
+        let region = "region";
+        let pool_id = "pool_id";
 
-        assert!(verify(
-            &ISSUER.to_string(),
-            &AUDIENCE.to_string(),
-            &REGION.to_string(),
-            &POOL_ID.to_string(),
-            &authorization_header
-        )
-        .is_none());
+        assert!(verify(issuer, audience, region, pool_id, authorization_header).is_none());
     }
 }

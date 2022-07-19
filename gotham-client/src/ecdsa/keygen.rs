@@ -8,22 +8,18 @@
 //
 
 use floating_duration::TimeFormat;
-use serde_json;
-use std::time::Instant;
 
 use two_party_ecdsa::curv::cryptographic_primitives::twoparty::dh_key_exchange_variant_with_pok_comm::*;
-
+use two_party_ecdsa::party_one;
 use kms::chain_code::two_party as chain_code;
-use kms::ecdsa::two_party::*;
-use two_party_ecdsa::*;
-
-use super::super::utilities::requests;
-use super::types::PrivateShare;
-use crate::ClientShim;
-
+use kms::ecdsa::two_party::{MasterKey2, party1};
 // iOS bindings
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
+use std::time::Instant;
+
+use super::types::PrivateShare;
+use crate::{utilities::requests, ClientShim};
 
 // Android bindings
 

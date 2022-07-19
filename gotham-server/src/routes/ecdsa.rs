@@ -12,21 +12,18 @@ use two_party_ecdsa::curv::cryptographic_primitives::proofs::sigma_dlog::*;
 use two_party_ecdsa::curv::cryptographic_primitives::twoparty::dh_key_exchange_variant_with_pok_comm::{
     CommWitness, EcKeyPair, Party1FirstMessage, Party1SecondMessage,
 };
-use two_party_ecdsa::curv::elliptic::curves::secp256_k1::GE;
-use two_party_ecdsa::curv::BigInt;
+use two_party_ecdsa::curv::{elliptic::curves::secp256_k1::GE, BigInt};
+use two_party_ecdsa::{party_one, party_two};
+use kms::ecdsa::two_party::{party1, party2, MasterKey1};
 use kms::chain_code::two_party as chain_code;
-use kms::ecdsa::two_party::*;
-use two_party_ecdsa::*;
-use rocket::serde::json::Json;
-use rocket::State;
-use std::collections::HashMap;
-use std::string::ToString;
+use rocket::{State, post, serde::json::Json};
 use uuid::Uuid;
+use serde::{Serialize, Deserialize};
+use failure::format_err;
 
-use super::super::auth::jwt::Claims;
-use super::super::storage::db;
-use super::super::Config;
-use rusoto_dynamodb::{AttributeValue, DynamoDb, QueryInput};
+use crate::{auth::jwt::Claims, storage::db, Config};
+
+use std::string::ToString;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 struct HDPos {

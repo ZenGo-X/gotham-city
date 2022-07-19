@@ -7,27 +7,9 @@
 // version 3 of the License, or (at your option) any later version.
 //
 
-extern crate kms;
-extern crate reqwest;
-extern crate two_party_ecdsa;
-
-#[macro_use]
-extern crate serde_derive;
-extern crate serde;
-extern crate serde_json;
-
-#[macro_use]
-extern crate log;
-
-#[macro_use]
-extern crate failure;
-
-extern crate bitcoin;
-
 pub mod ecdsa;
-pub mod escrow;
-
 pub mod eddsa;
+pub mod escrow;
 
 mod utilities;
 

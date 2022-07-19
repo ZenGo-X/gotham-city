@@ -6,11 +6,9 @@
 // License as published by the Free Software Foundation, either
 // version 3 of the License, or (at your option) any later version.
 //
-use super::super::Result;
-use rocksdb;
-use serde;
-
 use super::aws;
+use crate::Result;
+use log::debug;
 
 pub enum DB {
     Local(rocksdb::DB),

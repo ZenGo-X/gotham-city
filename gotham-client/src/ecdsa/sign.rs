@@ -1,14 +1,7 @@
-use kms::ecdsa::two_party::party2;
-use kms::ecdsa::two_party::MasterKey2;
-use two_party_ecdsa::curv::BigInt;
-use two_party_ecdsa::party_one;
-use two_party_ecdsa::party_two;
-
-use super::super::utilities::error_to_c_string;
-use super::super::utilities::requests;
-use super::super::Result;
-use crate::ClientShim;
-
+use failure::format_err;
+use kms::ecdsa::two_party::{party2, MasterKey2};
+use serde::{Deserialize, Serialize};
+use two_party_ecdsa::{curv::BigInt, party_one, party_two};
 // iOS bindings
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
@@ -18,6 +11,11 @@ use jni::objects::{JClass, JString};
 use jni::sys::{jstring, jint};
 use jni::strings::JavaStr;
 use std::ops::Deref;
+
+use crate::{
+    utilities::{error_to_c_string, requests},
+    ClientShim, Result,
+};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SignSecondMsgRequest {
@@ -154,7 +152,7 @@ pub unsafe extern "C" fn sign_message(
 
     let message: BigInt = serde_json::from_str(message_hex).unwrap();
 
-    let sig = match sign(&client_shim, message, &mk_child, x, y, &id.to_string()) {
+    let sig = match sign(&client_shim, message, &mk_child, x, y, id) {
         Ok(s) => s,
         Err(e) => {
             return error_to_c_string(format_err!(

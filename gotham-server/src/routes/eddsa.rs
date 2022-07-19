@@ -1,14 +1,14 @@
-use rocket::serde::json::Json;
-use rocket::State;
+use rocket::{post, serde::json::Json, State};
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use super::super::auth::jwt::Claims;
-use super::super::storage::db;
-use super::super::Config;
+use crate::auth::jwt::Claims;
+use crate::storage::db;
+use crate::Config;
 
 use two_party_musig2_eddsa::{
     generate_partial_nonces, AggPublicKeyAndMusigCoeff, KeyPair, PartialSignature,
-    PublicPartialNonces, Signature, PrivatePartialNonces
+    PrivatePartialNonces, PublicPartialNonces, Signature,
 };
 
 use self::EddsaStruct::*;
@@ -100,7 +100,7 @@ pub async fn sign_first(
         .await
         .or(Err("Failed to get from db"))?
         .ok_or(format!("No data for such identifier {}", id))?;
-    
+
     let server_key_pair = KeyPair::create_from_private_key(server_secret);
 
     // Generate partial nonces.
@@ -169,33 +169,37 @@ pub async fn sign_second(
         .await
         .or(Err("Failed to get from db"))?
         .ok_or(format!("No data for such identifier {}", id))?;
-    
+
     let server_key_pair = KeyPair::create_from_private_key(server_secret);
 
-    let server_private_nonces: PrivatePartialNonces = db::get(&state.db, &claim.sub, &id, &ServerPrivatePartialNonces)
+    let server_private_nonces: PrivatePartialNonces =
+        db::get(&state.db, &claim.sub, &id, &ServerPrivatePartialNonces)
+            .await
+            .or(Err("Failed to get from db"))?
+            .ok_or(format!("No data for such identifier {}", id))?;
+
+    let server_public_nonces: PublicPartialNonces =
+        db::get(&state.db, &claim.sub, &id, &ServerPublicPartialNonces)
+            .await
+            .or(Err("Failed to get from db"))?
+            .ok_or(format!("No data for such identifier {}", id))?;
+
+    let client_public_nonces: PublicPartialNonces =
+        db::get(&state.db, &claim.sub, &id, &ClientPublicPartialNonce)
+            .await
+            .or(Err("Failed to get from db"))?
+            .ok_or(format!("No data for such identifier {}", id))?;
+
+    let agg_pubkey: AggPublicKeyAndMusigCoeff =
+        db::get(&state.db, &claim.sub, &id, &AggregatedPublicKey)
+            .await
+            .or(Err("Failed to get from db"))?
+            .ok_or(format!("No data for such identifier {}", id))?;
+
+    let message: MessageStruct = db::get(&state.db, &claim.sub, &id, &Message)
         .await
         .or(Err("Failed to get from db"))?
         .ok_or(format!("No data for such identifier {}", id))?;
-
-    let server_public_nonces: PublicPartialNonces = db::get(&state.db, &claim.sub, &id, &ServerPublicPartialNonces)
-    .await
-    .or(Err("Failed to get from db"))?
-    .ok_or(format!("No data for such identifier {}", id))?;
-
-    let client_public_nonces: PublicPartialNonces = db::get(&state.db, &claim.sub, &id, &ClientPublicPartialNonce)
-    .await
-    .or(Err("Failed to get from db"))?
-    .ok_or(format!("No data for such identifier {}", id))?;
-
-    let agg_pubkey: AggPublicKeyAndMusigCoeff = db::get(&state.db, &claim.sub, &id, &AggregatedPublicKey)
-    .await
-    .or(Err("Failed to get from db"))?
-    .ok_or(format!("No data for such identifier {}", id))?;
-
-    let message: MessageStruct = db::get(&state.db, &claim.sub, &id, &Message)
-    .await
-    .or(Err("Failed to get from db"))?
-    .ok_or(format!("No data for such identifier {}", id))?;
 
     // Compute server partial sig
     let (server_partial_sig, agg_nonce) = server_key_pair.partial_sign(
@@ -206,7 +210,10 @@ pub async fn sign_second(
     );
 
     // Aggregate the partial signatures together
-    let signature = Signature::aggregate_partial_signatures(agg_nonce, [server_partial_sig.clone(), client_partial_sig.0]);
+    let signature = Signature::aggregate_partial_signatures(
+        agg_nonce,
+        [server_partial_sig.clone(), client_partial_sig.0],
+    );
 
     // Make sure the signature verifies against the aggregated public key
     match signature.verify(&message.message[..], agg_pubkey.aggregated_pubkey()) {

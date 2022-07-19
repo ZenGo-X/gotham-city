@@ -6,42 +6,12 @@
 // License as published by the Free Software Foundation, either
 // version 3 of the License, or (at your option) any later version.
 //
-#![recursion_limit = "128"]
-#[macro_use]
-extern crate rocket;
-extern crate config;
-extern crate kms;
-extern crate rocksdb;
-extern crate two_party_ecdsa;
-extern crate uuid;
-#[macro_use]
-extern crate failure;
-
-#[macro_use]
-extern crate error_chain;
-
-#[macro_use]
-extern crate serde_derive;
-extern crate serde;
-extern crate serde_json;
-
-#[macro_use]
-extern crate log;
-
-#[cfg(test)]
-#[macro_use]
-extern crate time_test;
-
-extern crate jsonwebtoken as jwt;
-extern crate rusoto_dynamodb;
-extern crate serde_dynamodb;
-
-extern crate hex;
 
 pub mod auth;
 pub mod routes;
 pub mod server;
 pub mod storage;
+
 pub mod tests;
 
 type Result<T> = std::result::Result<T, failure::Error>;

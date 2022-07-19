@@ -1,10 +1,11 @@
-use failure;
-use rusoto_dynamodb::*;
-use serde;
-use std;
+// use rusoto_dynamodb::*;
+use failure::format_err;
+use rusoto_dynamodb::{
+    AttributeValue, DynamoDb, DynamoDbClient, GetItemInput, PutItemInput, PutItemOutput,
+};
+use serde::{self, Deserialize, Serialize};
+
 use std::collections::HashMap;
-use std::default::Default;
-use std::string::*;
 
 const CUSTOMER_ID_IDENTIFIER: &str = "customerId";
 const ID_IDENTIFIER: &str = "id";
@@ -22,7 +23,7 @@ pub async fn insert<T>(
     id: &str,
     table_name: &str,
     v: T,
-) -> std::result::Result<PutItemOutput, failure::Error>
+) -> Result<PutItemOutput, failure::Error>
 where
     T: serde::ser::Serialize,
 {
@@ -54,7 +55,7 @@ pub async fn get<'a, T>(
     id: &str,
     table_name: String,
     require_customer_id: bool,
-) -> std::result::Result<Option<T>, failure::Error>
+) -> Result<Option<T>, failure::Error>
 where
     T: serde::de::Deserialize<'a>,
 {

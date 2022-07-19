@@ -1,5 +1,3 @@
-use jsonwebtoken::DecodingKey;
-
 // Gotham-city
 //
 // Copyright 2018 by Kzen Networks (kzencorp.com)
@@ -8,7 +6,8 @@ use jsonwebtoken::DecodingKey;
 // License as published by the Free Software Foundation, either
 // version 3 of the License, or (at your option) any later version.
 //
-use super::super::jwt::{decode, decode_header, Algorithm, Header, Validation};
+use jsonwebtoken::{decode, decode_header, Algorithm, DecodingKey, Header, Validation};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Claims {
@@ -50,9 +49,7 @@ pub fn decode_header_from_token(token: String) -> Option<Header> {
 #[cfg(test)]
 mod tests {
     use super::{decode_header_from_token, get_claims};
-    use hex;
-    use jwt::{Algorithm, Header};
-    use std::str;
+    use jsonwebtoken::{Algorithm, Header};
 
     #[test]
     #[should_panic] // Obviously hardcoded authorization_header become invalid

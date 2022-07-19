@@ -7,18 +7,18 @@
 // version 3 of the License, or (at your option) any later version.
 //
 
-use super::super::utilities::error_to_c_string;
-use super::super::utilities::requests;
-use super::super::ClientShim;
-use super::super::Result;
-
+use failure::format_err;
+use two_party_musig2_eddsa::{
+    generate_partial_nonces, AggPublicKeyAndMusigCoeff, KeyPair, PartialSignature,
+    PublicPartialNonces, Signature,
+};
 // iOS bindings
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
 
-use two_party_musig2_eddsa::{
-    generate_partial_nonces, AggPublicKeyAndMusigCoeff, KeyPair, PartialSignature,
-    PublicPartialNonces, Signature,
+use crate::{
+    utilities::{error_to_c_string, requests},
+    ClientShim, Result,
 };
 
 #[allow(non_snake_case)]
@@ -42,9 +42,27 @@ pub fn sign(
         None => return Err(failure::err_msg("party1 sign first message request failed")),
     };
 
-    // round 2: send ephemeral public keys and check commitments.
-    // in the two-party setting, the counterparty can immediately return its local signature.
-    let (mut party1_sign_second_msg, mut s1): (SignSecondMsg, Signature) = match requests::postb(
+    // Validates server's response
+    let server_nonces_bytes = server_nonces.serialize();
+    match PublicPartialNonces::deserialize(server_nonces_bytes) {
+        Some(_) => (),
+        None => {
+            return Err(failure::err_msg(
+                "Received invalid public nonces from server!",
+            ))
+        }
+    }
+
+    // Create a partial signature
+    let (partial_sig, agg_nonce) = client_keypair.partial_sign(
+        private_nonces,
+        [public_nonces, server_nonces],
+        agg_pubkey,
+        message,
+    );
+
+    // Send your partial signature to the server and recv their partial signature.
+    let server_partial_sig: PartialSignature = match requests::postb(
         client_shim,
         &format!("eddsa/sign/{}/second", id),
         &party2_sign_second_msg,
@@ -57,29 +75,20 @@ pub fn sign(
         }
     };
 
-    let eight: FE = ECScalar::from(&BigInt::from(8u32));
-    let eight_inverse: FE = eight.invert();
-    party1_sign_second_msg.R = party1_sign_second_msg.R * eight_inverse;
-    s1.R = s1.R * eight_inverse;
-    assert!(test_com(
-        &party1_sign_second_msg.R,
-        &party1_sign_second_msg.blind_factor,
-        &party1_sign_first_msg.commitment
-    ));
+    // Validate server partial signature
+    let server_partial_sig_bytes = server_partial_sig.serialize();
+    match PartialSignature::deserialize(server_partial_sig_bytes) {
+        Some(_) => (),
+        None => {
+            return Err(failure::err_msg(
+                "Received invalid partial signature from server!",
+            ))
+        }
+    }
 
-    // round 3:
-    // compute R' = sum(Ri):
-    let Ri = vec![party1_sign_second_msg.R, party2_sign_second_msg.R];
-    // each party i should run this:
-    let R_tot = Signature::get_R_tot(Ri);
-    let k = Signature::k(&R_tot, &key_agg.apk, BigInt::to_vec(&message).as_slice());
-    let s2 = Signature::partial_sign(
-        &party2_ephemeral_key.r,
-        party2_key_pair,
-        &k,
-        &key_agg.hash,
-        &R_tot,
-    );
+    // Aggregate the partial signatures together
+    let signature =
+        Signature::aggregate_partial_signatures(agg_nonce, [partial_sig, server_partial_sig]);
 
     let s = vec![s1, s2];
     let signature = Signature::add_signature_parts(s);
@@ -149,13 +158,7 @@ pub extern "C" fn sign_message_eddsa(
 
     let key_agg: AggPublicKeyAndMusigCoeff = serde_json::from_str(key_agg_json).unwrap();
 
-    let sig = match sign(
-        &client_shim,
-        &message[..],
-        &key_pair,
-        &key_agg,
-        &id.to_string(),
-    ) {
+    let sig = match sign(&client_shim, &message[..], &key_pair, &key_agg, id) {
         Ok(s) => s,
         Err(e) => {
             return error_to_c_string(format_err!(

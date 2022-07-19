@@ -7,15 +7,12 @@
 // version 3 of the License, or (at your option) any later version.
 //
 
-use super::super::utilities::requests;
-use super::super::Result;
-use crate::ClientShim;
-
 use two_party_musig2_eddsa::{AggPublicKeyAndMusigCoeff, KeyPair};
-
 // iOS bindings
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
+
+use crate::{utilities::requests, ClientShim, Result};
 
 /// Generate a keypair for 2-party Ed25519 signing
 pub fn generate_key(
