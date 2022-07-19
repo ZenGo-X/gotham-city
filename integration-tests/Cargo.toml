@@ -12,12 +12,13 @@ time-test = "0.2.1"
 log = "0.4.11"
 time = "*"
 rocket = { version="0.5.0-rc.1", default-features=false, features=["json"]}
+secp256k1 = "0.20"
+ed25519-dalek = "1.0"
+two-party-ecdsa = { git = "https://github.com/ZenGo-X/two-party-ecdsa.git" }
+rand = "0.8"
+
 [dependencies.gotham-server]
 path = "../gotham-server"
 
 [dependencies.gotham-client]
 path = "../gotham-client"
-
-[patch.crates-io]
-rust-gmp = { version = "0.5.0", features = ["serde_support"], git = "https://github.com/KZen-networks/rust-gmp" }
-remove_dir_all = { version = "0.5.3", git = "https://github.com/ZenGo-X/remove_dir_all", tag = "v0.5.3-fix" }
