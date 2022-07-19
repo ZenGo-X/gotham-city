@@ -9,7 +9,7 @@ use self::SchnorrStruct::*;
 use multi_party_schnorr::protocols::thresholdsig::zilliqa_schnorr::*;
 use uuid::Uuid;
 
-use curv::elliptic::curves::secp256_k1::{FE, GE};
+use two_party_ecdsa::curv::elliptic::curves::secp256_k1::{FE, GE};
 
 const PARTY1_INDEX: usize = 1;
 const PARTY2_INDEX: usize = 2;
@@ -169,7 +169,7 @@ pub async fn keygen_third(
             .await
             .or(Err("Failed to get from db"))?
             .ok_or(format!("No data for such identifier {}", id))?;
-    let vss_scheme: VerifiableSS<GE> =
+    let vss_scheme: VerifiableSS =
         db::get(&state.db, &claim.sub, &id, &Party1VerifiableSecretShares)
             .await
             .or(Err("Failed to get from db"))?
@@ -251,7 +251,7 @@ pub async fn sign(
     .await
     .or(Err("Failed to get from db"))?
     .ok_or(format!("No data for such identifier {}", keygen_id))?;
-    let party2_vss_scheme: VerifiableSS<GE> = db::get(
+    let party2_vss_scheme: VerifiableSS = db::get(
         &state.db,
         &claim.sub,
         &keygen_id,
@@ -260,7 +260,7 @@ pub async fn sign(
     .await
     .or(Err("Failed to get from db"))?
     .ok_or(format!("No data for such identifier {}", keygen_id))?;
-    let eph_vss_scheme: VerifiableSS<GE> = db::get(
+    let eph_vss_scheme: VerifiableSS = db::get(
         &state.db,
         &claim.sub,
         &eph_keygen_id,
@@ -269,7 +269,7 @@ pub async fn sign(
     .await
     .or(Err("Failed to get from db"))?
     .ok_or(format!("No data for such identifier {}", eph_keygen_id))?;
-    let party2_eph_vss_scheme: VerifiableSS<GE> = db::get(
+    let party2_eph_vss_scheme: VerifiableSS = db::get(
         &state.db,
         &claim.sub,
         &eph_keygen_id,

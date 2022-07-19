@@ -11,25 +11,23 @@
 extern crate clap;
 use clap::App;
 
-use client_lib::ClientShim;
 use client_lib::escrow;
 use client_lib::wallet;
-<<<<<<< HEAD
-use time::PreciseTime;
-=======
 use client_lib::wallet::ElectrumxBalanceFetcher;
-use std::time::Instant;
+use client_lib::ClientShim;
 use floating_duration::TimeFormat;
->>>>>>> 4f61f3c (support fetch mocking and electrum address from cli)
+use std::time::Instant;
 
 use std::collections::HashMap;
 
 fn main() {
     let yaml = load_yaml!("../cli.yml");
     let matches = App::from_yaml(yaml).get_matches();
-    let electrum_address = matches.value_of("electrum-address").expect("Missing elecrtrum-address");
+    let electrum_address = matches
+        .value_of("electrum-address")
+        .expect("Missing elecrtrum-address");
 
-    let mut fetcher = ElectrumxBalanceFetcher::new(electrum_address);
+    let mut fetcher = ElectrumxBalanceFetcher::new(&electrum_address);
 
     let mut settings = config::Config::default();
     settings
@@ -60,7 +58,7 @@ fn main() {
 
         if matches.is_present("new-address") {
             let address = wallet.get_new_bitcoin_address();
-            println!("Network: [{}], Address: [{}]", network, address);
+            println!("Network: [{}], Address: [{}]", network, address.to_string());
             wallet.save();
         } else if matches.is_present("get-balance") {
             let balance = wallet.get_balance(&mut fetcher);
@@ -124,7 +122,7 @@ fn main() {
                     to.to_string(),
                     amount_btc.to_string().parse::<f32>().unwrap(),
                     &client_shim,
-                    &mut fetcher
+                    &mut fetcher,
                 );
                 wallet.save();
                 println!(

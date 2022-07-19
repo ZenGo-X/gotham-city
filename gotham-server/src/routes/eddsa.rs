@@ -7,9 +7,8 @@ use super::super::storage::db;
 use super::super::Config;
 
 use self::EddsaStruct::*;
-use curv::elliptic::curves::ed25519::{FE, GE};
-use curv::BigInt;
-use multi_party_ed25519::protocols::aggsig::*;
+use two_party_ecdsa::curv::elliptic::curves::ed25519::{FE, GE};
+use two_party_ecdsa::curv::BigInt;
 use multi_party_eddsa::protocols::aggsig::*;
 
 const PARTY1_INDEX: usize = 0;

@@ -23,49 +23,24 @@ serde_json = "1.0"
 serde_derive = "1.0"
 rusoto_dynamodb = "0.47.0"
 rusoto_core = "0.47.0"
-time-test = "0.2.1"
-chrono = "0.4.19"
-env_logger = { version = "0.8.1", default-features = false }
-log = "0.4.11"
-time = "0.1.42"
+log = "0.4"
 config = "0.9.2"
 uuid = { version = "0.7", features = ["v4"] }
 error-chain = "0.12.0"
 failure = "0.1.5"
 jsonwebtoken = "8.0.1"
-rust-crypto = "0.2"
 hex = "0.3.2"
-
-[dependencies.zk-paillier]
-git = "https://github.com/KZen-networks/zk-paillier"
-branch = "feature/libra-support-fix"
-
-[dependencies.kms]
-git = "https://github.com/KZen-networks/kms-secp256k1"
-branch = "feature/libra-support-fix"
-
-[dependencies.multi-party-ecdsa]
-git = "https://github.com/KZen-networks/multi-party-ecdsa"
-branch = "feature/libra-support-fix"
-
-[dependencies.multi-party-ed25519]
-git = "https://github.com/KZen-networks/multi-party-eddsa"
-branch = "feature/libra-support-fix"
-
-[dependencies.multi-party-schnorr]
-git = "https://github.com/KZen-networks/multi-party-schnorr"
-branch = "feature/libra-support-fix"
-
-[dependencies.curv]
-git = "https://github.com/KZen-networks/curv"
-branch = "feature/libra-support-fix"
-features =  ["ec_secp256k1"]
+two-party-ecdsa = { git = "https://github.com/ZenGo-X/two-party-ecdsa.git" }
+kms = { git = "https://github.com/ZenGo-X/kms-secp256k1.git", branch = "2.0" }
+chrono = "0.4.9"
+env_logger = "0.9.0"
 
 [dependencies.serde_dynamodb]
 git = "https://github.com/KZen-networks/serde_dynamodb"
 features = ["native-tls"]
 default-features = false
 
-[patch.crates-io]
-rust-gmp = { version = "0.5.0", features = ["serde_support"], git = "https://github.com/KZen-networks/rust-gmp" }
-remove_dir_all = { version = "0.5.3", git = "https://github.com/ZenGo-X/remove_dir_all", tag = "v0.5.3-fix" }
+
+[dev-dependencies]
+time-test = "0.2.1"
+floating-duration = "0.1.2"

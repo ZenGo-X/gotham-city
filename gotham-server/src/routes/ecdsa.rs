@@ -8,18 +8,15 @@
 // version 3 of the License, or (at your option) any later version.
 //
 
-use curv::cryptographic_primitives::proofs::sigma_dlog::*;
-use curv::cryptographic_primitives::twoparty::coin_flip_optimal_rounds;
-use curv::cryptographic_primitives::twoparty::dh_key_exchange_variant_with_pok_comm::{
+use two_party_ecdsa::curv::cryptographic_primitives::proofs::sigma_dlog::*;
+use two_party_ecdsa::curv::cryptographic_primitives::twoparty::dh_key_exchange_variant_with_pok_comm::{
     CommWitness, EcKeyPair, Party1FirstMessage, Party1SecondMessage,
 };
-use curv::elliptic::curves::secp256_k1::Secp256k1Scalar;
-use curv::elliptic::curves::secp256_k1::GE;
-use curv::BigInt;
+use two_party_ecdsa::curv::elliptic::curves::secp256_k1::GE;
+use two_party_ecdsa::curv::BigInt;
 use kms::chain_code::two_party as chain_code;
 use kms::ecdsa::two_party::*;
-use kms::rotation::two_party::party1::Rotation1;
-use multi_party_ecdsa::protocols::two_party_ecdsa::lindell_2017::*;
+use two_party_ecdsa::*;
 use rocket::serde::json::Json;
 use rocket::State;
 use std::collections::HashMap;
@@ -65,15 +62,6 @@ pub enum EcdsaStruct {
     EphEcKeyPair,
     EphKeyGenFirstMsg,
 
-    RotateCommitMessage1M,
-    RotateCommitMessage1R,
-    RotateRandom1,
-    RotateFirstMsg,
-    RotatePrivateNew,
-    RotatePdlDecom,
-    RotateParty2First,
-    RotateParty1Second,
-
     POS,
 }
 
@@ -100,15 +88,15 @@ impl db::MPCStruct for EcdsaStruct {
 pub async fn first_message(
     state: &State<Config>,
     claim: Claims,
-) -> Result<Json<(String, party_one::KeyGenFirstMsg)>> {
-    match has_active_share(&state.db, &claim.sub) {
+) -> Result<Json<(String, party_one::KeyGenFirstMsg)>, String> {
+    match has_active_share(&state.db, &claim.sub).await {
         Err(e) => {
             let msg = format!(
                 "Error when searching for active shares of customerId {}",
                 &claim.sub
             );
             error!("{}: {:?}", msg, e);
-            return Err(format_err!("{}", msg));
+            return Err(format!("{}", msg));
         }
         Ok(result) => {
             if result {
@@ -117,7 +105,7 @@ pub async fn first_message(
                 let should_fail_keygen = std::env::var("FAIL_KEYGEN_IF_ACTIVE_SHARE_EXISTS");
                 if should_fail_keygen.is_ok() && should_fail_keygen.unwrap() == "true" {
                     warn!("Abort KeyGen");
-                    return Err(format_err!("{}", msg));
+                    return Err(format!("{}", msg));
                 }
             }
         }
@@ -175,7 +163,7 @@ pub async fn second_message(
     state: &State<Config>,
     claim: Claims,
     id: String,
-    dlog_proof: Json<DLogProof<GE>>,
+    dlog_proof: Json<DLogProof>,
 ) -> Result<Json<party1::KeyGenParty1Message2>, String> {
     let party2_public: GE = dlog_proof.0.pk;
     db::insert(
@@ -229,15 +217,17 @@ pub async fn second_message(
     format = "json",
     data = "<party_2_pdl_first_message>"
 )]
-pub fn third_message(
-    state: State<Config>,
+pub async fn third_message(
+    state: &State<Config>,
     claim: Claims,
     id: String,
     party_2_pdl_first_message: Json<party_two::PDLFirstMessage>,
-) -> Result<Json<(party_one::PDLFirstMessage)>> {
+) -> Result<Json<party_one::PDLFirstMessage>, String> {
     let party_one_private: party_one::Party1Private =
-        db::get(&state.db, &claim.sub, &id, &EcdsaStruct::Party1Private)?
-            .ok_or(format_err!("No data for such identifier {}", id))?;
+        db::get(&state.db, &claim.sub, &id, &EcdsaStruct::Party1Private)
+            .await
+            .or(Err(format!("Failed to get from DB, id: {}", id)))?
+            .ok_or(format!("No data for such identifier {}", id))?;
 
     let (party_one_third_message, party_one_pdl_decommit, alpha) =
         MasterKey1::key_gen_third_message(&party_2_pdl_first_message.0, &party_one_private);
@@ -248,7 +238,12 @@ pub fn third_message(
         &id,
         &EcdsaStruct::PDLDecommit,
         &party_one_pdl_decommit,
-    )?;
+    )
+    .await
+    .or(Err(format!(
+        "Failed to insert into DB PDLDecommit, id: {}",
+        id
+    )))?;
 
     db::insert(
         &state.db,
@@ -256,7 +251,9 @@ pub fn third_message(
         &id,
         &EcdsaStruct::Alpha,
         &Alpha { value: alpha },
-    )?;
+    )
+    .await
+    .or(Err(format!("Failed to insert into DB Alpha, id: {}", id)))?;
 
     db::insert(
         &state.db,
@@ -264,7 +261,12 @@ pub fn third_message(
         &id,
         &EcdsaStruct::Party2PDLFirstMsg,
         &party_2_pdl_first_message.0,
-    )?;
+    )
+    .await
+    .or(Err(format!(
+        "Failed to insert into DB Party2PDLFirstMsg, id: {}",
+        id
+    )))?;
 
     Ok(Json(party_one_third_message))
 }
@@ -274,26 +276,40 @@ pub fn third_message(
     format = "json",
     data = "<party_two_pdl_second_message>"
 )]
-pub fn fourth_message(
-    state: State<Config>,
+pub async fn fourth_message(
+    state: &State<Config>,
     claim: Claims,
     id: String,
     party_two_pdl_second_message: Json<party_two::PDLSecondMessage>,
-) -> Result<Json<(party_one::PDLSecondMessage)>> {
+) -> Result<Json<party_one::PDLSecondMessage>, String> {
     let party_one_private: party_one::Party1Private =
-        db::get(&state.db, &claim.sub, &id, &EcdsaStruct::Party1Private)?
-            .ok_or(format_err!("No data for such identifier {}", id))?;
+        db::get(&state.db, &claim.sub, &id, &EcdsaStruct::Party1Private)
+            .await
+            .or(Err(format!("Failed to get from DB, id:{}", id)))?
+            .ok_or(format!("No data for such identifier {}", id))?;
 
     let party_one_pdl_decommit: party_one::PDLdecommit =
-        db::get(&state.db, &claim.sub, &id, &EcdsaStruct::PDLDecommit)?
-            .ok_or(format_err!("No data for such identifier {}", id))?;
+        db::get(&state.db, &claim.sub, &id, &EcdsaStruct::PDLDecommit)
+            .await
+            .or(Err(format!(
+                "Failed to get party one pdl decommit, id: {}",
+                id
+            )))?
+            .ok_or(format!("No data for such identifier {}", id))?;
 
     let party_2_pdl_first_message: party_two::PDLFirstMessage =
-        db::get(&state.db, &claim.sub, &id, &EcdsaStruct::Party2PDLFirstMsg)?
-            .ok_or(format_err!("No data for such identifier {}", id))?;
+        db::get(&state.db, &claim.sub, &id, &EcdsaStruct::Party2PDLFirstMsg)
+            .await
+            .or(Err(format!(
+                "Failed to get party 2 pdl first message from DB, id: {}",
+                id
+            )))?
+            .ok_or(format!("No data for such identifier {}", id))?;
 
-    let alpha: Alpha = db::get(&state.db, &claim.sub, &id, &EcdsaStruct::Alpha)?
-        .ok_or(format_err!("No data for such identifier {}", id))?;
+    let alpha: Alpha = db::get(&state.db, &claim.sub, &id, &EcdsaStruct::Alpha)
+        .await
+        .or(Err(format!("Failed to get alpha from DB, id: {}", id)))?
+        .ok_or(format!("No data for such identifier {}", id))?;
 
     let res = MasterKey1::key_gen_fourth_message(
         &party_2_pdl_first_message,
@@ -359,9 +375,9 @@ pub async fn chain_code_second_message(
     state: &State<Config>,
     claim: Claims,
     id: String,
-    cc_party_two_first_message_d_log_proof: Json<DLogProof<GE>>,
-) -> Result<Json<Party1SecondMessage<GE>>, String> {
-    let cc_comm_witness: CommWitness<GE> =
+    cc_party_two_first_message_d_log_proof: Json<DLogProof>,
+) -> Result<Json<Party1SecondMessage>, String> {
+    let cc_comm_witness: CommWitness =
         db::get(&state.db, &claim.sub, &id, &EcdsaStruct::CCCommWitness)
             .await
             .or(Err("Failed to get from db"))?
@@ -384,7 +400,7 @@ pub async fn chain_code_compute_message(
     id: String,
     cc_party2_public: &GE,
 ) -> Result<Json<()>, String> {
-    let cc_ec_key_pair_party1: EcKeyPair<GE> =
+    let cc_ec_key_pair_party1: EcKeyPair =
         db::get(&state.db, &claim.sub, &id, &EcdsaStruct::CCEcKeyPair)
             .await
             .or(Err("Failed to get from db"))?
@@ -547,229 +563,6 @@ pub async fn get_mk(
         .ok_or_else(|| format_err!("No data for such identifier {}", id))
 }
 
-#[post("/ecdsa/rotate/<id>/first", format = "json")]
-pub async fn rotate_first(
-    state: &State<Config>,
-    claim: Claims,
-    id: String,
-) -> Result<Json<coin_flip_optimal_rounds::Party1FirstMessage<GE>>, String> {
-    let (party1_coin_flip_first_message, m1, r1) = Rotation1::key_rotate_first_message();
-    db::insert(
-        &state.db,
-        &claim.sub,
-        &id,
-        &EcdsaStruct::RotateCommitMessage1M,
-        &m1,
-    )
-    .await
-    .or(Err("Failed to insert into db"))?;
-    db::insert(
-        &state.db,
-        &claim.sub,
-        &id,
-        &EcdsaStruct::RotateCommitMessage1R,
-        &r1,
-    )
-    .await
-    .or(Err("Failed to insert into db"))?;
-
-    Ok(Json(party1_coin_flip_first_message))
-}
-
-#[post(
-    "/ecdsa/rotate/<id>/second",
-    format = "json",
-    data = "<party2_first_message>"
-)]
-pub async fn rotate_second(
-    state: &State<Config>,
-    id: String,
-    claim: Claims,
-    party2_first_message: Json<coin_flip_optimal_rounds::Party2FirstMessage>,
-) -> Result<
-    Json<(
-        coin_flip_optimal_rounds::Party1SecondMessage<GE>,
-        party1::RotationParty1Message1,
-    )>,
-    String,
-> {
-    let party_one_master_key = get_mk(state, claim.clone(), &id)
-        .await
-        .map_err(|e| e.to_string())?;
-
-    let m1: Secp256k1Scalar = db::get(
-        &state.db,
-        &claim.sub,
-        &id,
-        &EcdsaStruct::RotateCommitMessage1M,
-    )
-    .await
-    .or(Err("Failed to get from db"))?
-    .ok_or(format!("No data for such identifier {}", id))?;
-
-    let r1: Secp256k1Scalar = db::get(
-        &state.db,
-        &claim.sub,
-        &id,
-        &EcdsaStruct::RotateCommitMessage1R,
-    )
-    .await
-    .or(Err("Failed to get from db"))?
-    .ok_or(format!("No data for such identifier {}", id))?;
-
-    let (party1_second_message, random1) =
-        Rotation1::key_rotate_second_message(&party2_first_message.0, &m1, &r1);
-    db::insert(
-        &state.db,
-        &claim.sub,
-        &id,
-        &EcdsaStruct::RotateRandom1,
-        &random1,
-    )
-    .await
-    .or(Err("Failed to insert into db"))?;
-
-    let (rotation_party_one_first_message, party_one_private_new) =
-        party_one_master_key.rotation_first_message(&random1);
-
-    db::insert(
-        &state.db,
-        &claim.sub,
-        &id,
-        &EcdsaStruct::RotateFirstMsg,
-        &rotation_party_one_first_message,
-    )?;
-    db::insert(
-        &state.db,
-        &claim.sub,
-        &id,
-        &EcdsaStruct::RotatePrivateNew,
-        &party_one_private_new,
-    )?;
-    Ok(Json((
-        party1_second_message,
-        rotation_party_one_first_message,
-    )))
-}
-
-#[post(
-    "/ecdsa/rotate/<id>/third",
-    format = "json",
-    data = "<rotation_party_two_first_message>"
-)]
-pub fn rotate_third(
-    state: State<Config>,
-    claim: Claims,
-    id: String,
-    rotation_party_two_first_message: Json<party_two::PDLFirstMessage>,
-) -> Result<Json<(party_one::PDLFirstMessage)>> {
-    let party_one_private_new: party_one::Party1Private =
-        db::get(&state.db, &claim.sub, &id, &EcdsaStruct::RotatePrivateNew)?
-            .ok_or(format_err!("No data for such identifier {}", id))?;
-
-    let (rotation_party_one_second_message, party_one_pdl_decommit, alpha) =
-        MasterKey1::rotation_second_message(
-            &rotation_party_two_first_message.0,
-            &party_one_private_new,
-        );
-
-    db::insert(
-        &state.db,
-        &claim.sub,
-        &id,
-        &EcdsaStruct::Alpha,
-        &Alpha { value: alpha },
-    )?;
-
-    db::insert(
-        &state.db,
-        &claim.sub,
-        &id,
-        &EcdsaStruct::RotatePdlDecom,
-        &party_one_pdl_decommit,
-    )?;
-    db::insert(
-        &state.db,
-        &claim.sub,
-        &id,
-        &EcdsaStruct::RotateParty2First,
-        &rotation_party_two_first_message.0,
-    )?;
-    db::insert(
-        &state.db,
-        &id,
-        &claim.sub,
-        &EcdsaStruct::RotateParty1Second,
-        &rotation_party_one_second_message,
-    )?;
-
-    Ok(Json(rotation_party_one_second_message))
-}
-
-#[post(
-    "/ecdsa/rotate/<id>/fourth",
-    format = "json",
-    data = "<rotation_party_two_second_message>"
-)]
-pub fn rotate_fourth(
-    state: State<Config>,
-    claim: Claims,
-    id: String,
-    rotation_party_two_second_message: Json<party_two::PDLSecondMessage>,
-) -> Result<Json<(party_one::PDLSecondMessage)>> {
-    let party_one_master_key = get_mk(&state, claim.clone(), &id)?;
-
-    let rotation_party_one_first_message: party1::RotationParty1Message1 =
-        db::get(&state.db, &claim.sub, &id, &EcdsaStruct::RotateFirstMsg)?
-            .ok_or(format_err!("No data for such identifier {}", id))?;
-
-    let party_one_private_new: party_one::Party1Private =
-        db::get(&state.db, &claim.sub, &id, &EcdsaStruct::RotatePrivateNew)?
-            .ok_or(format_err!("No data for such identifier {}", id))?;
-
-    let random1: kms::rotation::two_party::Rotation =
-        db::get(&state.db, &claim.sub, &id, &EcdsaStruct::RotateRandom1)?
-            .ok_or(format_err!("No data for such identifier {}", id))?;
-
-    let rotation_party_two_first_message: party_two::PDLFirstMessage =
-        db::get(&state.db, &claim.sub, &id, &EcdsaStruct::RotateParty2First)?
-            .ok_or(format_err!("No data for such identifier {}", id))?;
-
-    let party_one_pdl_decommit: party_one::PDLdecommit =
-        db::get(&state.db, &claim.sub, &id, &EcdsaStruct::RotatePdlDecom)?
-            .ok_or(format_err!("No data for such identifier {}", id))?;
-
-    let alpha: Alpha = db::get(&state.db, &claim.sub, &id, &EcdsaStruct::Alpha)?
-        .ok_or(format_err!("No data for such identifier {}", id))?;
-
-    let result_rotate_party_two_second_message = party_one_master_key.rotation_third_message(
-        &rotation_party_one_first_message,
-        party_one_private_new,
-        &random1,
-        &rotation_party_two_first_message,
-        &rotation_party_two_second_message.0,
-        party_one_pdl_decommit,
-        alpha.value,
-    );
-    if result_rotate_party_two_second_message.is_err() {
-        panic!("rotation failed");
-    }
-    let (rotation_party_one_third_message, party_one_master_key_rotated) =
-        result_rotate_party_two_second_message.unwrap();
-
-    db::insert(
-        &state.db,
-        &claim.sub,
-        &id,
-        &EcdsaStruct::Party1MasterKey,
-        &party_one_master_key_rotated,
-    )
-    .await
-    .or(Err("Failed to insert into db"))?;
-
-    Ok(Json(rotation_party_one_third_message))
-}
-
 #[post("/ecdsa/<id>/recover", format = "json")]
 pub async fn recover(
     state: &State<Config>,
@@ -783,7 +576,7 @@ pub async fn recover(
     Ok(Json(pos_old))
 }
 
-fn has_active_share(db: &db::DB, user_id: &str) -> Result<bool> {
+async fn has_active_share(db: &db::DB, user_id: &str) -> Result<bool, String> {
     match db {
         db::DB::Local(_) => Ok(false),
         db::DB::AWS(dynamodb_client, env) => {
@@ -812,15 +605,14 @@ fn has_active_share(db: &db::DB, user_id: &str) -> Result<bool> {
                 consistent_read: Some(true),
                 ..QueryInput::default()
             };
-            let result = dynamodb_client.query(query_input).sync();
+            let result = dynamodb_client.query(query_input).await;
             match result {
                 Ok(query_output) => query_output
                     .items
                     .map_or(Ok(false), |items| Ok(items.len() > 0)),
-                Err(e) => Err(format_err!(
+                Err(e) => Err(format!(
                     "Error retrieving Party1MasterKey for customerId {}: {:?}",
-                    user_id,
-                    e
+                    user_id, e
                 )),
             }
         }

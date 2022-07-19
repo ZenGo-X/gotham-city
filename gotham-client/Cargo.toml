@@ -55,10 +55,6 @@ branch = "feature/libra-support-fix"
 git = "https://github.com/KZen-networks/multi-party-ecdsa"
 branch = "feature/libra-support-fix"
 
-[dependencies.multi-party-ed25519]
-git = "https://github.com/KZen-networks/multi-party-eddsa"
-branch = "feature/libra-support-fix"
-
 [dependencies.multi-party-schnorr]
 git = "https://github.com/KZen-networks/multi-party-schnorr"
 branch = "feature/libra-support-fix"
