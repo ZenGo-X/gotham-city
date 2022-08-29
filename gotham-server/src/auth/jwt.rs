@@ -28,7 +28,7 @@ pub fn get_claims(
 
     // Setting audience
     validation.set_audience(&[audience]);
-    let key = DecodingKey::from_secret(secret);
+    let key = DecodingKey::from_rsa_der(secret);
     let token_data = match decode::<Claims>(token, &key, &validation) {
         Ok(c) => c,
         Err(_) => return None,
