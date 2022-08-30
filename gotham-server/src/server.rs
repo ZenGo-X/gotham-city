@@ -86,6 +86,7 @@ pub fn get_server(settings: HashMap<String, String>) -> Rocket<Build> {
                 crate::routes::ecdsa::sign_first,
                 crate::routes::ecdsa::sign_second,
                 crate::routes::ecdsa::recover,
+                crate::routes::eddsa::keygen
             ],
         )
         .manage(db_config)
