@@ -21,10 +21,10 @@ serde_json.workspace = true
 log.workspace = true
 reqwest.workspace = true
 failure.workspace = true
-jni.workspace = true
 floating-duration.workspace = true
 two-party-ecdsa.workspace = true
 kms.workspace = true
+jni = "0.19"
 
 [dev-dependencies]
 mockall = "0.11"

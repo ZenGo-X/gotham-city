@@ -51,7 +51,7 @@ where
 }
 
 pub async fn get<'a, T>(
-    dynamodb_client: &rusoto_dynamodb::DynamoDbClient,
+    dynamodb_client: &DynamoDbClient,
     user_id: &str,
     id: &str,
     table_name: String,

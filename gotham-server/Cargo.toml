@@ -17,7 +17,6 @@ path = "src/main.rs"
 
 [dependencies]
 rocket.workspace = true
-rocksdb = { workspace = true, optional = true }
 serde.workspace = true
 serde_json.workspace = true
 log.workspace = true
@@ -28,11 +27,9 @@ jsonwebtoken.workspace = true
 hex.workspace = true
 two-party-ecdsa.workspace = true
 kms.workspace = true
-chrono.workspace = true
-env_logger.workspace = true
-
-rusoto_dynamodb = {workspace = true, optional = true}
-rusoto_core = {workspace = true, optional = true}
+rocksdb = { version = "0.19", optional = true }
+rusoto_dynamodb = {version = "0.47", optional = true}
+rusoto_core = {version = "0.47", optional = true}
 
 [features]
 default = ["local", "aws"]
