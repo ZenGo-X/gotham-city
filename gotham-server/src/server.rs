@@ -93,26 +93,6 @@ pub fn get_server(settings: HashMap<String, String>) -> Rocket<Build> {
         .manage(auth_config)
 }
 
-fn get_settings_as_map() -> HashMap<String, String> {
-    info!(
-        "FAIL_KEYGEN_IF_ACTIVE_SHARE_EXISTS = {:?}",
-        std::env::var("FAIL_KEYGEN_IF_ACTIVE_SHARE_EXISTS")
-    );
-
-    let config_file = include_str!("../Settings.toml");
-    let mut settings = config::Config::default();
-    settings
-        .merge(config::File::from_str(
-            config_file,
-            config::FileFormat::Toml,
-        ))
-        .unwrap()
-        .merge(config::Environment::new())
-        .unwrap();
-
-    settings.try_into::<HashMap<String, String>>().unwrap()
-}
-
 fn get_db(settings: HashMap<String, String>) -> db::DB {
     let db_type_string = settings
         .get("db")

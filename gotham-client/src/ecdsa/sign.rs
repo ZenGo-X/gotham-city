@@ -6,16 +6,13 @@ use two_party_ecdsa::{curv::BigInt, party_one, party_two};
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
 //Android bindings
-use jni::JNIEnv;
 use jni::objects::{JClass, JString};
-use jni::sys::{jstring, jint};
 use jni::strings::JavaStr;
+use jni::sys::{jint, jstring};
+use jni::JNIEnv;
 use std::ops::Deref;
 
-use crate::{
-    utilities::{error_to_c_string, requests},
-    ClientShim, Result,
-};
+use crate::{utilities::error_to_c_string, Client, ClientShim, Result};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SignSecondMsgRequest {
@@ -25,8 +22,8 @@ pub struct SignSecondMsgRequest {
     pub y_pos_child_key: BigInt,
 }
 
-pub fn sign(
-    client_shim: &ClientShim,
+pub fn sign<C: Client>(
+    client_shim: &ClientShim<C>,
     message: BigInt,
     mk: &MasterKey2,
     x_pos: BigInt,
@@ -38,7 +35,7 @@ pub fn sign(
 
     let request: party_two::EphKeyGenFirstMsg = eph_key_gen_first_message_party_two;
     let sign_party_one_first_message: party_one::EphKeyGenFirstMsg =
-        match requests::postb(client_shim, &format!("/ecdsa/sign/{}/first", id), &request) {
+        match client_shim.postb(&format!("/ecdsa/sign/{}/first", id), &request) {
             Some(s) => s,
             None => return Err(failure::err_msg("party1 sign first message request failed")),
         };
@@ -65,8 +62,8 @@ pub fn sign(
     Ok(signature)
 }
 
-fn get_signature(
-    client_shim: &ClientShim,
+fn get_signature<C: Client>(
+    client_shim: &ClientShim<C>,
     message: BigInt,
     party_two_sign_message: party2::SignMessage,
     x_pos_child_key: BigInt,
@@ -81,7 +78,7 @@ fn get_signature(
     };
 
     let signature: party_one::SignatureRecid =
-        match requests::postb(client_shim, &format!("/ecdsa/sign/{}/second", id), &request) {
+        match client_shim.postb(&format!("/ecdsa/sign/{}/second", id), &request) {
             Some(s) => s,
             None => {
                 return Err(failure::err_msg(
@@ -177,11 +174,10 @@ pub unsafe extern "C" fn sign_message(
     CString::new(signature_json).unwrap().into_raw()
 }
 
-#[cfg(target_os="android")]
+#[cfg(target_os = "android")]
 #[no_mangle]
 #[allow(non_snake_case)]
-pub extern fn
-Java_com_zengo_components_kms_gotham_ECDSA_signMessage(
+pub extern "C" fn Java_com_zengo_components_kms_gotham_ECDSA_signMessage(
     env: JNIEnv,
     // this is the class that owns our
     // static method. Not going to be
@@ -196,7 +192,6 @@ Java_com_zengo_components_kms_gotham_ECDSA_signMessage(
     j_y_pos: jint,
     j_id: JString,
 ) -> jstring {
-
     /************************ START CONVERSION ************************/
 
     //Convert endpoint
@@ -215,7 +210,7 @@ Java_com_zengo_components_kms_gotham_ECDSA_signMessage(
     };
 
     //Convert auth_token
-    let JavaStr_auth_token= match env.get_string(j_auth_token) {
+    let JavaStr_auth_token = match env.get_string(j_auth_token) {
         Ok(java_auth_token) => java_auth_token,
         Err(e) => return env.new_string(format!("Error from Rust in signMessage: {}", e.to_string()))
             .unwrap()
@@ -244,7 +239,7 @@ Java_com_zengo_components_kms_gotham_ECDSA_signMessage(
     };
 
     //Convert master_key_json
-    let JavaStr_master_key_json= match env.get_string(j_master_key_json) {
+    let JavaStr_master_key_json = match env.get_string(j_master_key_json) {
         Ok(java_master_key_json) => java_master_key_json,
         Err(e) => return env.new_string(format!("Error from Rust in signMessage: {}", e.to_string()))
             .unwrap()
@@ -264,7 +259,7 @@ Java_com_zengo_components_kms_gotham_ECDSA_signMessage(
     let y: BigInt = BigInt::from(j_y_pos);
 
     //Convert id
-    let JavaStr_id= match env.get_string(j_id) {
+    let JavaStr_id = match env.get_string(j_id) {
         Ok(java_id) => java_id,
         Err(e) => return env.new_string(format!("Error from Rust in signMessage: {}", e.to_string()))
             .unwrap()
@@ -287,14 +282,7 @@ Java_com_zengo_components_kms_gotham_ECDSA_signMessage(
 
     let message: BigInt = serde_json::from_str(message_le_hex).unwrap();
 
-    let sig = match sign(
-        &client_shim,
-        message,
-        &mk_child,
-        x,
-        y,
-        &id.to_string(),
-    ) {
+    let sig = match sign(&client_shim, message, &mk_child, x, y, &id.to_string()) {
         Ok(s) => s,
         Err(e) => return env.new_string(format!("Error from Rust in signMessage: {}", e.to_string()))
             .unwrap()

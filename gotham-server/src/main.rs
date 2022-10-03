@@ -12,7 +12,6 @@ use env_logger::Builder;
 use log::LevelFilter;
 use server_lib::server;
 use std::collections::HashMap;
-use std::io::Write;
 
 #[rocket::launch]
 fn rocket() -> _ {
