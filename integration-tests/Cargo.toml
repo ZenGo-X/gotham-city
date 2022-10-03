@@ -5,13 +5,13 @@ authors = []
 edition = "2021"
 
 [dependencies]
-rocket = { version="0.5.0-rc.1", default-features=false, features=["json"]}
+rocket.workspace = true
+two-party-ecdsa.workspace = true
+gotham-server.workspace = true
+gotham-client.workspace = true
+serde_json.workspace = true
 secp256k1 = {version = "0.21.0", features = ["global-context"]}
 ed25519-dalek = "1.0"
 rand = "0.8"
-two-party-ecdsa = { git = "https://github.com/ZenGo-X/two-party-ecdsa.git" }
-gotham-server = { path = "../gotham-server" }
-gotham-client = { path = "../gotham-client" }
-serde_json = "1"
 
 
