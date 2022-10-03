@@ -1,3 +1,5 @@
+#![cfg(feature = "aws")]
+
 use serde::{Deserialize, Serialize};
 pub mod dynamodb;
 

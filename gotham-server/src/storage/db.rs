@@ -6,12 +6,13 @@
 // License as published by the Free Software Foundation, either
 // version 3 of the License, or (at your option) any later version.
 //
-use super::aws;
 use crate::Result;
 use log::debug;
 
 pub enum DB {
+    #[cfg(feature = "local")]
     Local(rocksdb::DB),
+    #[cfg(feature = "aws")]
     AWS(rusoto_dynamodb::DynamoDbClient, String),
 }
 
@@ -36,11 +37,13 @@ where
     T: serde::ser::Serialize,
 {
     match db {
+        #[cfg(feature = "aws")]
         DB::AWS(dynamodb_client, env) => {
             let table_name = name.to_table_name(env);
-            aws::dynamodb::insert(dynamodb_client, user_id, id, &table_name, v).await?;
+            super::aws::dynamodb::insert(dynamodb_client, user_id, id, &table_name, v).await?;
             Ok(())
         }
+        #[cfg(feature = "local")]
         DB::Local(rocksdb_client) => {
             let identifier = idify(user_id, id, name);
             let v_string = serde_json::to_string(&v).unwrap();
@@ -55,6 +58,7 @@ where
     T: serde::de::DeserializeOwned,
 {
     match db {
+        #[cfg(feature = "aws")]
         DB::AWS(dynamodb_client, env) => {
             let table_name = name.to_table_name(env);
             debug!("table_name = {}", table_name);
@@ -62,7 +66,7 @@ where
             println!("require_customer_id = {}", require_customer_id);
             println!("user_id = {}", user_id);
             println!("id = {}", id);
-            let res: Option<T> = aws::dynamodb::get(
+            let res: Option<T> = super::aws::dynamodb::get(
                 dynamodb_client,
                 user_id,
                 id,
@@ -73,6 +77,7 @@ where
             println!("res.is_none() = {}", res.is_none());
             Ok(res)
         }
+        #[cfg(feature = "local")]
         DB::Local(rocksdb_client) => {
             let identifier = idify(user_id, id, name);
             debug!("Getting from db ({})", identifier);
