@@ -8,23 +8,21 @@ ENV PATH="/android-ndk/toolchains/llvm/prebuilt/linux-x86_64/bin/:${PATH}"
 ENV OPENSSL_VERSION=1.1.1n
 ENV TARGET_CXXFLAGS=-mno-outline-atomics
 ENV PKG_CONFIG_SYSROOT_DIR="${ANDROID_NDK_HOME}toolchains/llvm/prebuilt/linux-x86_64/sysroot"
-RUN apt update
-RUN 	wget https://dl.google.com/android/repository/android-ndk-r${NDK_VERSION}-linux-x86_64.zip && \
+RUN apt update && \
+	wget https://dl.google.com/android/repository/android-ndk-r${NDK_VERSION}-linux-x86_64.zip && \
 	unzip android-ndk-r*.zip && \
 	rm android-ndk-r*.zip && \
 	mv android-ndk-r* android-ndk && \
 	git clone https://github.com/ZenGo-X/gotham-city.git && \
 	cd gotham-city && git checkout server_fix && \
 	rustup target add \
-    		aarch64-linux-android \
-    		armv7-linux-androideabi \
-    		x86_64-linux-android \
-    		i686-linux-android && \
-	cargo install cargo-ndk
-
-# libGMP
-
-RUN 	wget https://gmplib.org/download/gmp/gmp-${GMP_VERSION}.tar.lz && \
+	aarch64-linux-android \
+	armv7-linux-androideabi \
+	x86_64-linux-android \
+	i686-linux-android && \
+	cargo install cargo-ndk && \
+	cd / && \
+	wget https://gmplib.org/download/gmp/gmp-${GMP_VERSION}.tar.lz && \
 	apt install lzip && \
 	tar -xvf ./gmp-*.tar.lz && \
 	rm  gmp-*.tar.lz && \
@@ -33,33 +31,28 @@ RUN 	wget https://gmplib.org/download/gmp/gmp-${GMP_VERSION}.tar.lz && \
 	mkdir build && \
 	cd build && \
 	for i in armv7a-linux-androideabi aarch64-linux-android x86_64-linux-android; do \
-		mkdir $i && \
-		cd $i && \
-		../../configure --host=${i}${MIN_SDK_VERSION} CC=${i}${MIN_SDK_VERSION}-clang && \
-		 make -j 32 && \
-		cd .. ;\
+	mkdir $i && \
+	cd $i && \
+	../../configure --host=${i}${MIN_SDK_VERSION} CC=${i}${MIN_SDK_VERSION}-clang && \
+	make -j 32 && \
+	cd .. ;\
 	done && \
-	cd /
-
-# OPENSSL
-
-RUN 	wget https://www.openssl.org/source/openssl-${OPENSSL_VERSION}.tar.gz && \
+	cd / && \
+	wget https://www.openssl.org/source/openssl-${OPENSSL_VERSION}.tar.gz && \
 	tar -xvf openssl-${OPENSSL_VERSION}.tar.gz && \
 	rm openssl-${OPENSSL_VERSION}.tar.gz && \
 	mv openssl-${OPENSSL_VERSION} openssl && \
 	mkdir /openssl/build && \
 	cd /openssl/build/ && \
 	for i in android-arm64 android-arm android-x86_64; do \
-		mkdir $i && \
-		cd $i && \
-		../../Configure $i && \
-		make -j 32 && \
-		cd .. ;\
+	mkdir $i && \
+	cd $i && \
+	../../Configure $i && \
+	make -j 32 && \
+	cd .. ;\
 	done && \
-	cd /
-
-# COPY EVERY LIB into sysroot...
-RUN 	cp -r /openssl/include/* ${ANDROID_NDK_HOME}toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/ && \
+	cd / && \
+	cp -r /openssl/include/* ${ANDROID_NDK_HOME}toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/ && \
 	cp -r /openssl/build/android-arm64/include/* ${ANDROID_NDK_HOME}toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/ && \
 	cp /openssl/build/android-arm64/libssl.so ${ANDROID_NDK_HOME}toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android && \
 	cp /openssl/build/android-arm64/libcrypto.so ${ANDROID_NDK_HOME}toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android && \
@@ -72,5 +65,5 @@ RUN 	cp -r /openssl/include/* ${ANDROID_NDK_HOME}toolchains/llvm/prebuilt/linux-
 	cp /gmp/build/x86_64-linux-android/.libs/libgmp.so ${ANDROID_NDK_HOME}toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/x86_64-linux-android/
 
 # compile
-RUN 	cd /gotham-city/gotham-client && cargo ndk -t arm64-v8a -t armeabi-v7a -t x86_64 -o ./jniLibs_debug build && \
-	cd /gotham-city/gotham-client && cargo ndk -t arm64-v8a -t armeabi-v7a -t x86_64 -o ./jniLibs build --release
+# 	cd /gotham-city/gotham-client && cargo ndk -t arm64-v8a -t armeabi-v7a -t x86_64 -o ./jniLibs_debug build && \
+#	cd /gotham-city/gotham-client && cargo ndk -t arm64-v8a -t armeabi-v7a -t x86_64 -o ./jniLibs build --release
