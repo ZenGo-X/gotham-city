@@ -1,0 +1,32 @@
+version: 2.1
+
+jobs:
+  build_ios:
+    macos: 
+      xcode: 13.4.1
+    environment:
+      HOMEBREW_NO_AUTO_UPDATE: 1
+    steps:
+      - run: echo "Starting to build for iOS"
+  build_android_docker_image:
+    machine:
+      image: ubuntu-2204:2022.07.1
+    steps:
+      - checkout
+      - run:
+        name: Build Docker Image
+        command: docker build -t gotham_android gotham-city/gotham-client/docker_images/android/
+      - run:
+        name: Login to docker registry
+        command: docker login --username "$DOCKER_REG_USERNAME" --password "$DOCKER_REG_PASSWORD" "$DOCKER_REG_HOST"
+      - run:
+        name: Set Tags
+        command: docker tag gotham_android:latest "$DOCKER_REG_USERNAME"/gotham_android:latest
+      - run:
+        name: Push Image
+        command: docker image push  --all-tags "$DOCKER_REG_USERNAME"/gotham_android
+
+
+
+
+
