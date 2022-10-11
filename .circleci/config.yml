@@ -3,11 +3,33 @@ version: 2.1
 jobs:
   build_ios:
     macos: 
-      xcode: 13.4.1
+      xcode: 14.0.1
     environment:
       HOMEBREW_NO_AUTO_UPDATE: 1
     steps:
-      - run: echo "Starting to build for iOS"
+      - checkout
+      - run:
+          name: Install Rust for MacOS
+          command: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+      - run:
+          name: Add aarch64-apple-ios Target
+          command: rustup target add aarch64-apple-ios
+      - run: 
+          name: Build for aarch64 iOS Debug
+          command: |
+            cd gotham-client
+            cargo build --target aarch64-apple-ios --lib
+      - run: 
+          name: Build for iOS Release
+          command: |
+            cd gotham-client
+            cargo build --target aarch64-apple-ios --release --lib
+      - store_artifacts:
+          path: target/aarch64-apple-ios/debug/libclient_lib.a
+          destination: gotham-ios-debug/libclient_lib.a
+      - store_artifacts:
+          path: target/aarch64-apple-ios/release/libclient_lib.a
+          destination: gotham-ios-release/libclient_lib.a
 
   build_android_docker_image:
     machine:
