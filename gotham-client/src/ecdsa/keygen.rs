@@ -23,10 +23,13 @@ use crate::{Client, ClientShim};
 
 // Android bindings
 
-use jni::objects::{JClass, JString};
-use jni::strings::JavaStr;
-use jni::sys::jstring;
-use jni::JNIEnv;
+#[cfg(target_os = "android")]
+use jni::{
+    objects::{JClass, JString},
+    strings::JavaStr,
+    sys::jstring,
+    JNIEnv,
+};
 use std::ops::Deref;
 
 const KG_PATH_PRE: &str = "ecdsa/keygen";

@@ -6,10 +6,13 @@ use two_party_ecdsa::{curv::BigInt, party_one, party_two};
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
 //Android bindings
-use jni::objects::{JClass, JString};
-use jni::strings::JavaStr;
-use jni::sys::{jint, jstring};
-use jni::JNIEnv;
+#[cfg(target_os = "android")]
+use jni::{
+    objects::{JClass, JString},
+    strings::JavaStr,
+    sys::{jint, jstring},
+    JNIEnv,
+};
 use std::ops::Deref;
 
 use crate::{utilities::error_to_c_string, Client, ClientShim, Result};
@@ -197,59 +200,83 @@ pub extern "C" fn Java_com_zengo_components_kms_gotham_ECDSA_signMessage(
     //Convert endpoint
     let JavaStr_endpoint = match env.get_string(j_endpoint) {
         Ok(java_endpoint) => java_endpoint,
-        Err(e) => return env.new_string(format!("Error from Rust in signMessage: {}", e.to_string()))
-            .unwrap()
-        .into_inner()
+        Err(e) => {
+            return env
+                .new_string(format!("Error from Rust in signMessage: {}", e.to_string()))
+                .unwrap()
+                .into_inner()
+        }
     };
 
     let endpoint = match JavaStr::deref(&JavaStr_endpoint).to_str() {
         Ok(endpoint) => endpoint,
-        Err(e) => return env.new_string(format!("Error from Rust in signMessage: {}", e.to_string()))
-            .unwrap()
-            .into_inner()
+        Err(e) => {
+            return env
+                .new_string(format!("Error from Rust in signMessage: {}", e.to_string()))
+                .unwrap()
+                .into_inner()
+        }
     };
 
     //Convert auth_token
     let JavaStr_auth_token = match env.get_string(j_auth_token) {
         Ok(java_auth_token) => java_auth_token,
-        Err(e) => return env.new_string(format!("Error from Rust in signMessage: {}", e.to_string()))
-            .unwrap()
-            .into_inner()
+        Err(e) => {
+            return env
+                .new_string(format!("Error from Rust in signMessage: {}", e.to_string()))
+                .unwrap()
+                .into_inner()
+        }
     };
     let auth_token = match JavaStr::deref(&JavaStr_auth_token).to_str() {
         Ok(auth_token) => auth_token,
-        Err(e) => return env.new_string(format!("Error from Rust in signMessage: {}", e.to_string()))
-            .unwrap()
-            .into_inner()
+        Err(e) => {
+            return env
+                .new_string(format!("Error from Rust in signMessage: {}", e.to_string()))
+                .unwrap()
+                .into_inner()
+        }
     };
 
     //Convert message_le_hex
     let JavaStr_message_le_hex = match env.get_string(j_message_le_hex) {
         Ok(java_message_le_hex) => java_message_le_hex,
-        Err(e) => return env.new_string(format!("Error from Rust in signMessage: {}", e.to_string()))
-            .unwrap()
-            .into_inner()
+        Err(e) => {
+            return env
+                .new_string(format!("Error from Rust in signMessage: {}", e.to_string()))
+                .unwrap()
+                .into_inner()
+        }
     };
 
     let message_le_hex = match JavaStr::deref(&JavaStr_message_le_hex).to_str() {
         Ok(message_le_hex) => message_le_hex,
-        Err(e) => return env.new_string(format!("Error from Rust in signMessage: {}", e.to_string()))
-            .unwrap()
-            .into_inner()
+        Err(e) => {
+            return env
+                .new_string(format!("Error from Rust in signMessage: {}", e.to_string()))
+                .unwrap()
+                .into_inner()
+        }
     };
 
     //Convert master_key_json
     let JavaStr_master_key_json = match env.get_string(j_master_key_json) {
         Ok(java_master_key_json) => java_master_key_json,
-        Err(e) => return env.new_string(format!("Error from Rust in signMessage: {}", e.to_string()))
-            .unwrap()
-            .into_inner()
+        Err(e) => {
+            return env
+                .new_string(format!("Error from Rust in signMessage: {}", e.to_string()))
+                .unwrap()
+                .into_inner()
+        }
     };
     let master_key_json = match JavaStr::deref(&JavaStr_master_key_json).to_str() {
         Ok(master_key_json) => master_key_json,
-        Err(e) => return env.new_string(format!("Error from Rust in signMessage: {}", e.to_string()))
-            .unwrap()
-            .into_inner()
+        Err(e) => {
+            return env
+                .new_string(format!("Error from Rust in signMessage: {}", e.to_string()))
+                .unwrap()
+                .into_inner()
+        }
     };
 
     //Convert x_pos
@@ -261,15 +288,21 @@ pub extern "C" fn Java_com_zengo_components_kms_gotham_ECDSA_signMessage(
     //Convert id
     let JavaStr_id = match env.get_string(j_id) {
         Ok(java_id) => java_id,
-        Err(e) => return env.new_string(format!("Error from Rust in signMessage: {}", e.to_string()))
-            .unwrap()
-            .into_inner()
+        Err(e) => {
+            return env
+                .new_string(format!("Error from Rust in signMessage: {}", e.to_string()))
+                .unwrap()
+                .into_inner()
+        }
     };
     let id = match JavaStr::deref(&JavaStr_id).to_str() {
         Ok(id) => id,
-        Err(e) => return env.new_string(format!("Error from Rust in signMessage: {}", e.to_string()))
-            .unwrap()
-            .into_inner()
+        Err(e) => {
+            return env
+                .new_string(format!("Error from Rust in signMessage: {}", e.to_string()))
+                .unwrap()
+                .into_inner()
+        }
     };
 
     /************************ END CONVERSION ************************/
@@ -284,19 +317,23 @@ pub extern "C" fn Java_com_zengo_components_kms_gotham_ECDSA_signMessage(
 
     let sig = match sign(&client_shim, message, &mk_child, x, y, &id.to_string()) {
         Ok(s) => s,
-        Err(e) => return env.new_string(format!("Error from Rust in signMessage: {}", e.to_string()))
-            .unwrap()
-            .into_inner()
+        Err(e) => {
+            return env
+                .new_string(format!("Error from Rust in signMessage: {}", e.to_string()))
+                .unwrap()
+                .into_inner()
+        }
     };
 
     let signature_json = match serde_json::to_string(&sig) {
         Ok(share) => share,
-        Err(e) => return env.new_string(format!("Error from Rust in signMessage: {}", e.to_string()))
-            .unwrap()
-            .into_inner()
+        Err(e) => {
+            return env
+                .new_string(format!("Error from Rust in signMessage: {}", e.to_string()))
+                .unwrap()
+                .into_inner()
+        }
     };
 
-    env.new_string(signature_json)
-        .unwrap()
-        .into_inner()
+    env.new_string(signature_json).unwrap().into_inner()
 }

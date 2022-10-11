@@ -20,10 +20,13 @@ use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
 
 //Android bindings
-use jni::objects::{JClass, JString};
-use jni::strings::JavaStr;
-use jni::sys::{jint, jstring};
-use jni::JNIEnv;
+#[cfg(target_os = "android")]
+use jni::{
+    objects::{JClass, JString},
+    strings::JavaStr,
+    sys::{jint, jstring},
+    JNIEnv,
+};
 use std::ops::Deref;
 
 #[no_mangle]
@@ -368,6 +371,7 @@ pub extern "C" fn Java_com_zengo_components_kms_gotham_ECDSA_constructSinglePriv
     env.new_string(sk_json).unwrap().into_inner()
 }
 
+#[cfg(target_os = "android")]
 #[allow(non_snake_case)]
 fn get_String_from_JString(env: &JNIEnv, j_string: JString) -> Result<String, Error> {
     let java_str_string = match env.get_string(j_string) {
