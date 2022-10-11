@@ -7,12 +7,9 @@
 // version 3 of the License, or (at your option) any later version.
 //
 
-use chrono::Local;
-use env_logger::Builder;
 use log::LevelFilter;
 use server_lib::server;
 use std::collections::HashMap;
-use std::io::Write;
 
 #[rocket::launch]
 fn rocket() -> _ {

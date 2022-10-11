@@ -8,7 +8,7 @@ authors = [
 edition = "2021"
 
 [target.'cfg(target_os="android")'.dependencies]
-jni = { version = "0.5", default-features = false }
+jni = { version = "0.19", default-features = false }
 
 [lib]
 crate-type = ["staticlib", "cdylib", "lib"]
@@ -16,21 +16,14 @@ name = "client_lib"
 path = "src/lib.rs"
 
 [dependencies]
-serde = { version = "1", features = ["serde_derive"] }
-serde_json = "1.0"
-log = "0.4"
-reqwest = "0.9.5"
-failure = "0.1.5"
-floating-duration = "0.1.2"
-jni = "0.19.0"
-
-two-party-ecdsa = { git = "https://github.com/ZenGo-X/two-party-ecdsa.git" }
-kms = { git = "https://github.com/ZenGo-X/kms-secp256k1.git", branch = "2.0" }
-
-
-[dependencies.two-party-musig2-eddsa]
-git = "https://github.com/ZenGo-X/two-party-musig2-eddsa"
-tag = "v0.1.2"
+serde.workspace = true
+serde_json.workspace = true
+log.workspace = true
+reqwest.workspace = true
+failure.workspace = true
+floating-duration.workspace = true
+two-party-ecdsa.workspace = true
+kms.workspace = true
 
 [dev-dependencies]
 mockall = "0.11"

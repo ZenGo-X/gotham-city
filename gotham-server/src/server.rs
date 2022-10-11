@@ -9,8 +9,6 @@
 
 use log::info;
 use rocket::{self, catch, catchers, routes, Build, Request, Rocket};
-use rusoto_core::Region;
-use rusoto_dynamodb::DynamoDbClient;
 use serde::Deserialize;
 
 use super::{storage::db, Config};
@@ -93,26 +91,6 @@ pub fn get_server(settings: HashMap<String, String>) -> Rocket<Build> {
         .manage(auth_config)
 }
 
-fn get_settings_as_map() -> HashMap<String, String> {
-    info!(
-        "FAIL_KEYGEN_IF_ACTIVE_SHARE_EXISTS = {:?}",
-        std::env::var("FAIL_KEYGEN_IF_ACTIVE_SHARE_EXISTS")
-    );
-
-    let config_file = include_str!("../Settings.toml");
-    let mut settings = config::Config::default();
-    settings
-        .merge(config::File::from_str(
-            config_file,
-            config::FileFormat::Toml,
-        ))
-        .unwrap()
-        .merge(config::Environment::new())
-        .unwrap();
-
-    settings.try_into::<HashMap<String, String>>().unwrap()
-}
-
 fn get_db(settings: HashMap<String, String>) -> db::DB {
     let db_type_string = settings
         .get("db")
@@ -129,7 +107,10 @@ fn get_db(settings: HashMap<String, String>) -> db::DB {
         .to_string();
 
     match db_type {
+        #[cfg(feature = "aws")]
         "AWS" => {
+            use rusoto_core::Region;
+            use rusoto_dynamodb::DynamoDbClient;
             let region_option = settings.get("aws_region");
             match region_option {
                 Some(s) => {
@@ -142,6 +123,15 @@ fn get_db(settings: HashMap<String, String>) -> db::DB {
                 None => panic!("Set 'DB = AWS' but 'region' is empty"),
             }
         }
-        _ => db::DB::Local(rocksdb::DB::open_default(format!("./{}", db_name)).unwrap()),
+        _ => {
+            #[cfg(feature = "local")]
+            {
+                db::DB::Local(rocksdb::DB::open_default(format!("./{}", db_name)).unwrap())
+            }
+            #[cfg(not(feature = "local"))]
+            {
+                unimplemented!("DB type not supported")
+            }
+        },
     }
 }

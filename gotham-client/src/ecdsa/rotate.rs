@@ -7,7 +7,6 @@
 // version 3 of the License, or (at your option) any later version.
 //
 use super::types::PrivateShare;
-use super::super::utilities::requests;
 use super::super::wallet;
 use super::super::ClientShim;
 use curv::cryptographic_primitives::twoparty::coin_flip_optimal_rounds;
@@ -19,10 +18,10 @@ use std::collections::HashMap;
 
 const ROT_PATH_PRE: &str = "ecdsa/rotate";
 
-pub fn rotate_master_key(wallet: wallet::Wallet, client_shim: &ClientShim) -> wallet::Wallet {
+pub fn rotate_master_key<C: Client>(wallet: wallet::Wallet, client_shim: &ClientShim<C>) -> wallet::Wallet {
     let id = &wallet.private_share.id.clone();
     let coin_flip_party1_first_message: coin_flip_optimal_rounds::Party1FirstMessage =
-        requests::post(client_shim, &format!("{}/{}/first", ROT_PATH_PRE, id)).unwrap();
+        client_shim.post(&format!("{}/{}/first", ROT_PATH_PRE, id)).unwrap();
 
     let coin_flip_party2_first_message =
         Rotation2::key_rotate_first_message(&coin_flip_party1_first_message);
@@ -32,9 +31,8 @@ pub fn rotate_master_key(wallet: wallet::Wallet, client_shim: &ClientShim) -> wa
     let (coin_flip_party1_second_message, rotation_party1_first_message): (
         coin_flip_optimal_rounds::Party1SecondMessage,
         party1::RotationParty1Message1,
-    ) = requests::postb(
-        client_shim,
-        &format!("{}/{}/second", ROT_PATH_PRE, id.clone()),
+    ) = client_shim.postb(
+        &format!("{}/{}/second", ROT_PATH_PRE, id),
         body,
     )
     .unwrap();
@@ -58,9 +56,8 @@ pub fn rotate_master_key(wallet: wallet::Wallet, client_shim: &ClientShim) -> wa
 
     let body = &rotation_party_two_first_message;
 
-    let rotation_party1_second_message: party_one::PDLFirstMessage = requests::postb(
-        client_shim,
-        &format!("{}/{}/third", ROT_PATH_PRE, id.clone()),
+    let rotation_party1_second_message: party_one::PDLFirstMessage = client_shim.postb(
+        &format!("{}/{}/third", ROT_PATH_PRE, id),
         body,
     )
     .unwrap();
@@ -69,9 +66,8 @@ pub fn rotate_master_key(wallet: wallet::Wallet, client_shim: &ClientShim) -> wa
 
     let body = &rotation_party_two_second_message;
 
-    let rotation_party1_third_message: party_one::PDLSecondMessage = requests::postb(
-        client_shim,
-        &format!("{}/{}/fourth", ROT_PATH_PRE, id.clone()),
+    let rotation_party1_third_message: party_one::PDLSecondMessage = client_shim.postb(
+        &format!("{}/{}/fourth", ROT_PATH_PRE, id),
         body,
     )
     .unwrap();

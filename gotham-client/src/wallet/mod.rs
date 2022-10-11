@@ -32,7 +32,6 @@ use kms::chain_code::two_party::party2::ChainCode2;
 use super::ecdsa;
 use super::ecdsa::types::PrivateShare;
 use super::escrow;
-use super::utilities::requests;
 use super::ClientShim;
 use curv::arithmetic::traits::Converter;
 use hex;
@@ -121,7 +120,7 @@ pub struct Wallet {
 }
 
 impl Wallet {
-    pub fn new(client_shim: &ClientShim, net: &str) -> Wallet {
+    pub fn new<C: Client>(client_shim: &ClientShim<C>, net: &str) -> Wallet {
         let id = Uuid::new_v4().to_string();
         let private_share = ecdsa::get_master_key(client_shim);
         let last_derived_pos = 0;
@@ -137,7 +136,7 @@ impl Wallet {
         }
     }
 
-    pub fn rotate(self, client_shim: &ClientShim) -> Self {
+    pub fn rotate<C: Client>(self, client_shim: &ClientShim<C>) -> Self {
         ecdsa::rotate_master_key(self, client_shim)
     }
 
@@ -192,10 +191,10 @@ impl Wallet {
         }
     }
 
-    pub fn recover_and_save_share(
+    pub fn recover_and_save_share<C: Client>(
         escrow_service: escrow::Escrow,
         net: &str,
-        client_shim: &ClientShim,
+        client_shim: &ClientShim<C>,
     ) -> Wallet {
         let g: GE = ECPoint::generator();
         let y_priv = escrow_service.get_private_key();
@@ -215,7 +214,7 @@ impl Wallet {
         let client_master_key_recovered =
             MasterKey2::recover_master_key(sk.unwrap(), public_data, chain_code2);
         let pos_old: u32 =
-            requests::post(client_shim, &format!("ecdsa/{}/recover", key_id)).unwrap();
+            client_shim.post(&format!("ecdsa/{}/recover", key_id)).unwrap();
 
         let pos_old = if pos_old < 10 { 10 } else { pos_old };
         //TODO: temporary, server will keep updated pos, to do so we need to send update to server for every get_new_address
@@ -267,11 +266,11 @@ impl Wallet {
         Wallet::load_from(WALLET_FILENAME)
     }
 
-    pub fn send<E: BalanceFetcher>(
+    pub fn send<E: BalanceFetcher, C: Client>(
         &mut self,
         to_address: String,
         amount_btc: f32,
-        client_shim: &ClientShim,
+        client_shim: &ClientShim<C>,
         fetcher: &mut E,
     ) -> String {
         let selected = self.select_tx_in(amount_btc, fetcher);

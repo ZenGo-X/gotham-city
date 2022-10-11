@@ -19,7 +19,7 @@ use std::os::raw::c_char;
 use std::time::Instant;
 
 use super::types::PrivateShare;
-use crate::{utilities::requests, ClientShim};
+use crate::{Client, ClientShim};
 
 // Android bindings
 
@@ -31,18 +31,19 @@ use std::ops::Deref;
 
 const KG_PATH_PRE: &str = "ecdsa/keygen";
 
-pub fn get_master_key(client_shim: &ClientShim) -> PrivateShare {
+pub fn get_master_key<C: Client>(client_shim: &ClientShim<C>) -> PrivateShare {
     let start = Instant::now();
 
     let (id, kg_party_one_first_message): (String, party_one::KeyGenFirstMsg) =
-        requests::post(client_shim, &format!("{}/first", KG_PATH_PRE)).unwrap();
+        client_shim.post(&format!("{}/first", KG_PATH_PRE)).unwrap();
 
     let (kg_party_two_first_message, kg_ec_key_pair_party2) = MasterKey2::key_gen_first_message();
 
     let body = &kg_party_two_first_message.d_log_proof;
 
-    let kg_party_one_second_message: party1::KeyGenParty1Message2 =
-        requests::postb(client_shim, &format!("{}/{}/second", KG_PATH_PRE, id), body).unwrap();
+    let kg_party_one_second_message: party1::KeyGenParty1Message2 = client_shim
+        .postb(&format!("{}/{}/second", KG_PATH_PRE, id), body)
+        .unwrap();
 
     let key_gen_second_message = MasterKey2::key_gen_second_message(
         &kg_party_one_first_message,
@@ -54,8 +55,9 @@ pub fn get_master_key(client_shim: &ClientShim) -> PrivateShare {
 
     let body = &party_two_second_message.pdl_first_message;
 
-    let party_one_third_message: party_one::PDLFirstMessage =
-        requests::postb(client_shim, &format!("{}/{}/third", KG_PATH_PRE, id), body).unwrap();
+    let party_one_third_message: party_one::PDLFirstMessage = client_shim
+        .postb(&format!("{}/{}/third", KG_PATH_PRE, id), body)
+        .unwrap();
 
     let pdl_decom_party2 = MasterKey2::key_gen_third_message(&party_two_pdl_chal);
 
@@ -63,8 +65,9 @@ pub fn get_master_key(client_shim: &ClientShim) -> PrivateShare {
 
     let body = &party_2_pdl_second_message;
 
-    let party_one_pdl_second_message: party_one::PDLSecondMessage =
-        requests::postb(client_shim, &format!("{}/{}/fourth", KG_PATH_PRE, id), body).unwrap();
+    let party_one_pdl_second_message: party_one::PDLSecondMessage = client_shim
+        .postb(&format!("{}/{}/fourth", KG_PATH_PRE, id), body)
+        .unwrap();
 
     MasterKey2::key_gen_fourth_message(
         &party_two_pdl_chal,
@@ -73,23 +76,18 @@ pub fn get_master_key(client_shim: &ClientShim) -> PrivateShare {
     )
     .expect("pdl error party1");
 
-    let cc_party_one_first_message: Party1FirstMessage = requests::post(
-        client_shim,
-        &format!("{}/{}/chaincode/first", KG_PATH_PRE, id),
-    )
-    .unwrap();
+    let cc_party_one_first_message: Party1FirstMessage = client_shim
+        .post(&format!("{}/{}/chaincode/first", KG_PATH_PRE, id))
+        .unwrap();
 
     let (cc_party_two_first_message, cc_ec_key_pair2) =
         chain_code::party2::ChainCode2::chain_code_first_message();
 
     let body = &cc_party_two_first_message.d_log_proof;
 
-    let cc_party_one_second_message: Party1SecondMessage = requests::postb(
-        client_shim,
-        &format!("{}/{}/chaincode/second", KG_PATH_PRE, id),
-        body,
-    )
-    .unwrap();
+    let cc_party_one_second_message: Party1SecondMessage = client_shim
+        .postb(&format!("{}/{}/chaincode/second", KG_PATH_PRE, id), body)
+        .unwrap();
 
     let cc_party_two_second_message = chain_code::party2::ChainCode2::chain_code_second_message(
         &cc_party_one_first_message,
