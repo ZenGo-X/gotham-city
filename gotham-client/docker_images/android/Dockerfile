@@ -61,9 +61,3 @@ RUN apt update && \
     cp /gmp/build/aarch64-linux-android/.libs/libgmp.so ${ANDROID_NDK_HOME}toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/ && \
     cp /gmp/build/armv7a-linux-androideabi/.libs/libgmp.so ${ANDROID_NDK_HOME}toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/arm-linux-androideabi/ && \
     cp /gmp/build/x86_64-linux-android/.libs/libgmp.so ${ANDROID_NDK_HOME}toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/x86_64-linux-android/
-
-# git clone https://github.com/ZenGo-X/gotham-city.git && \
-# cd gotham-city && git checkout server_fix && \
-# compile
-# 	cd /gotham-city/gotham-client && cargo ndk -t arm64-v8a -t armeabi-v7a -t x86_64 -o ./jniLibs_debug build && \
-#	cd /gotham-city/gotham-client && cargo ndk -t arm64-v8a -t armeabi-v7a -t x86_64 -o ./jniLibs build --release

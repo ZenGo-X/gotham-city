@@ -27,6 +27,29 @@ jobs:
           name: Push Image
           command: docker image push  --all-tags "${DOCKER_REG_HOST}"/"$DOCKER_REG_USERNAME"/gotham_android
 
+  build_android:
+    docker:
+      - image: matanzengo/gotham_android:latest
+    resource_class: xlarge
+    steps:
+      - checkout 
+      - run: 
+          name: Build Debug Version
+          command: |
+            cd gotham-client 
+            cargo ndk -p "${MIN_SDK_VERSION}" -t arm64-v8a -t armeabi-v7a -t x86_64 -o ./jniLibs_debug build 
+      - run: 
+          name: Build Release Version
+          command: |
+            cd gotham-client  
+            cargo ndk -p "${MIN_SDK_VERSION}" -t arm64-v8a -t armeabi-v7a -t x86_64 -o ./jniLibs build --release
+      - store_artifacts:
+          path: gotham-client/jniLibs
+          destination: gotham-android-release
+      - store_artifacts:
+          path: gotham-client/jniLibs_debug 
+          destination: gotham-android-debug
+
 workflows:
   build_docker_image:
     jobs:
@@ -34,3 +57,6 @@ workflows:
   build_ios:
     jobs:
       - build_ios
+  build_android:
+    jobs:
+      - build_android
