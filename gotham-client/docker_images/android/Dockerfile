@@ -9,6 +9,7 @@ ENV OPENSSL_VERSION=1.1.1n
 ENV TARGET_CXXFLAGS=-mno-outline-atomics
 ENV PKG_CONFIG_SYSROOT_DIR="${ANDROID_NDK_HOME}toolchains/llvm/prebuilt/linux-x86_64/sysroot"
 RUN apt update && \
+    apt install -y ca-certificates lzip && \
     wget https://dl.google.com/android/repository/android-ndk-r${NDK_VERSION}-linux-x86_64.zip && \
     unzip android-ndk-r*.zip && \
     rm android-ndk-r*.zip && \
@@ -21,7 +22,6 @@ RUN apt update && \
     cargo install cargo-ndk && \
     cd / && \
     wget https://gmplib.org/download/gmp/gmp-${GMP_VERSION}.tar.lz && \
-    apt install lzip && \
     tar -xvf ./gmp-*.tar.lz && \
     rm  gmp-*.tar.lz && \
     mv gmp-* gmp && \

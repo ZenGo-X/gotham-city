@@ -18,12 +18,12 @@ jobs:
           name: Build for aarch64 iOS Debug
           command: |
             cd gotham-client
-            cargo build --target aarch64-apple-ios --lib
+            cargo rustc --crate-type staticlib --target aarch64-apple-ios --lib
       - run: 
           name: Build for iOS Release
           command: |
             cd gotham-client
-            cargo build --target aarch64-apple-ios --release --lib
+            cargo rustc --crate-type staticlib --target aarch64-apple-ios --release --lib
       - store_artifacts:
           path: target/aarch64-apple-ios/debug/libclient_lib.a
           destination: gotham-ios-debug/libclient_lib.a
