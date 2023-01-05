@@ -27,7 +27,6 @@ use jni::{
     sys::{jint, jstring},
     JNIEnv,
 };
-use std::ops::Deref;
 
 #[no_mangle]
 #[allow(non_snake_case)]

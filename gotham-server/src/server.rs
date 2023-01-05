@@ -7,7 +7,6 @@
 // version 3 of the License, or (at your option) any later version.
 //
 
-use log::info;
 use rocket::{self, catch, catchers, routes, Build, Request, Rocket};
 use serde::Deserialize;
 
@@ -83,8 +82,7 @@ pub fn get_server(settings: HashMap<String, String>) -> Rocket<Build> {
                 crate::routes::ecdsa::chain_code_second_message,
                 crate::routes::ecdsa::sign_first,
                 crate::routes::ecdsa::sign_second,
-                crate::routes::ecdsa::recover,
-                crate::routes::eddsa::keygen
+                crate::routes::ecdsa::recover
             ],
         )
         .manage(db_config)
@@ -132,6 +130,6 @@ fn get_db(settings: HashMap<String, String>) -> db::DB {
             {
                 unimplemented!("DB type not supported")
             }
-        },
+        }
     }
 }

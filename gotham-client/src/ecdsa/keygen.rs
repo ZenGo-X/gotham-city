@@ -30,7 +30,6 @@ use jni::{
     sys::jstring,
     JNIEnv,
 };
-use std::ops::Deref;
 
 const KG_PATH_PRE: &str = "ecdsa/keygen";
 

@@ -13,7 +13,6 @@ use jni::{
     sys::{jint, jstring},
     JNIEnv,
 };
-use std::ops::Deref;
 
 use crate::{utilities::error_to_c_string, Client, ClientShim, Result};
 
