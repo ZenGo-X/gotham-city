@@ -22,7 +22,7 @@ use super::types::PrivateShare;
 use crate::{Client, ClientShim};
 
 // Android bindings
-
+use std::ops::Deref;
 #[cfg(target_os = "android")]
 use jni::{
     objects::{JClass, JString},

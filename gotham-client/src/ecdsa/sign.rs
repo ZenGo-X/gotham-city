@@ -5,6 +5,7 @@ use two_party_ecdsa::{curv::BigInt, party_one, party_two};
 // iOS bindings
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
+use std::ops::Deref;
 //Android bindings
 #[cfg(target_os = "android")]
 use jni::{
