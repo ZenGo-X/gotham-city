@@ -30,6 +30,7 @@ jobs:
       - store_artifacts:
           path: target/aarch64-apple-ios/release/libclient_lib.a
           destination: gotham-ios-release/libclient_lib.a
+      - run: echo "Starting to build for iOS"
 
   build_android_docker_image:
     machine:
