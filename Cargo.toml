@@ -21,4 +21,4 @@ jsonwebtoken = "8"
 hex = "0.4"
 
 two-party-ecdsa = { git = "https://github.com/ZenGo-X/two-party-ecdsa.git" }
-kms = { git = "https://github.com/ZenGo-X/kms-secp256k1.git", branch = "2.0" }
+kms = { git = "https://github.com/ZenGo-X/kms-secp256k1.git", branch = "2.0" } 
