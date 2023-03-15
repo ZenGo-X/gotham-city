@@ -37,6 +37,8 @@ serde_derive = "1.0"
 uuid = { version = "0.7", features = ["v4"] }
 mockall = "0.11.3"
 clap = { version = "2.32", features = ["yaml"] }
+rand = "0.8"
+secp256k1 = {version = "0.21.0", features = ["global-context"]}
 
 [dev-dependencies]
 mockall = "0.11"

@@ -10,18 +10,21 @@
 #[macro_use]
 extern crate clap;
 use clap::App;
-
+use rand::rngs::mock::StepRng;
+use rand::Rng;
 use client_lib::escrow;
 use client_lib::wallet;
 use client_lib::ClientShim;
 use floating_duration::TimeFormat;
 use std::time::Instant;
+pub use two_party_ecdsa::curv::{ BigInt};
 
 use std::collections::HashMap;
 
 fn main() {
     // let yaml = load_yaml!("../cli.yml");
     // let matches = App::from_yaml(yaml).get_matches();
+    let mut rng = StepRng::new(0, 1);
 
     let mut settings = config::Config::default();
     settings
@@ -43,6 +46,12 @@ fn main() {
     let wallet = wallet::Wallet::new(&client_shim, &network);
     wallet.save_to("mywallet");
     println!("Network: [{}], Wallet saved to disk", &network);
+    let mut wallet: wallet::Wallet = wallet::Wallet::load();
+
+    let mut msg_buf = [0u8; 32];
+    rng.fill(&mut msg_buf);
+    // let msg: BigInt = BigInt::from(&msg_buf[..]);
+    wallet.sign(&msg_buf,&client_shim);
 
     // let mut wallet: wallet::Wallet = wallet::Wallet::load();
 }

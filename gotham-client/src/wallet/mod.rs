@@ -18,6 +18,7 @@ use std::fs;
 use uuid::Uuid;
 use two_party_ecdsa::curv::PK;
 use kms::chain_code::two_party::party2::ChainCode2;
+use secp256k1::{ecdsa::Signature, Message, SECP256K1};
 
 use super::ecdsa;
 use super::ecdsa::types::PrivateShare;
@@ -33,14 +34,9 @@ use log::debug;
 use two_party_ecdsa::centipede::juggling::proof_system::Proof;
 use two_party_ecdsa::centipede::juggling::segmentation::Msegmentation;
 use two_party_ecdsa::{Helgamalsegmented, party_one};
-// use two_party_ecdsa::party_one::Signature;
 use crate::Client;
 
-// TODO: move that to a config file and double check electrum server addresses
-const ELECTRUM_HOST: &str = "ec2-34-219-15-143.us-west-2.compute.amazonaws.com:60001";
-//const ELECTRUM_HOST: &str = "testnetnode.arihanc.com:51001";
-const WALLET_FILENAME: &str = "wallet/wallet.data";
-const BACKUP_FILENAME: &str = "wallet/backup.data";
+const WALLET_FILENAME: &str = "mywallet";
 
 
 
@@ -115,28 +111,33 @@ impl Wallet {
 
     pub fn sign<C: Client>(
         &mut self,
-        to_address: String,
-        amount_btc: [u8; 32],
+        msg: &[u8],
         client_shim: &ClientShim<C>,
     ) {
 
+        let child_master_key = &self.private_share.master_key.get_child(vec![BigInt::from(0), BigInt::from(1)]);
 
             let signature = ecdsa::sign(
                 client_shim,
-                BigInt::from_hex(&hex::encode(&amount_btc[..])),
-                &self.private_share.master_key,
-                BigInt::from(0u32),
-                // BigInt::from(address_derivation.pos),
-                BigInt::from(101),
+                BigInt::from(&msg[..]),
+                child_master_key,
+                BigInt::from(0),
+                BigInt::from(1),
                 &self.private_share.id,
             ).expect("ECDSA signature failed");
 
         let r = BigInt::to_vec(&signature.r);
         let s = BigInt::to_vec(&signature.s);
+        let message = Message::from_slice(&msg).unwrap();
 
         let mut sig = [0u8; 64];
         sig[32 - r.len()..32].copy_from_slice(&r);
-        sig[32 + 32 - s.len()..].copy_from_slice(&s)
+        sig[32 + 32 - s.len()..].copy_from_slice(&s);
+
+        let sig = Signature::from_compact(&sig).unwrap();
+        let pk = child_master_key.public.q.get_element();
+
+        SECP256K1.verify_ecdsa(&message, &sig, &pk).unwrap();
 
     }
 
