@@ -11,11 +11,11 @@
 extern crate clap;
 use clap::App;
 
-use client_lib::ClientShim;
 use client_lib::escrow;
 use client_lib::wallet;
-use std::time::Instant;
+use client_lib::ClientShim;
 use floating_duration::TimeFormat;
+use std::time::Instant;
 
 use std::collections::HashMap;
 
@@ -39,16 +39,10 @@ fn main() {
 
     let network = "testnet".to_string();
 
-        println!("Network: [{}], Creating wallet", network);
-        let wallet = wallet::Wallet::new(&client_shim, &network);
-        // wallet.save();
-        println!("Network: [{}], Wallet saved to disk", &network);
+    println!("Network: [{}], Creating wallet", network);
+    let wallet = wallet::Wallet::new(&client_shim, &network);
+    wallet.save_to("mywallet");
+    println!("Network: [{}], Wallet saved to disk", &network);
 
-        // let mut wallet: wallet::Wallet = wallet::Wallet::load();
-
-
-    }
-
-
-
-
+    // let mut wallet: wallet::Wallet = wallet::Wallet::load();
+}
