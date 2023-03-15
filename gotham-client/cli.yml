@@ -1,7 +1,7 @@
-name: gotham-client
+name: aa-mpc demo
 version: "1.0"
-author: gbenattar <g.benattar@gmail.com>
-about: Command Line Interface for a minimalist decentralized crypto-currency wallet
+author: leontiad <leontiad@gmail.com>
+about: Command Line Interface for a 2MPC sign protocol with L17
 args:
   - verbose:
       short: v
@@ -10,7 +10,7 @@ args:
   - electrum-address:
       short: e
       multiple: false
-      required: true
+      required: false
       value_name: ADDRESS
       takes_value: true
       help: Address of an electrum address to use. In the format of a sockaddress (url:port)

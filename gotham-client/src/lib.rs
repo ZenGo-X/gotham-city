@@ -12,9 +12,30 @@ use serde::{de::DeserializeOwned, Serialize};
 use std::time::Instant;
 pub mod ecdsa;
 pub mod escrow;
+// extern crate config;
+extern crate kms;
+extern crate reqwest;
+
+#[macro_use]
+// extern crate serde_derive;
+extern crate serde;
+extern crate serde_json;
+
+extern crate log;
+
+#[macro_use]
+extern crate failure;
+//
+// extern crate bitcoin;
+// extern crate electrumx_client;
+// extern crate hex;
+// extern crate itertools;
+// extern crate uuid;
+
+
 
 mod utilities;
-mod wallet;
+pub mod wallet;
 
 type Result<T> = std::result::Result<T, failure::Error>;
 
