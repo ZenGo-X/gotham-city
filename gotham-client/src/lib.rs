@@ -14,6 +14,7 @@ pub mod ecdsa;
 pub mod escrow;
 
 mod utilities;
+mod wallet;
 
 type Result<T> = std::result::Result<T, failure::Error>;
 

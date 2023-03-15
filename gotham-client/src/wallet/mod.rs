@@ -14,9 +14,9 @@ use bitcoin::network::constants::Network;
 use bitcoin::secp256k1::Signature;
 use bitcoin::util::bip143::SighashComponents;
 use bitcoin::{TxIn, TxOut, Txid};
-use curv::elliptic::curves::secp256_k1::{GE, PK};
-use curv::elliptic::curves::traits::ECPoint;
-use curv::BigInt;
+use two_party_ecdsa::curv::elliptic::curves::secp256_k1::{GE, PK};
+use two_party_ecdsa::curv::elliptic::curves::traits::ECPoint;
+use two_party_ecdsa::curv::BigInt;
 use electrumx_client::{electrumx_client::ElectrumxClient, interface::Electrumx};
 use kms::ecdsa::two_party::MasterKey2;
 use kms::ecdsa::two_party::*;
@@ -33,12 +33,19 @@ use super::ecdsa;
 use super::ecdsa::types::PrivateShare;
 use super::escrow;
 use super::ClientShim;
-use curv::arithmetic::traits::Converter;
+pub use two_party_ecdsa::curv::{arithmetic::traits::Converter, BigInt};
+
 use hex;
 use itertools::Itertools;
 use secp256k1::Signature;
 use std::collections::HashMap;
 use std::str::FromStr;
+use log::debug;
+use two_party_ecdsa::centipede::juggling::proof_system::Proof;
+use two_party_ecdsa::centipede::juggling::segmentation::Msegmentation;
+use two_party_ecdsa::Helgamalsegmented;
+use two_party_ecdsa::party_one::Signature;
+use crate::Client;
 
 // TODO: move that to a config file and double check electrum server addresses
 const ELECTRUM_HOST: &str = "ec2-34-219-15-143.us-west-2.compute.amazonaws.com:60001";
@@ -542,6 +549,8 @@ fn to_bitcoin_public_key(pk: PK) -> bitcoin::util::key::PublicKey {
 
 #[cfg(test)]
 mod tests {
+    use two_party_ecdsa::BigInt;
+    use two_party_ecdsa::party_one::Converter;
     use bitcoin::hashes::hex::ToHex;
     use bitcoin::hashes::sha256d;
     use bitcoin::hashes::Hash;

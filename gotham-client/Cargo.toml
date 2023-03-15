@@ -11,9 +11,13 @@ edition = "2021"
 jni = { version = "0.19", default-features = false }
 
 [lib]
-crate-type = ["staticlib", "cdylib", "lib"]
+#crate-type = ["staticlib", "cdylib", "lib"]
 name = "client_lib"
 path = "src/lib.rs"
+
+[[bin]]
+name = "cli"
+path = "src/main.rs"
 
 [dependencies]
 serde.workspace = true
