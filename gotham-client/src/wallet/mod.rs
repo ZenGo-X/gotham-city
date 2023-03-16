@@ -114,13 +114,14 @@ impl Wallet {
         msg: &[u8],
         client_shim: &ClientShim<C>,
     ) {
-
-        let child_master_key = &self.private_share.master_key.get_child(vec![BigInt::from(0), BigInt::from(1)]);
-
+        //derive a master client new key from msk by forwording the counter +1
+        let (pos,child_master_key) = Wallet::derive_new_key(&self.private_share,self.last_derived_pos);
+        self.last_derived_pos=pos;
+        self.save();
             let signature = ecdsa::sign(
                 client_shim,
                 BigInt::from(&msg[..]),
-                child_master_key,
+                &child_master_key,
                 BigInt::from(0),
                 BigInt::from(1),
                 &self.private_share.id,
@@ -129,6 +130,7 @@ impl Wallet {
         let r = BigInt::to_vec(&signature.r);
         let s = BigInt::to_vec(&signature.s);
         let message = Message::from_slice(&msg).unwrap();
+        //prepare signature to be verified from secp256k1 lib
 
         let mut sig = [0u8; 64];
         sig[32 - r.len()..32].copy_from_slice(&r);
@@ -140,8 +142,6 @@ impl Wallet {
         SECP256K1.verify_ecdsa(&message, &sig, &pk).unwrap();
 
     }
-
-
 
 
 

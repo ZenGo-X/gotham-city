@@ -44,7 +44,7 @@ fn main() {
 
     println!("Network: [{}], Creating wallet", network);
     let wallet = wallet::Wallet::new(&client_shim, &network);
-    wallet.save_to("mywallet");
+    wallet.save();
     println!("Network: [{}], Wallet saved to disk", &network);
     let mut wallet: wallet::Wallet = wallet::Wallet::load();
 
@@ -52,6 +52,7 @@ fn main() {
     rng.fill(&mut msg_buf);
     // let msg: BigInt = BigInt::from(&msg_buf[..]);
     wallet.sign(&msg_buf,&client_shim);
+    println!("Network: [{}], MPC signature verified", &network);
 
     // let mut wallet: wallet::Wallet = wallet::Wallet::load();
 }
