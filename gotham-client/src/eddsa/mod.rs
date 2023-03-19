@@ -7,7 +7,10 @@
 // version 3 of the License, or (at your option) any later version.
 //
 
-pub mod ecdsa;
-pub mod schnorr;
-pub mod eddsa;
-pub mod ping;
+mod keygen;
+mod sign;
+mod types;
+
+pub use keygen::generate_key;
+pub use sign::sign;
+pub use types::*;

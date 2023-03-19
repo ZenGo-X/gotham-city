@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/KZen-networks/gotham-city.svg?branch=master)](https://travis-ci.org/KZen-networks/gotham-city)
+
 Gotham City
 =====================================
 Gotham city is a fully functional client/server application of a minimalist decentralized HD wallet using 2 party ECDSA.
@@ -89,4 +91,4 @@ Gotham City is released under the terms of the GPL-3.0 license. See [LICENSE](LI
 
 Contact
 -------
-For any questions, feel free to [email us](mailto:github@kzencorp.com).
+For any questions, feel free to [email us](mailto:github@kzencorp.com) or join ZenGo X [Telegram](https://t.me/joinchat/ET1mddGXRoyCxZ-7).
