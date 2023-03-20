@@ -1,7 +1,7 @@
 # syntax = docker/dockerfile:1.2
 FROM rust:latest
 ENV GMP_VERSION=6.2.1
-ENV NDK_VERSION=26
+ENV NDK_VERSION=r23
 ENV MIN_SDK_VERSION=26
 ENV ANDROID_NDK_HOME=/android-ndk/
 ENV PATH="/android-ndk/toolchains/llvm/prebuilt/linux-x86_64/bin/:${PATH}"
