@@ -22,4 +22,3 @@ hex = "0.4"
 
 two-party-ecdsa = { git = "https://github.com/ZenGo-X/two-party-ecdsa.git" }
 kms = { git = "https://github.com/ZenGo-X/kms-secp256k1.git", branch = "2.0" }
-two-party-musig2-eddsa = { git = "https://github.com/ZenGo-X/two-party-musig2-eddsa", tag = "v0.1.2" }
