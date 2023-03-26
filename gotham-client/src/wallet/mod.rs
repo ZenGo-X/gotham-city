@@ -99,7 +99,6 @@ impl Wallet {
         let data = fs::read_to_string(filepath).expect("Unable to load wallet!");
 
         let wallet: Wallet = serde_json::from_str(&data).unwrap();
-
         debug!("(wallet id: {}) Loaded wallet to memory", wallet.id);
 
         wallet
