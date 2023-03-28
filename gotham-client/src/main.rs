@@ -18,7 +18,14 @@ pub use two_party_ecdsa::curv::{ BigInt};
 use std::collections::HashMap;
 use ethers::prelude::*;
 use sha2::{Sha256, Digest};
-
+use ethers::{
+    core::{types::TransactionRequest,types::transaction::eip2718::TypedTransaction, utils::Anvil},
+    middleware::SignerMiddleware,
+    providers::{Http, Middleware, Provider},
+    signers::{LocalWallet, Signer},
+};
+use eyre::Result;
+use std::convert::TryFrom;
 
 
 #[tokio::main]
@@ -49,8 +56,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         /// sign with the existing wallet
         // #[command(subcommand)]
         sign{ name: Option<String> },
-        /// derive new addresses
-        derive
+        /// sign an eth transaction
+        eth
     }
     let args = walletArgs::parse();
     let mut rng = StepRng::new(0, 1);
@@ -101,7 +108,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             wallet.sign(&msg,&client_shim);
             println!("Network: [{}], MPC signature verified", &network);
         }
-        Action::derive {  } => {
+        Action::eth {  } => {
             const RPC_URL: &str = "https://eth.llamarpc.com";
             println!("'derive: ");
             let mut wallet: wallet::Wallet = wallet::Wallet::load();
@@ -109,6 +116,29 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let provider = Provider::<Http>::try_from(RPC_URL)?;
             let block_number: U64 = provider.get_block_number().await?;
             println!("{block_number}");
+
+            let tx: TypedTransaction = TransactionRequest {
+                from: None,
+                to: Some("F0109fC8DF283027b6285cc889F5aA624EaC1F55".parse::<Address>().unwrap().into()),
+                value: Some(1_000_000_000.into()),
+                gas: Some(2_000_000.into()),
+                nonce: Some(0.into()),
+                gas_price: Some(21_000_000_000u128.into()),
+                data: None,
+                chain_id: Some(U64::one()),
+            }
+                .into();
+            // create a Sha256 object
+            let mut hasher = Sha256::new();
+
+            // write input message
+            hasher.update(&tx.rlp());
+
+            // read hash digest and consume hasher
+            let msg = hasher.finalize();
+            let transaction = serde_json::to_string(&tx).unwrap();
+            println!("Transaction tx:{:?}",transaction);
+            wallet.sign(&msg,&client_shim);
 
 
 

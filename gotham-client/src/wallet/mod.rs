@@ -115,7 +115,7 @@ impl Wallet {
         &mut self,
         msg: &[u8],
         client_shim: &ClientShim<C>,
-    ) {
+    )-> Result<bool, Error> {
 
         //derive a master client new key from msk by forwording the counter +1
         let (pos,child_master_key) = Wallet::derive_new_key(&self.private_share,self.last_derived_pos);
@@ -135,7 +135,7 @@ impl Wallet {
 
         let message = Message::from_slice(msg).unwrap();
 
-        println!("hash{:?},\n signature: [r={},s={}]",msg,&signature.r,&signature.s);
+        println!("hash{:?},\nsignature: [r={},s={}]",msg,&signature.r,&signature.s);
 
         //prepare signature to be verified from secp256k1 lib
 
@@ -147,6 +147,7 @@ impl Wallet {
         let pk = child_master_key.public.q.get_element();
 
         let secp = Secp256k1::new();
+        //v = chain_id * 2 + 35 + recovery_id
         let id = secp256k1::ecdsa::RecoveryId::from_i32(signature.recid as i32).unwrap();
         let sig = secp256k1::ecdsa::RecoverableSignature::from_compact(&sig, id).unwrap();
 
@@ -154,12 +155,13 @@ impl Wallet {
             secp.recover_ecdsa(&message, &sig),
             Ok(pk)
         );
+
         println!("Trying to recover pk from r,s,recid");
         println!("Recovered pk:{:?}",secp.recover_ecdsa(&message, &sig));
         println!("pk:{:?}",pk);
 
 
-        SECP256K1.verify_ecdsa(&message, &Sig, &pk).unwrap();
+        Ok(SECP256K1.verify_ecdsa(&message, &Sig, &pk).is_ok())
     }
 
 
