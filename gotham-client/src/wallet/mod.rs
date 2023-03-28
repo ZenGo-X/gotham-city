@@ -18,13 +18,16 @@ use std::fs;
 use uuid::Uuid;
 use two_party_ecdsa::curv::PK;
 use kms::chain_code::two_party::party2::ChainCode2;
-use secp256k1::{ecdsa::Signature, Message, SECP256K1};
+// use secp256k1::{ecdsa::Signature, Message, SECP256K1,PublicKey,ecdsa::RecoveryId,ecdsa::};
+use secp256k1::{ecdsa::Signature,Error,SECP256K1, Message, PublicKey, Secp256k1, SecretKey, Signing, Verification};
 
+use std::str;
 use super::ecdsa;
 use super::ecdsa::types::PrivateShare;
 use super::escrow;
 use super::ClientShim;
 pub use two_party_ecdsa::curv::{arithmetic::traits::Converter, BigInt};
+use sha2::{Sha256, Digest};
 
 use hex;
 use itertools::Itertools;
@@ -113,6 +116,7 @@ impl Wallet {
         msg: &[u8],
         client_shim: &ClientShim<C>,
     ) {
+
         //derive a master client new key from msk by forwording the counter +1
         let (pos,child_master_key) = Wallet::derive_new_key(&self.private_share,self.last_derived_pos);
         self.last_derived_pos=pos;
@@ -122,24 +126,40 @@ impl Wallet {
                 BigInt::from(&msg[..]),
                 &child_master_key,
                 BigInt::from(0),
-                BigInt::from(1),
+                BigInt::from(self.last_derived_pos),
                 &self.private_share.id,
             ).expect("ECDSA signature failed");
 
         let r = BigInt::to_vec(&signature.r);
         let s = BigInt::to_vec(&signature.s);
-        let message = Message::from_slice(&msg).unwrap();
+
+        let message = Message::from_slice(msg).unwrap();
+
+        println!("hash{:?},\n signature: [r={},s={}]",msg,&signature.r,&signature.s);
+
         //prepare signature to be verified from secp256k1 lib
 
         let mut sig = [0u8; 64];
         sig[32 - r.len()..32].copy_from_slice(&r);
         sig[32 + 32 - s.len()..].copy_from_slice(&s);
 
-        let sig = Signature::from_compact(&sig).unwrap();
+        let Sig = Signature::from_compact(&sig).unwrap();
         let pk = child_master_key.public.q.get_element();
 
-        SECP256K1.verify_ecdsa(&message, &sig, &pk).unwrap();
+        let secp = Secp256k1::new();
+        let id = secp256k1::ecdsa::RecoveryId::from_i32(signature.recid as i32).unwrap();
+        let sig = secp256k1::ecdsa::RecoverableSignature::from_compact(&sig, id).unwrap();
 
+        assert_eq!(
+            secp.recover_ecdsa(&message, &sig),
+            Ok(pk)
+        );
+        println!("Trying to recover pk from r,s,recid");
+        println!("Recovered pk:{:?}",secp.recover_ecdsa(&message, &sig));
+        println!("pk:{:?}",pk);
+
+
+        SECP256K1.verify_ecdsa(&message, &Sig, &pk).unwrap();
     }
 
 

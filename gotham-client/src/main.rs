@@ -16,10 +16,13 @@ use floating_duration::TimeFormat;
 use std::time::Instant;
 pub use two_party_ecdsa::curv::{ BigInt};
 use std::collections::HashMap;
+use ethers::prelude::*;
+use sha2::{Sha256, Digest};
 
 
 
-fn main() {
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // let yaml = load_yaml!("../cli.yml");
     // let matches = App::from_yaml(yaml).get_matches();
     // #[derive(Debug,Parser)]
@@ -83,25 +86,36 @@ fn main() {
         Action::sign { name } => {
             let mut wallet: wallet::Wallet = wallet::Wallet::load();
             println!("Load wallet: [{}]", wallet.id);
-            println!("'sign: ");
-            let mut msg_buf = [0u8; 32];
-            rng.fill(&mut msg_buf);
-            // let msg: BigInt = BigInt::from(&msg_buf[..]);
-            wallet.sign(&msg_buf,&client_shim);
+            println!("Sign: ");
+            let mut msg_buf = "Test Signature";
+            println!("message: [{}]",msg_buf);
+
+            // create a Sha256 object
+            let mut hasher = Sha256::new();
+
+            // write input message
+            hasher.update(msg_buf);
+
+            // read hash digest and consume hasher
+            let msg = hasher.finalize();
+            wallet.sign(&msg,&client_shim);
             println!("Network: [{}], MPC signature verified", &network);
         }
         Action::derive {  } => {
+            const RPC_URL: &str = "https://eth.llamarpc.com";
             println!("'derive: ");
             let mut wallet: wallet::Wallet = wallet::Wallet::load();
             println!("Wallet: [{}], loaded", wallet.id);
+            let provider = Provider::<Http>::try_from(RPC_URL)?;
+            let block_number: U64 = provider.get_block_number().await?;
+            println!("{block_number}");
 
 
 
         }
     }
 
+    Ok(())
 
 
-
-    // let mut wallet: wallet::Wallet = wallet::Wallet::load();
 }
