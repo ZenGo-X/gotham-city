@@ -59,14 +59,12 @@ jobs:
           name: Build Debug Version
           command: |
             cd gotham-client 
-            cargo ndk -t arm64-v8a -t armeabi-v7a -t x86_64 -o ./jniLibs_debug build
-
+            cargo ndk -p "${MIN_SDK_VERSION}" -t arm64-v8a -t armeabi-v7a -t x86_64 -o ./jniLibs_debug build
       - run:
           name: Build Release Version
           command: |
             cd gotham-client  
-            cargo ndk -t arm64-v8a -t armeabi-v7a -t x86_64 -o ./jniLibs_debug build
-
+            cargo ndk -p "${MIN_SDK_VERSION}" -t arm64-v8a -t armeabi-v7a -t x86_64 -o ./jniLibs build --release
       - store_artifacts:
           path: gotham-client/jniLibs
           destination: gotham-android-release
