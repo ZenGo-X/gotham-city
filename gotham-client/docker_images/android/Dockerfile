@@ -15,7 +15,7 @@ RUN apt update && \
     x86_64-linux-android \
     i686-linux-android && \
     cargo install cargo-ndk && \
-    wget https://dl.google.com/android/repository/android-ndk-r${NDK_VERSION}-linux-x86_64.zip && \
+    wget https://dl.google.com/android/repository/android-ndk-r${NDK_VERSION}-linux.zip && \
     unzip android-ndk-r*.zip && \
     rm android-ndk-r*.zip && \
     mv android-ndk-r* android-ndk && \
