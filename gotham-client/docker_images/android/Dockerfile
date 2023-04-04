@@ -9,17 +9,16 @@ ENV OPENSSL_VERSION=1.1.1n
 ENV TARGET_CXXFLAGS=-mno-outline-atomics
 ENV PKG_CONFIG_SYSROOT_DIR="${ANDROID_NDK_HOME}toolchains/llvm/prebuilt/linux-x86_64/sysroot"
 RUN apt update && \
-    apt list --upgradable &&\
-    wget https://dl.google.com/android/repository/android-ndk-r${NDK_VERSION}-linux-x86_64.zip && \
-    unzip android-ndk-r*.zip && \
-    rm android-ndk-r*.zip && \
-    mv android-ndk-r* android-ndk && \
     rustup target add \
     aarch64-linux-android \
     armv7-linux-androideabi \
     x86_64-linux-android \
     i686-linux-android && \
     cargo install cargo-ndk && \
+    wget https://dl.google.com/android/repository/android-ndk-r${NDK_VERSION}-linux-x86_64.zip && \
+    unzip android-ndk-r*.zip && \
+    rm android-ndk-r*.zip && \
+    mv android-ndk-r* android-ndk && \
     cd / && \
     wget https://gmplib.org/download/gmp/gmp-${GMP_VERSION}.tar.lz && \
     apt install lzip && \
