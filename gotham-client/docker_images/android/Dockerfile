@@ -1,7 +1,7 @@
 # syntax = docker/dockerfile:1.2
 FROM rust:latest
 ENV GMP_VERSION=6.2.1
-ENV NDK_VERSION=2
+ENV NDK_VERSION=21e
 ENV MIN_SDK_VERSION=26
 ENV ANDROID_NDK_HOME=/android-ndk/
 ENV PATH="/android-ndk/toolchains/llvm/prebuilt/linux-x86_64/bin/:${PATH}"
@@ -9,8 +9,6 @@ ENV OPENSSL_VERSION=1.1.1n
 ENV TARGET_CXXFLAGS=-mno-outline-atomics
 ENV PKG_CONFIG_SYSROOT_DIR="${ANDROID_NDK_HOME}toolchains/llvm/prebuilt/linux-x86_64/sysroot"
 RUN apt update && \
-    apt install -y ca-certificates lzip && \
-    wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add - && \
     wget https://dl.google.com/android/repository/android-ndk-r${NDK_VERSION}-linux-x86_64.zip && \
     unzip android-ndk-r*.zip && \
     rm android-ndk-r*.zip && \
@@ -23,6 +21,7 @@ RUN apt update && \
     cargo install cargo-ndk && \
     cd / && \
     wget https://gmplib.org/download/gmp/gmp-${GMP_VERSION}.tar.lz && \
+    apt install lzip && \
     tar -xvf ./gmp-*.tar.lz && \
     rm  gmp-*.tar.lz && \
     mv gmp-* gmp && \
