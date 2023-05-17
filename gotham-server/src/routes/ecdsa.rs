@@ -20,8 +20,10 @@ use rocket::{State, post, serde::json::Json};
 use uuid::Uuid;
 use serde::{Serialize, Deserialize};
 use failure::format_err;
-use log::{warn,error};
+use log::{warn, error};
 use std::collections::HashMap;
+use std::process;
+use std::panic;
 
 use crate::{auth::jwt::Claims, storage::db, Config};
 
@@ -62,6 +64,7 @@ pub enum EcdsaStruct {
     EphKeyGenFirstMsg,
 
     POS,
+    Abort,
 }
 
 impl db::MPCStruct for EcdsaStruct {
@@ -153,6 +156,10 @@ pub async fn first_message(
     )
     .await
     .or(Err("Failed to insert into db"))?;
+
+    db::insert(&state.db, &claim.sub, &id, &EcdsaStruct::Abort, "false")
+        .await
+        .or(Err("Failed to insert into db"))?;
 
     Ok(Json((id, key_gen_first_msg)))
 }
@@ -476,6 +483,15 @@ pub async fn sign_first(
     id: String,
     eph_key_gen_first_message_party_two: Json<party_two::EphKeyGenFirstMsg>,
 ) -> Result<Json<party_one::EphKeyGenFirstMsg>, String> {
+    let abort: String = db::get(&state.db, &claim.sub, &id, &EcdsaStruct::Abort)
+        .await
+        .or(Err("Failed to get from db"))?
+        .ok_or(format!("No data for such identifier {}", id))?;
+
+    if abort == "true" {
+        panic!("Tainted user");
+    }
+
     let (sign_party_one_first_message, eph_ec_key_pair_party1) = MasterKey1::sign_first_message();
 
     db::insert(
@@ -509,6 +525,7 @@ pub struct SignSecondMsgRequest {
     pub x_pos_child_key: BigInt,
     pub y_pos_child_key: BigInt,
 }
+
 #[post("/ecdsa/sign/<id>/second", format = "json", data = "<request>")]
 pub async fn sign_second(
     state: &State<Config>,
@@ -546,7 +563,11 @@ pub async fn sign_second(
     );
 
     if signature_with_recid.is_err() {
-        panic!("validation failed")
+        println!("signature failed, user tainted[{:?}]", id);
+        db::insert(&state.db, &claim.sub, &id, &EcdsaStruct::Abort, "true")
+            .await
+            .or(Err("Failed to insert into db"))?;
+        panic!("Server sign_second: validation of signature failed. Potential adversary")
     };
 
     Ok(Json(signature_with_recid.unwrap()))
