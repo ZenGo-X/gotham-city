@@ -132,6 +132,6 @@ fn get_db(settings: HashMap<String, String>) -> db::DB {
             {
                 unimplemented!("DB type not supported")
             }
-        },
+        }
     }
 }

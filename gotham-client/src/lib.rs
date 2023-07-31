@@ -48,12 +48,9 @@ impl<C: Client> ClientShim<C> {
         V: serde::de::DeserializeOwned,
     {
         let start = Instant::now();
-        let res = self.client.post(
-            &self.endpoint,
-            path,
-            self.auth_token.clone(),
-            "{}",
-        );
+        let res = self
+            .client
+            .post(&self.endpoint, path, self.auth_token.clone(), "{}");
         info!("(req {}, took: {:?})", path, TimeFormat(start.elapsed()));
         res
     }
@@ -64,12 +61,9 @@ impl<C: Client> ClientShim<C> {
         V: serde::de::DeserializeOwned,
     {
         let start = Instant::now();
-        let res = self.client.post(
-            &self.endpoint,
-            path,
-            self.auth_token.clone(),
-            body,
-        );
+        let res = self
+            .client
+            .post(&self.endpoint, path, self.auth_token.clone(), body);
         info!("(req {}, took: {:?})", path, TimeFormat(start.elapsed()));
         res
     }
