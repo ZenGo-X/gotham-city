@@ -1,9 +1,8 @@
 [package]
 name = "gotham-server"
-version = "0.1.0"
+version = "1.0.0"
 authors = [
-    "gbenattar <g.benattar@gmail.com>",
-    "Oded Leiba <odedleiba5@gmail.com"
+    "x@zengo.com"
 ]
 edition = "2021"
 
@@ -44,3 +43,10 @@ default-features = false
 [dev-dependencies]
 time-test = "0.2.1"
 floating-duration.workspace = true
+criterion = "0.4.0"
+pprof = { version = "0.11", features = ["flamegraph", "frame-pointer", "criterion"] }
+
+[[bench]]
+name = "keygen_bench"
+harness = false
+
