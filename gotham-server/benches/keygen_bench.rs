@@ -146,7 +146,7 @@ fn key_gen(client: &Client) -> (String, MasterKey2) {
         &party_one_third_message,
         &party_one_pdl_second_message,
     )
-        .expect("pdl error party1");
+    .expect("pdl error party1");
 
     println!(
         "{} Client: party2 fourth message",
@@ -218,7 +218,7 @@ fn key_gen(client: &Client) -> (String, MasterKey2) {
         &cc_ec_key_pair2,
         &cc_party_one_second_message.comm_witness.public_share,
     )
-        .chain_code;
+    .chain_code;
 
     println!(
         "{} Client: party2 chain code second message",
