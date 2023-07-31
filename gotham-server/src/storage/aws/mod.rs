@@ -1,6 +1,7 @@
+#![cfg(feature = "aws")]
+
+use serde::{Deserialize, Serialize};
 pub mod dynamodb;
-#[allow(deprecated)]
-pub mod error;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AWSError {

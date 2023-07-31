@@ -6,7 +6,8 @@
 // License as published by the Free Software Foundation, either
 // version 3 of the License, or (at your option) any later version.
 //
-use super::super::jwt::{decode, decode_header, Algorithm, Header, Validation};
+use jsonwebtoken::{decode, decode_header, Algorithm, DecodingKey, Header, Validation};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Claims {
@@ -15,45 +16,40 @@ pub struct Claims {
 }
 
 pub fn get_claims(
-    issuer: &String,
-    audience: &String,
-    token: &String,
+    issuer: &str,
+    audience: &str,
+    token: &str,
     secret: &[u8],
     algorithms: Vec<Algorithm>,
-) -> Result<Claims, ()> {
-    let mut validation = Validation {
-        iss: Some(issuer.to_string()),
-        ..Validation::default()
-    };
-
+) -> Option<Claims> {
+    let mut validation = Validation::default();
+    validation.set_issuer(&[issuer]);
     validation.algorithms = algorithms;
 
     // Setting audience
-    validation.set_audience(audience);
-
-    let token_data = match decode::<Claims>(token, secret, &validation) {
+    validation.set_audience(&[audience]);
+    let key = DecodingKey::from_rsa_der(secret);
+    let token_data = match decode::<Claims>(token, &key, &validation) {
         Ok(c) => c,
-        Err(_) => return Err(()),
+        Err(_) => return None,
     };
 
-    Ok(token_data.claims)
+    Some(token_data.claims)
 }
 
-pub fn decode_header_from_token(token: String) -> Result<Header, ()> {
+pub fn decode_header_from_token(token: String) -> Option<Header> {
     let header = match decode_header(&token) {
         Ok(h) => h,
-        Err(_) => return Err(()),
+        Err(_) => return None,
     };
 
-    Ok(header)
+    Some(header)
 }
 
 #[cfg(test)]
 mod tests {
     use super::{decode_header_from_token, get_claims};
-    use hex;
-    use jwt::{Algorithm, Header};
-    use std::str;
+    use jsonwebtoken::{Algorithm, Header};
 
     #[test]
     #[should_panic] // Obviously hardcoded authorization_header become invalid
@@ -85,7 +81,7 @@ mod tests {
         let issuer: String = "issuer".to_string();
         let audience: String = "audience".to_string();
         let algorithms = vec![Algorithm::RS256];
-        assert!(get_claims(&issuer, &audience, &token, der.as_ref(), algorithms).is_ok());
+        assert!(get_claims(&issuer, &audience, &token, der.as_ref(), algorithms).is_some());
     }
 
     #[test]

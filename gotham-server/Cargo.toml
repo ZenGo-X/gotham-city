@@ -1,11 +1,10 @@
 [package]
 name = "gotham-server"
-version = "0.1.4"
+version = "1.0.0"
 authors = [
-    "gbenattar <g.benattar@gmail.com>",
-    "Oded Leiba <odedleiba5@gmail.com"
+    "x@zengo.com"
 ]
-edition = "2018"
+edition = "2021"
 
 [lib]
 name = "server_lib"
@@ -16,49 +15,38 @@ name = "server_exec"
 path = "src/main.rs"
 
 [dependencies]
-rocket = { version = "0.4.2", default-features = false }
-rocket_contrib = { version = "0.4.2", default-features = false, features = ["json"] }
-rocksdb = "0.10.1"
-serde = "1.0"
-serde_json = "1.0"
-serde_derive = "1.0"
-rusoto_dynamodb = "0.36.0"
-rusoto_core = "0.36.0"
-time-test = "0.2.1"
-log = "0.4"
-config = "0.9.2"
-uuid = { version = "0.7", features = ["v4"] }
-error-chain = "0.12.0"
-failure = "0.1.5"
-jsonwebtoken = "6.0.1"
-rust-crypto = "0.2"
-hex = "0.3.2"
-floating-duration = "0.1.2"
-curv = { package = "curv-kzen", version = "0.7" }
+rocket.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+log.workspace = true
+config.workspace = true
+uuid.workspace = true
+failure.workspace = true
+jsonwebtoken.workspace = true
+hex.workspace = true
+two-party-ecdsa.workspace = true
+kms.workspace = true
+rocksdb = { version = "0.20.1", optional = true }
+rusoto_dynamodb = {version = "0.47", optional = true}
+rusoto_core = {version = "0.47", optional = true}
 
-[dependencies.zk-paillier]
-git = "https://github.com/KZen-networks/zk-paillier"
-tag = "v0.3.12"
-
-[dependencies.kms]
-git = "https://github.com/KZen-networks/kms-secp256k1"
-tag = "v0.3.0"
-
-[dependencies.multi-party-ecdsa]
-git = "https://github.com/KZen-networks/multi-party-ecdsa"
-tag = "v0.4.6"
-
-[dependencies.multi-party-eddsa]
-git = "https://github.com/KZen-networks/multi-party-eddsa"
-tag = "v0.2.2"
-
-[dependencies.multi-party-schnorr]
-git = "https://github.com/KZen-networks/multi-party-schnorr"
-tag = "v0.4.4"
-
+[features]
+default = ["local", "aws"]
+local = ["rocksdb"]
+aws = ["rusoto_dynamodb", "rusoto_core"]
 
 [dependencies.serde_dynamodb]
 git = "https://github.com/KZen-networks/serde_dynamodb"
+features = ["native-tls"]
+default-features = false
 
-[patch.crates-io]
-rust-gmp = { version = "0.5.0", features = ["serde_support"], git = "https://github.com/KZen-networks/rust-gmp" }
+[dev-dependencies]
+time-test = "0.2.1"
+floating-duration.workspace = true
+criterion = "0.4.0"
+pprof = { version = "0.11", features = ["flamegraph", "frame-pointer", "criterion"] }
+
+[[bench]]
+name = "keygen_bench"
+harness = false
+

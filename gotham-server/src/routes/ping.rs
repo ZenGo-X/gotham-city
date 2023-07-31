@@ -1,4 +1,4 @@
-use rocket::http::Status;
+use rocket::{get, http::Status};
 
 #[get("/ping")]
 pub fn ping() -> Status {

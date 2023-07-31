@@ -1,2 +1,5 @@
 db/
 target/
+ecdsa/
+eddsa/
+schnorr/

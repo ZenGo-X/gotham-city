@@ -7,6 +7,8 @@
 // version 3 of the License, or (at your option) any later version.
 //
 
+use serde::{Deserialize, Serialize};
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PublicKey {
     pub kid: String,
