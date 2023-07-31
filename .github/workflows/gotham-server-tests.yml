@@ -1,0 +1,72 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches:
+    - master
+    paths:
+      - "gotham-server/**"
+      - "gotham-utilities/**"
+      - "integration-tests/**"
+      - "gotham-client/Cargo.toml"
+      - "Cargo.toml"
+
+  pull_request:
+    branches:
+    - master
+    paths:
+      - "gotham-server/**"
+      - "gotham-utilities/**"
+      - "integration-tests/**"
+      - "gotham-client/Cargo.toml"
+      - "Cargo.toml"
+
+
+jobs:
+  lints:
+    name: Lints
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+          components: rustfmt, clippy
+
+      - name: Run cargo fmt
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all -- --check
+  build-and-test:
+    name: Test Suite
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        redis-version: [ 7 ]
+    needs: lints
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+#      - run: cargo build --release
+
+      - name: Start Redis
+        uses: supercharge/redis-github-action@1.5.0
+        with:
+            redis-version: ${{ matrix.redis-version }}
+
+      - name: Unit tests
+        run:  ELASTICACHE_URL=127.0.0.1 cargo test --all -- --nocapture
+
+
+
