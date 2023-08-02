@@ -8,25 +8,26 @@
 //
 
 use clap::*;
-use rand::rngs::mock::StepRng;
-use rand::Rng;
 use client_lib::wallet;
 use client_lib::ClientShim;
-use floating_duration::TimeFormat;
-use std::time::Instant;
-pub use two_party_ecdsa::curv::{ BigInt};
-use std::collections::HashMap;
 use ethers::prelude::*;
-use sha2::{Sha256, Digest};
 use ethers::{
-    core::{types::TransactionRequest,types::transaction::eip2718::TypedTransaction, utils::Anvil},
+    core::{
+        types::transaction::eip2718::TypedTransaction, types::TransactionRequest, utils::Anvil,
+    },
     middleware::SignerMiddleware,
     providers::{Http, Middleware, Provider},
     signers::{LocalWallet, Signer},
 };
 use eyre::Result;
+use floating_duration::TimeFormat;
+use rand::rngs::mock::StepRng;
+use rand::Rng;
+use sha2::{Digest, Sha256};
+use std::collections::HashMap;
 use std::convert::TryFrom;
-
+use std::time::Instant;
+pub use two_party_ecdsa::curv::BigInt;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -55,9 +56,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         load,
         /// sign with the existing wallet
         // #[command(subcommand)]
-        sign{ name: Option<String> },
+        sign { name: Option<String> },
         /// sign an eth transaction
-        eth
+        eth,
     }
     let args = walletArgs::parse();
     let mut rng = StepRng::new(0, 1);
@@ -78,24 +79,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let network = "testnet".to_string();
     match &args.action {
-        Action::create {  } => {
+        Action::create {} => {
             println!("'create: ");
             println!("Network: [{}], Creating wallet", network);
             let wallet = wallet::Wallet::new(&client_shim, &network);
             wallet.save();
             println!("Network: [{}], Wallet saved to disk", &network);
         }
-        Action::load {  } => {
+        Action::load {} => {
             println!("'load: ");
             let mut wallet: wallet::Wallet = wallet::Wallet::load();
-
         }
         Action::sign { name } => {
             let mut wallet: wallet::Wallet = wallet::Wallet::load();
             println!("Load wallet: [{}]", wallet.id);
             println!("Sign: ");
             let mut msg_buf = "Test Signature";
-            println!("message: [{}]",msg_buf);
+            println!("message: [{}]", msg_buf);
 
             // create a Sha256 object
             let mut hasher = Sha256::new();
@@ -105,10 +105,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             // read hash digest and consume hasher
             let msg = hasher.finalize();
-            wallet.sign(&msg,&client_shim);
+            wallet.sign(&msg, &client_shim);
             println!("Network: [{}], MPC signature verified", &network);
         }
-        Action::eth {  } => {
+        Action::eth {} => {
             const RPC_URL: &str = "https://eth.llamarpc.com";
             println!("'derive: ");
             let mut wallet: wallet::Wallet = wallet::Wallet::load();
@@ -119,7 +119,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             let tx: TypedTransaction = TransactionRequest {
                 from: None,
-                to: Some("F0109fC8DF283027b6285cc889F5aA624EaC1F55".parse::<Address>().unwrap().into()),
+                to: Some(
+                    "F0109fC8DF283027b6285cc889F5aA624EaC1F55"
+                        .parse::<Address>()
+                        .unwrap()
+                        .into(),
+                ),
                 value: Some(1_000_000_000.into()),
                 gas: Some(2_000_000.into()),
                 nonce: Some(0.into()),
@@ -127,7 +132,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 data: None,
                 chain_id: Some(U64::one()),
             }
-                .into();
+            .into();
             // create a Sha256 object
             let mut hasher = Sha256::new();
 
@@ -137,15 +142,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             // read hash digest and consume hasher
             let msg = hasher.finalize();
             let transaction = serde_json::to_string(&tx).unwrap();
-            println!("Transaction tx:{:?}",transaction);
-            wallet.sign(&msg,&client_shim);
-
-
-
+            println!("Transaction tx:{:?}", transaction);
+            wallet.sign(&msg, &client_shim);
         }
     }
 
     Ok(())
-
-
 }

@@ -33,11 +33,8 @@ extern crate failure;
 // extern crate itertools;
 // extern crate uuid;
 
-
-
 mod utilities;
 pub mod wallet;
-
 
 type Result<T> = std::result::Result<T, failure::Error>;
 

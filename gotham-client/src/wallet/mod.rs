@@ -7,40 +7,41 @@
 // version 3 of the License, or (at your option) any later version.
 //
 
-use two_party_ecdsa::curv::elliptic::curves::secp256_k1::{GE};
-use two_party_ecdsa::curv::elliptic::curves::traits::ECPoint;
+use kms::chain_code::two_party::party2::ChainCode2;
 use kms::ecdsa::two_party::MasterKey2;
 use kms::ecdsa::two_party::*;
 use mockall::*;
 use serde_json;
 use std::fs;
-use uuid::Uuid;
+use two_party_ecdsa::curv::elliptic::curves::secp256_k1::GE;
+use two_party_ecdsa::curv::elliptic::curves::traits::ECPoint;
 use two_party_ecdsa::curv::PK;
-use kms::chain_code::two_party::party2::ChainCode2;
+use uuid::Uuid;
 // use secp256k1::{ecdsa::Signature, Message, SECP256K1,PublicKey,ecdsa::RecoveryId,ecdsa::};
-use secp256k1::{ecdsa::Signature,Error,SECP256K1, Message, PublicKey, Secp256k1, SecretKey, Signing, Verification};
+use secp256k1::{
+    ecdsa::Signature, Error, Message, PublicKey, Secp256k1, SecretKey, Signing, Verification,
+    SECP256K1,
+};
 
-use std::str;
 use super::ecdsa;
 use super::ecdsa::types::PrivateShare;
 use super::escrow;
 use super::ClientShim;
+use sha2::{Digest, Sha256};
+use std::str;
 pub use two_party_ecdsa::curv::{arithmetic::traits::Converter, BigInt};
-use sha2::{Sha256, Digest};
 
+use crate::Client;
 use hex;
 use itertools::Itertools;
+use log::debug;
 use std::collections::HashMap;
 use std::str::FromStr;
-use log::debug;
 use two_party_ecdsa::centipede::juggling::proof_system::Proof;
 use two_party_ecdsa::centipede::juggling::segmentation::Msegmentation;
-use two_party_ecdsa::{Helgamalsegmented, party_one};
-use crate::Client;
+use two_party_ecdsa::{party_one, Helgamalsegmented};
 
 const WALLET_FILENAME: &str = "mywallet";
-
-
 
 #[derive(Serialize, Deserialize)]
 pub struct SignSecondMsgRequest {
@@ -48,8 +49,6 @@ pub struct SignSecondMsgRequest {
     pub party_two_sign_message: party2::SignMessage,
     pub pos_child_key: u32,
 }
-
-
 
 #[derive(Serialize, Deserialize)]
 pub struct AddressDerivation {
@@ -83,8 +82,6 @@ impl Wallet {
         }
     }
 
-
-
     pub fn save_to(&self, filepath: &str) {
         let wallet_json = serde_json::to_string(self).unwrap();
 
@@ -114,11 +111,11 @@ impl Wallet {
         &mut self,
         msg: &[u8],
         client_shim: &ClientShim<C>,
-    )-> Result<bool, Error> {
-
+    ) -> Result<bool, Error> {
         //derive a master client new key from msk by forwording the counter +1
-        let (pos,child_master_key) = Wallet::derive_new_key(&self.private_share,self.last_derived_pos);
-        self.last_derived_pos=pos;
+        let (pos, child_master_key) =
+            Wallet::derive_new_key(&self.private_share, self.last_derived_pos);
+        self.last_derived_pos = pos;
         self.save();
         let signature = ecdsa::sign(
             client_shim,
@@ -127,14 +124,18 @@ impl Wallet {
             BigInt::from(0),
             BigInt::from(self.last_derived_pos),
             &self.private_share.id,
-        ).expect("ECDSA signature failed");
+        )
+        .expect("ECDSA signature failed");
 
         let r = BigInt::to_vec(&signature.r);
         let s = BigInt::to_vec(&signature.s);
 
         let message = Message::from_slice(msg).unwrap();
 
-        println!("hash{:?},\nsignature: [r={},s={}]",msg,&signature.r,&signature.s);
+        println!(
+            "hash{:?},\nsignature: [r={},s={}]",
+            msg, &signature.r, &signature.s
+        );
 
         //prepare signature to be verified from secp256k1 lib
 
@@ -150,20 +151,14 @@ impl Wallet {
         let id = secp256k1::ecdsa::RecoveryId::from_i32(signature.recid as i32).unwrap();
         let sig = secp256k1::ecdsa::RecoverableSignature::from_compact(&sig, id).unwrap();
 
-        assert_eq!(
-            secp.recover_ecdsa(&message, &sig),
-            Ok(pk)
-        );
+        assert_eq!(secp.recover_ecdsa(&message, &sig), Ok(pk));
 
         println!("Trying to recover pk from r,s,recid");
-        println!("Recovered pk:{:?}",secp.recover_ecdsa(&message, &sig));
-        println!("pk:{:?}",pk);
-
+        println!("Recovered pk:{:?}", secp.recover_ecdsa(&message, &sig));
+        println!("pk:{:?}", pk);
 
         Ok(SECP256K1.verify_ecdsa(&message, &Sig, &pk).is_ok())
     }
-
-
 
     fn derive_new_key(private_share: &PrivateShare, pos: u32) -> (u32, MasterKey2) {
         let last_pos: u32 = pos + 1;
@@ -174,7 +169,4 @@ impl Wallet {
 
         (last_pos, last_child_master_key)
     }
-
-
 }
-
