@@ -1,0 +1,16 @@
+{
+  "name": "cognito-jwt-utils",
+  "version": "1.0.0",
+  "description": "Simple utility to retrieve public keys from Cognito",
+  "main": "jwt-to-pems.js",
+  "scripts": {},
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "jwk-to-pem": "^2.0.1",
+    "lodash": "^4.17.21",
+    "node-fetch": "^2.6.7",
+    "rsa-key": "0.0.6",
+    "yargs": "^17.7.1"
+  }
+}

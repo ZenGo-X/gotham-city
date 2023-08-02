@@ -1,0 +1,28 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+    - echo Logging in to Amazon ECR...
+    - aws --version
+    - $(aws ecr get-login --region us-west-2 --no-include-email)
+    - ACCOUNT_ID=$(echo $CODEBUILD_BUILD_ARN | cut -d ":" -f 5)
+    - REPOSITORY_URI=${ACCOUNT_ID}.dkr.ecr.us-west-2.amazonaws.com/gothambuild
+    - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+    - IMAGE_TAG=${COMMIT_HASH:=latest}
+  build:
+    commands:
+    - echo Build started on `date`
+    - echo Building the Docker image...
+    - docker build -t $REPOSITORY_URI:latest . -f ./gotham-utilities/server/docker-build-img/Dockerfile
+    - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$IMAGE_TAG
+  post_build:
+    commands:
+    - echo Build completed on `date`
+    - echo Pushing the Docker images...
+    - docker push $REPOSITORY_URI:latest
+    - docker push $REPOSITORY_URI:$IMAGE_TAG
+    - echo Writing image definitions file...
+    - printf '{"AWSEBDockerrunVersion":"1","Ports":[{"ContainerPort":8000}],"Image":{"Name":"%s","Update":"true"}}' $REPOSITORY_URI:$IMAGE_TAG > Dockerrun.aws.json
+artifacts:
+  files: Dockerrun.aws.json
