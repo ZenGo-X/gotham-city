@@ -79,11 +79,7 @@ fn test_ecdsa_keygen() {
 
     let client_shim =
         ClientShim::new_with_client("http://localhost:8009".to_string(), None, client);
-<<<<<<< HEAD
-    for _ in 0..100 {
-=======
     for _ in 0..10 {
->>>>>>> master
         let ps: ecdsa::PrivateShare = ecdsa::get_master_key(&client_shim);
         let _ = ps.master_key.public.q.get_element();
     }
@@ -101,11 +97,8 @@ fn test_ecdsa_key_derivation() {
     let client_shim =
         ClientShim::new_with_client("http://localhost:8009".to_string(), None, client);
     let ps: ecdsa::PrivateShare = ecdsa::get_master_key(&client_shim);
-<<<<<<< HEAD
-    for y in 0..1_000 {
-=======
+
     for y in 0..10 {
->>>>>>> master
         let x_pos = BigInt::from(y * 2 + 1);
         let y_pos = BigInt::from(y);
         let child_master_key = ps.master_key.get_child(vec![x_pos.clone(), y_pos.clone()]);
@@ -132,11 +125,7 @@ fn test_ecdsa_key_signing() {
     let child_master_key = ps.master_key.get_child(vec![x_pos.clone(), y_pos.clone()]);
     let pk = child_master_key.public.q.get_element();
 
-<<<<<<< HEAD
-    for _ in 0..100 {
-=======
     for _ in 0..10 {
->>>>>>> master
         let mut msg_buf = [0u8; 32];
         rng.fill(&mut msg_buf);
         let msg: BigInt = BigInt::from(&msg_buf[..]);
@@ -180,11 +169,7 @@ fn test_ecdsa_long() {
 
     let ps: ecdsa::PrivateShare = ecdsa::get_master_key(&client_shim);
 
-<<<<<<< HEAD
-    for y in 0..50i32 {
-=======
     for y in 0..20 {
->>>>>>> master
         let x_pos = BigInt::from(y * 2 + 1);
         let y_pos = BigInt::from(y);
 

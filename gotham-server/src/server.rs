@@ -7,7 +7,6 @@
 // version 3 of the License, or (at your option) any later version.
 //
 
-
 use rocket::{self, catch, catchers, routes, Build, Request, Rocket};
 use serde::Deserialize;
 
@@ -84,7 +83,6 @@ pub fn get_server(settings: HashMap<String, String>) -> Rocket<Build> {
                 crate::routes::ecdsa::sign_first,
                 crate::routes::ecdsa::sign_second,
                 crate::routes::ecdsa::recover
-
             ],
         )
         .manage(db_config)

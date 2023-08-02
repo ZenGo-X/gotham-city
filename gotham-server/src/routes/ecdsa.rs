@@ -478,7 +478,6 @@ pub async fn sign_first(
     id: String,
     eph_key_gen_first_message_party_two: Json<party_two::EphKeyGenFirstMsg>,
 ) -> Result<Json<party_one::EphKeyGenFirstMsg>, String> {
-
     let abort: String = db::get(&state.db, &claim.sub, &id, &EcdsaStruct::Abort)
         .await
         .or(Err("Failed to get from db"))?
