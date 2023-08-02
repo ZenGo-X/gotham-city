@@ -100,11 +100,9 @@ Project Description
 
 Disclaimer
 -------
-### **USE AT YOUR OWN RISK, we are not responsible for software/hardware and/or any transactional issues that may occur while using Gotham city.**
+### **USE AT YOUR OWN RISK, we are not responsible for software/hardware and/or any transactional issues that may occur while using Gotham city.The project is currently work in progress.**
 
-Project Status
--------
-The project is currently work in progress. For more information you can [email us](mailto:github@kzencorp.com).
+
 
 License
 -------
