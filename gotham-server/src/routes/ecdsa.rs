@@ -22,6 +22,7 @@ use serde::{Serialize, Deserialize};
 use failure::format_err;
 use log::{warn, error};
 use std::collections::HashMap;
+use std::process;
 use std::panic;
 
 use crate::{auth::jwt::Claims, storage::db, Config};
@@ -155,6 +156,10 @@ pub async fn first_message(
     )
     .await
     .or(Err("Failed to insert into db"))?;
+
+    db::insert(&state.db, &claim.sub, &id, &EcdsaStruct::Abort, "false")
+        .await
+        .or(Err("Failed to insert into db"))?;
 
     Ok(Json((id, key_gen_first_msg)))
 }
