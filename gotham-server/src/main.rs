@@ -16,7 +16,7 @@ fn rocket() -> _ {
     let settings = get_settings_as_map();
     server::get_server(settings)
 }
-
+ 
 fn get_settings_as_map() -> HashMap<String, String> {
     let config_file = include_str!("../Settings.toml");
     let mut settings = config::Config::default();
