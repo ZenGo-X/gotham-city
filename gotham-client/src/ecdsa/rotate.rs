@@ -9,10 +9,18 @@
 use super::types::PrivateShare;
 use super::super::wallet;
 use super::super::ClientShim;
+<<<<<<< HEAD
 use two_party_ecdsa::curv::cryptographic_primitives::twoparty::coin_flip_optimal_rounds;
 use kms::ecdsa::two_party::MasterKey2;
 use kms::ecdsa::two_party::*;
 use two_party_ecdsa::*;
+=======
+use curv::cryptographic_primitives::twoparty::coin_flip_optimal_rounds;
+use kms::ecdsa::two_party::MasterKey2;
+use kms::ecdsa::two_party::*;
+use kms::rotation::two_party::party2::Rotation2;
+use multi_party_ecdsa::protocols::two_party_ecdsa::lindell_2017::*;
+>>>>>>> master
 use std::collections::HashMap;
 use two_party_ecdsa::party_one;
 use crate::Client;

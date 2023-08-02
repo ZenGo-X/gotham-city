@@ -10,7 +10,7 @@ args:
   - electrum-address:
       short: e
       multiple: false
-      required: false
+      required: true
       value_name: ADDRESS
       takes_value: true
       help: Address of an electrum address to use. In the format of a sockaddress (url:port)

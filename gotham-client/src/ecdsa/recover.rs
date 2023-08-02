@@ -27,6 +27,10 @@ use jni::{
     sys::{jint, jstring},
     JNIEnv,
 };
+<<<<<<< HEAD
+=======
+use std::ops::Deref;
+>>>>>>> master
 
 #[no_mangle]
 #[allow(non_snake_case)]

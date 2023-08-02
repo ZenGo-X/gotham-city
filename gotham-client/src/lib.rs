@@ -12,6 +12,7 @@ use serde::{de::DeserializeOwned, Serialize};
 use std::time::Instant;
 pub mod ecdsa;
 pub mod escrow;
+<<<<<<< HEAD
 // extern crate config;
 extern crate kms;
 extern crate reqwest;
@@ -36,6 +37,10 @@ extern crate failure;
 
 mod utilities;
 pub mod wallet;
+=======
+
+mod utilities;
+>>>>>>> master
 
 type Result<T> = std::result::Result<T, failure::Error>;
 
@@ -70,12 +75,18 @@ impl<C: Client> ClientShim<C> {
         V: serde::de::DeserializeOwned,
     {
         let start = Instant::now();
+<<<<<<< HEAD
         let res = self.client.post(
             &self.endpoint,
             path,
             self.auth_token.clone(),
             "{}",
         );
+=======
+        let res = self
+            .client
+            .post(&self.endpoint, path, self.auth_token.clone(), "{}");
+>>>>>>> master
         info!("(req {}, took: {:?})", path, TimeFormat(start.elapsed()));
         res
     }
@@ -86,12 +97,18 @@ impl<C: Client> ClientShim<C> {
         V: serde::de::DeserializeOwned,
     {
         let start = Instant::now();
+<<<<<<< HEAD
         let res = self.client.post(
             &self.endpoint,
             path,
             self.auth_token.clone(),
             body,
         );
+=======
+        let res = self
+            .client
+            .post(&self.endpoint, path, self.auth_token.clone(), body);
+>>>>>>> master
         info!("(req {}, took: {:?})", path, TimeFormat(start.elapsed()));
         res
     }

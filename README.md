@@ -2,44 +2,44 @@
 
 Gotham City
 =====================================
-Gotham city is a fully functional client/server application of a minimalist decentralized HD wallet using 2 party ECDSA.
+Gotham city is a fully functional client/server application for issuing two party ECDSA signatures.
 
-Supported Blockchain(s) / Coin(s)
 -------
 ### Server
-Gotham **server** is coin / blockchain agnostic but Elliptic Curve specific.
-
+Gotham **server** is an ECDSA agnostic signing machine.
 List of supported Curve(s):
 
  * secp256k1
 
 ### Client
-Gotham **client** is coin / blockchain specific.
+You can see a full fledged example of a client which connects to gotham server under: [integration-tests/test_ecdsa_key_signing](https://github.com/ZenGo-X/gotham-city/blob/master/integration-tests/tests/ecdsa.rs#L109)
 
-List of supported Coin(s):
+[//]: # (List of supported Coin&#40;s&#41;:)
 
- * BTC
+[//]: # ()
+[//]: # ( * BTC)
 
-**Extending the client to support more coin(s) is easy as long as the Elliptic Curve and signing scheme of the new blockchain are supported. In the case a blockchain is using secp256k1 together with ECDSA, the same keygen and signing code can be reused.**
+[//]: # ()
+[//]: # (**Extending the client to support more coin&#40;s&#41; is easy as long as the Elliptic Curve and signing scheme of the new blockchain are supported. In the case a blockchain is using secp256k1 together with ECDSA, the same keygen and signing code can be reused.**)
 
-| ![Demo](misc/demo.gif) |
-|-----------------------------|
+[//]: # ()
+[//]: # (| ![Demo]&#40;misc/demo.gif&#41; |)
 
-Disclaimer
--------
-### **USE AT YOUR OWN RISK, we are not responsible for software/hardware and/or any transactional issues that may occur while using Gotham city.**
+[//]: # (|-----------------------------|)
 
-Project Status
--------
-The project is currently work in progress. For more information you can [email us](mailto:github@kzencorp.com).
 
-Elements
--------
+[//]: # (Elements)
 
-|                                                 | Gotham Server                                | Gotham Client                                |
-| -------------------------------------------- | -------------------------------------------- |--------------------------------------------
-| Description | RESTful web service exposing APIs for two party ECDSA key generation and signing | Bitcoin minimalist decentralized wallet CLI app |
-| Instructions | [View](gotham-server/README.md) | [View](gotham-client/README.md) |
+[//]: # (-------)
+
+[//]: # ()
+[//]: # (|                                                 | Gotham Server                                | Gotham Client                                |)
+
+[//]: # (| -------------------------------------------- | -------------------------------------------- |--------------------------------------------)
+
+[//]: # (| Description | RESTful web service exposing APIs for two party ECDSA key generation and signing | Bitcoin minimalist decentralized wallet CLI app |)
+
+[//]: # (| Instructions | [View]&#40;gotham-server/README.md&#41; | [View]&#40;gotham-client/README.md&#41; |)
 
 Project Description
 -------
@@ -52,42 +52,61 @@ Project Description
 
 #### Cryptographic libraries
 * [secp256k1](https://github.com/rust-bitcoin/rust-secp256k1/): Rust language bindings for Bitcoin secp256k1 library.
-* [curv](https://github.com/KZen-networks/curv) : basic ECC primitives using secp256k1
-* [rust-paillier](https://github.com/mortendahl/rust-paillier): A pure-Rust implementation of the Paillier encryption scheme
-* [zk-paillier](https://github.com/KZen-networks/zk-paillier): A collection of zero knowledge proofs using Paillier cryptosystem 
-* [multi-party-ecdsa](https://github.com/KZen-networks/multi-party-ecdsa): Rust implelemtation of Lindell's Crypto17 paper: [Fast Secure Two-Party ECDSA Signing](https://eprint.iacr.org/2017/552)
-* [kms](https://github.com/KZen-networks/kms): Two party key managament system (master keys, 2p-HD, shares rotation) for secp256k1 based two party digital sigantures 
+* [two-party-ecdsa](https://github.com/KZen-networks/two-party-ecdsa): Rust implelemtation of Lindell's Crypto17 paper: [Fast Secure Two-Party ECDSA Signing](https://eprint.iacr.org/2017/552)
 
-### White paper overview
-#### Abstract
-We demonstrate a Bitcoin wallet that utilizes two party ECDSA (2P-ECDSA).
-Our architecture relies on a simple client-server communication
-model. We show support for 2 party deterministic child derivation
-(2P-HD), secret share rotation and verifiable recovery. We discuss the
-opportunities and challenges of using a multi-party wallet.
+[//]: # (### White paper overview)
 
-#### Background
-For end-users, cryptocurrencies and blockchain-based assets are hard to store and manage.
-One of the reasons is the tradeoff between security and availability.
-Storing private keys safely requires dedicated hardware or extreme security measures which make using the coins
-on a daily basis difficult. Threshold cryptography provides ways to distribute the private key and digital signing.
-This can potentially benefit security but at the same time reveal new challenges such as availability, ownership and recovery.
-Bitcoin is utilizing ECDSA as the signing scheme. There is an active line of research for practical and efficient multi-party ECDSA schemes.
+[//]: # (#### Abstract)
+
+[//]: # (We demonstrate a Bitcoin wallet that utilizes two party ECDSA &#40;2P-ECDSA&#41;.)
+
+[//]: # (Our architecture relies on a simple client-server communication)
+
+[//]: # (model. We show support for 2 party deterministic child derivation)
+
+[//]: # (&#40;2P-HD&#41;, secret share rotation and verifiable recovery. We discuss the)
+
+[//]: # (opportunities and challenges of using a multi-party wallet.)
+
+[//]: # ()
+[//]: # (#### Background)
+
+[//]: # (For end-users, cryptocurrencies and blockchain-based assets are hard to store and manage.)
+
+[//]: # (One of the reasons is the tradeoff between security and availability.)
+
+[//]: # (Storing private keys safely requires dedicated hardware or extreme security measures which make using the coins)
+
+[//]: # (on a daily basis difficult. Threshold cryptography provides ways to distribute the private key and digital signing.)
+
+[//]: # (This can potentially benefit security but at the same time reveal new challenges such as availability, ownership and recovery.)
+
+[//]: # (Bitcoin is utilizing ECDSA as the signing scheme. There is an active line of research for practical and efficient multi-party ECDSA schemes.)
 
 **For more information, see our [white paper](white-paper/white-paper.pdf)**.
 
-### Comperative Performance
-The comparison was done on an Intel i9-8950HK (2.9GHz) using localhost for server (no real network). The numbers are mean for 20 runs of 2P-ECDSA KeyGen and 50 runs for 2P-ECDSA Signing. Standard deviation is inconsistent but for both implementations it is order of magnitude smaller than mean value.
+[//]: # (### Comperative Performance)
 
-|        Implementation         |   Gotham city (this repo)    |    [Unbound](https://github.com/unbound-tech/blockchain-crypto-mpc)       | 
-|-------------------------------|------------------------|------------------------|
-| 2P-ECDSA KeyGen                      |        1.05 s            |      **0.813** s           |
-|    2P-ECDSA Signing    |      **0.153** s        |      0.206 s     |
+[//]: # (The comparison was done on an Intel i9-8950HK &#40;2.9GHz&#41; using localhost for server &#40;no real network&#41;. The numbers are mean for 20 runs of 2P-ECDSA KeyGen and 50 runs for 2P-ECDSA Signing. Standard deviation is inconsistent but for both implementations it is order of magnitude smaller than mean value.)
+
+[//]: # ()
+[//]: # (|        Implementation         |   Gotham city &#40;this repo&#41;    |    [Unbound]&#40;https://github.com/unbound-tech/blockchain-crypto-mpc&#41;       | )
+
+[//]: # (|-------------------------------|------------------------|------------------------|)
+
+[//]: # (| 2P-ECDSA KeyGen                      |        1.05 s            |      **0.813** s           |)
+
+[//]: # (|    2P-ECDSA Signing    |      **0.153** s        |      0.206 s     |)
+
+Disclaimer
+-------
+### **USE AT YOUR OWN RISK, we are not responsible for software/hardware and/or any transactional issues that may occur while using Gotham city.The project is currently work in progress.**
+
 
 
 License
 -------
-Gotham City is released under the terms of the GPL-3.0 license. See [LICENSE](LICENSE) for more information.
+See [LICENSE](LICENSE) for more information.
 
 Contact
 -------
