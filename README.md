@@ -12,7 +12,7 @@ List of supported Curve(s):
  * secp256k1
 
 ### Client
-You can see a full fledged example of a client which connects to gotham server under: [integration-tests/test_ecdsa_key_signing](https://github.com/ZenGo-X/zengo-gotham-city/blob/master/integration-tests/tests/ecdsa.rs#L109)
+You can see a full fledged example of a client which connects to gotham server under: [integration-tests/test_ecdsa_key_signing](https://github.com/ZenGo-X/gotham-city/blob/master/integration-tests/tests/ecdsa.rs#L109)
 
 [//]: # (List of supported Coin&#40;s&#41;:)
 
