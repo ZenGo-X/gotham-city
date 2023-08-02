@@ -20,15 +20,9 @@ use rocket::{State, post, serde::json::Json};
 use uuid::Uuid;
 use serde::{Serialize, Deserialize};
 use failure::format_err;
-<<<<<<< HEAD
-use log::{warn,error};
-use std::collections::HashMap;
-=======
 use log::{warn, error};
 use std::collections::HashMap;
-use std::process;
 use std::panic;
->>>>>>> master
 
 use crate::{auth::jwt::Claims, storage::db, Config};
 
@@ -484,8 +478,7 @@ pub async fn sign_first(
     id: String,
     eph_key_gen_first_message_party_two: Json<party_two::EphKeyGenFirstMsg>,
 ) -> Result<Json<party_one::EphKeyGenFirstMsg>, String> {
-<<<<<<< HEAD
-=======
+
     let abort: String = db::get(&state.db, &claim.sub, &id, &EcdsaStruct::Abort)
         .await
         .or(Err("Failed to get from db"))?
@@ -495,7 +488,6 @@ pub async fn sign_first(
         panic!("Tainted user");
     }
 
->>>>>>> master
     let (sign_party_one_first_message, eph_ec_key_pair_party1) = MasterKey1::sign_first_message();
 
     db::insert(

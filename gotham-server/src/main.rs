@@ -7,7 +7,6 @@
 // version 3 of the License, or (at your option) any later version.
 //
 
-use log::LevelFilter;
 use server_lib::server;
 use std::collections::HashMap;
 
