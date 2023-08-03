@@ -1,4 +1,4 @@
-use crate::keygen_bench::key_gen;
+use crate::keygen_bench::keygen;
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use kms::ecdsa::two_party::MasterKey2;
 use pprof::criterion::{Output, PProfProfiler};
@@ -76,7 +76,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     let server = server::get_server(settings);
     let client = Client::tracked(server).expect("valid rocket instance");
 
-    let (id, mk) = key_gen(&client);
+    let (id, mk) = keygen(&client);
 
     c.bench_with_input(
         BenchmarkId::new("sign_benchmark", 1),
