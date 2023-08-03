@@ -52,7 +52,7 @@ Project Description
 
 #### Cryptographic libraries
 * [secp256k1](https://github.com/rust-bitcoin/rust-secp256k1/): Rust language bindings for Bitcoin secp256k1 library.
-* [two-party-ecdsa](https://github.com/KZen-networks/two-party-ecdsa): Rust implelemtation of Lindell's Crypto17 paper: [Fast Secure Two-Party ECDSA Signing](https://eprint.iacr.org/2017/552)
+* [two-party-ecdsa](https://github.com/ZenGo-X/two-party-ecdsa): Rust implelemtation of Lindell's Crypto17 paper: [Fast Secure Two-Party ECDSA Signing](https://eprint.iacr.org/2017/552)
 
 [//]: # (### White paper overview)
 
