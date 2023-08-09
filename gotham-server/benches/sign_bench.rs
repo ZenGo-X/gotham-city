@@ -8,8 +8,8 @@ use rocket::{http::ContentType, http::Status, local::blocking::Client};
 use std::collections::HashMap;
 use two_party_ecdsa::{party_one, BigInt};
 mod keygen_bench;
-use server_lib::*;
 use server_lib::routes::ecdsa::SignSecondMsgRequest;
+use server_lib::*;
 
 pub fn sign(
     client: &Client,

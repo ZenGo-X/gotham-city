@@ -12,7 +12,6 @@ use pprof::criterion::{Output, PProfProfiler};
 use server_lib::*;
 
 pub fn keygen(client: &Client) -> (String, MasterKey2) {
-
     /*************** START: FIRST MESSAGE ***************/
 
     let response = client
@@ -26,14 +25,12 @@ pub fn keygen(client: &Client) -> (String, MasterKey2) {
     let (id, kg_party_one_first_message): (String, party_one::KeyGenFirstMsg) =
         serde_json::from_str(&res_body).unwrap();
 
-
     let (kg_party_two_first_message, kg_ec_key_pair_party2) = MasterKey2::key_gen_first_message();
 
     /*************** END: FIRST MESSAGE ***************/
 
     /*************** START: SECOND MESSAGE ***************/
     let body = serde_json::to_string(&kg_party_two_first_message.d_log_proof).unwrap();
-
 
     let response = client
         .post(format!("/ecdsa/keygen/{}/second", id))
@@ -45,7 +42,6 @@ pub fn keygen(client: &Client) -> (String, MasterKey2) {
     let res_body = response.into_string().unwrap();
     let kg_party_one_second_message: party1::KeyGenParty1Message2 =
         serde_json::from_str(&res_body).unwrap();
-
 
     let key_gen_second_message = MasterKey2::key_gen_second_message(
         &kg_party_one_first_message,
@@ -61,7 +57,6 @@ pub fn keygen(client: &Client) -> (String, MasterKey2) {
     /*************** START: THIRD MESSAGE ***************/
     let body = serde_json::to_string(&party_two_second_message.pdl_first_message).unwrap();
 
-
     let response = client
         .post(format!("/ecdsa/keygen/{}/third", id))
         .body(body)
@@ -73,7 +68,6 @@ pub fn keygen(client: &Client) -> (String, MasterKey2) {
     let party_one_third_message: party_one::PDLFirstMessage =
         serde_json::from_str(&res_body).unwrap();
 
-
     let pdl_decom_party2 = MasterKey2::key_gen_third_message(&party_two_pdl_chal);
 
     /*************** END: THIRD MESSAGE ***************/
@@ -84,7 +78,6 @@ pub fn keygen(client: &Client) -> (String, MasterKey2) {
     let request = party_2_pdl_second_message;
     let body = serde_json::to_string(&request).unwrap();
 
-
     let response = client
         .post(format!("/ecdsa/keygen/{}/fourth", id))
         .body(body)
@@ -92,11 +85,9 @@ pub fn keygen(client: &Client) -> (String, MasterKey2) {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
 
-
     let res_body = response.into_string().unwrap();
     let party_one_pdl_second_message: party_one::PDLSecondMessage =
         serde_json::from_str(&res_body).unwrap();
-
 
     MasterKey2::key_gen_fourth_message(
         &party_two_pdl_chal,
@@ -114,7 +105,6 @@ pub fn keygen(client: &Client) -> (String, MasterKey2) {
         .header(ContentType::JSON)
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-
 
     let res_body = response.into_string().unwrap();
     let cc_party_one_first_message: Party1FirstMessage = serde_json::from_str(&res_body).unwrap();
@@ -134,7 +124,6 @@ pub fn keygen(client: &Client) -> (String, MasterKey2) {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
 
-
     let res_body = response.into_string().unwrap();
     let cc_party_one_second_message: Party1SecondMessage = serde_json::from_str(&res_body).unwrap();
 
@@ -152,7 +141,6 @@ pub fn keygen(client: &Client) -> (String, MasterKey2) {
     .chain_code;
 
     /*************** END: CHAINCODE COMPUTE MESSAGE ***************/
-
 
     let party_two_master_key = MasterKey2::set_master_key(
         &party2_cc,
