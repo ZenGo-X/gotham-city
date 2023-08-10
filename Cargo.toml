@@ -19,6 +19,7 @@ config = "0.9.2"
 uuid = { version = "0.7", features = ["v4"] }
 jsonwebtoken = "8"
 hex = "0.4"
+clap = { version = "4.3.21", features = ["derive"] }
 
 two-party-ecdsa = { git = "https://github.com/ZenGo-X/two-party-ecdsa.git" }
 kms = { git = "https://github.com/ZenGo-X/kms-secp256k1.git", branch = "2.0" }
