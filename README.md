@@ -85,6 +85,11 @@ Project Description
 
 **For more information, see our [white paper](white-paper/white-paper.pdf)**.
 
+# Benchmarks
+In a local networking setup, with a MacBook Air M2, 8GB RAM and macOS 13.5:
+* `cargo bench --bench keygen_bench` reports **762ms** 
+* `cargo bench --bench sign_bench` reports **151ms** 
+
 [//]: # (### Comperative Performance)
 
 [//]: # (The comparison was done on an Intel i9-8950HK &#40;2.9GHz&#41; using localhost for server &#40;no real network&#41;. The numbers are mean for 20 runs of 2P-ECDSA KeyGen and 50 runs for 2P-ECDSA Signing. Standard deviation is inconsistent but for both implementations it is order of magnitude smaller than mean value.)
