@@ -6,4 +6,3 @@
 ### Features
 
 * benchmarks ([fa42458](https://github.com/ZenGo-X/gotham-city/commit/fa424582ac57ad5c0727f9c2eb2813a119cf81fa))
-* benchmarks ([fa42458](https://github.com/ZenGo-X/gotham-city/commit/fa424582ac57ad5c0727f9c2eb2813a119cf81fa))
