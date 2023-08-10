@@ -52,7 +52,7 @@ Project Description
 
 #### Cryptographic libraries
 * [secp256k1](https://github.com/rust-bitcoin/rust-secp256k1/): Rust language bindings for Bitcoin secp256k1 library.
-* [two-party-ecdsa](https://github.com/KZen-networks/two-party-ecdsa): Rust implelemtation of Lindell's Crypto17 paper: [Fast Secure Two-Party ECDSA Signing](https://eprint.iacr.org/2017/552)
+* [two-party-ecdsa](https://github.com/ZenGo-X/two-party-ecdsa): Rust implelemtation of Lindell's Crypto17 paper: [Fast Secure Two-Party ECDSA Signing](https://eprint.iacr.org/2017/552)
 
 [//]: # (### White paper overview)
 
@@ -84,6 +84,11 @@ Project Description
 [//]: # (Bitcoin is utilizing ECDSA as the signing scheme. There is an active line of research for practical and efficient multi-party ECDSA schemes.)
 
 **For more information, see our [white paper](white-paper/white-paper.pdf)**.
+
+# Benchmarks
+In a local networking setup, with a MacBook Air M2, 8GB RAM and macOS 13.5:
+* `cargo bench --bench keygen_bench` reports **762ms** 
+* `cargo bench --bench sign_bench` reports **151ms** 
 
 [//]: # (### Comperative Performance)
 
