@@ -39,6 +39,7 @@ use hex;
 use itertools::Itertools;
 use std::collections::HashMap;
 use std::str::FromStr;
+use bitcoin::hashes::hex::ToHex;
 use log::debug;
 use crate::Client;
 
@@ -541,10 +542,8 @@ impl Wallet {
 
 // type conversion
 fn to_bitcoin_public_key(pk: PK) -> bitcoin::util::key::PublicKey {
-    bitcoin::util::key::PublicKey {
-        compressed: true,
-        key: pk,
-    }
+    bitcoin::util::key::PublicKey::from_str(&pk.to_hex().as_str())
+        .expect("Invalid PublicKey")
 }
 
 #[cfg(test)]
