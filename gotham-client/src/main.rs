@@ -7,9 +7,10 @@
 // version 3 of the License, or (at your option) any later version.
 //
 
-use std::path::PathBuf;
 
-use clap::{Args, Parser, Subcommand};
+use clap::{Args, Parser, Subcommand, ValueEnum};
+
+
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -19,7 +20,10 @@ struct Cli {
 
     #[arg(short, long, help= "Address of an electrum address to use. \
     In the format of a sockaddress (url:port)")]
-    electrum_address: String,
+    network: String,
+
+    #[arg(short, long, default_value = "http://localhost:8000" ,help= "Gotham server API endpoint")]
+    endpoint: String,
 
     #[command(subcommand)]
     command: Commands,
@@ -44,33 +48,57 @@ struct CreateWalletStruct {
 
 #[derive(Args)]
 struct WalletStruct {
-    #[arg(short = 'a', long, help= "Generate a new address")]
-    new_address: bool,
-
-    #[arg(short = 'b', long, help= "Total balance")]
-    get_balance: bool,
-
-    #[arg(short = 'u', long, help= "List unspent transactions (tx hash)")]
-    list_unspent: bool,
-
-    #[arg(short = 's', long, help= "Private share backup")]
-    backup: bool,
-
-    #[arg(short = 'c', long, help= "Backup verification")]
-    verify: bool,
-
-    #[arg(short = 'r', long, help= "Private share recovery")]
-    restore: bool,
-
-    #[arg(short = 'o', long, help= "Private shares rotation")]
-    rotate: bool,
-
     #[command(subcommand)]
     command: WalletCommands,
 }
 
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+enum WalletMode {
+    /// Generate a new address
+    NewAddress,
+
+    /// "Total balance"
+    GetBalance,
+
+    /// List unspent transactions (tx hash)
+    ListUnspent,
+
+    /// Private share backup
+    Backup,
+
+    /// Backup verification
+    Verify,
+
+    /// Private share recovery
+    Restore,
+
+    /// Private shares rotation
+    Rotate,
+}
+
 #[derive(Subcommand)]
 enum WalletCommands {
+    /// Generate a new address
+    NewAddress,
+
+    /// "Total balance"
+    GetBalance,
+
+    /// List unspent transactions (tx hash)
+    ListUnspent,
+
+    /// Private share backup
+    Backup,
+
+    /// Backup verification
+    Verify,
+
+    /// Private share recovery
+    Restore,
+
+    /// Private shares rotation
+    Rotate,
+
     /// Send a transaction
     Send(SendStruct),
 }
@@ -87,6 +115,19 @@ struct SendStruct {
 fn main() {
     let cli = Cli::parse();
 
+    let client_shim = client_lib::ClientShim::new(cli.endpoint, None);
+
+    let network = cli.network;
+
+    match &cli.command {
+        Commands::CreateWallet(createWallet) => {
+            // let wallet = Wallet::new(&client_shim, &network);
+        }
+        Commands::Wallet(wallet) => {
+
+        }
+        _ => {}
+    }
 }
 
 /*

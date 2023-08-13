@@ -28,7 +28,13 @@ floating-duration.workspace = true
 two-party-ecdsa.workspace = true
 kms.workspace = true
 clap.workspace = true
-
+hex.workspace = true
+uuid.workplace = true
+secp256k1.workplace = true
+itertools.workplace = true
+electrum-client.workplace = true
+#bitcoin.workplace = true
+bitcoin = "=0.23.0"
 
 [dev-dependencies]
 mockall = "0.11"

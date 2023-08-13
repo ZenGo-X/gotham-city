@@ -12,6 +12,8 @@ use serde::{de::DeserializeOwned, Serialize};
 use std::time::Instant;
 pub mod ecdsa;
 pub mod escrow;
+pub mod wallet;
+
 
 mod utilities;
 

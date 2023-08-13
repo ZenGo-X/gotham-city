@@ -20,6 +20,9 @@ uuid = { version = "0.7", features = ["v4"] }
 jsonwebtoken = "8"
 hex = "0.4"
 clap = { version = "4.3.21", features = ["derive"] }
-
+#secp256k1 = {version = "0.21.0", features = ["global-context"]}
+itertools = "0.10"
+#bitcoin = "=0.23.0"
+#electrumx-client = {git = "https://github.com/ZenGo-X/rust-electrumx-client.git" }
 two-party-ecdsa = { git = "https://github.com/ZenGo-X/two-party-ecdsa.git" }
 kms = { git = "https://github.com/ZenGo-X/kms-secp256k1.git", branch = "2.0" }
