@@ -11,9 +11,10 @@ use bitcoin;
 use bitcoin::consensus::encode::serialize;
 use bitcoin::hashes::{hex::FromHex, sha256d};
 use bitcoin::network::constants::Network;
-use bitcoin::secp256k1::Signature;
-use bitcoin::util::bip143::SighashComponents;
-use bitcoin::{TxIn, TxOut, Txid};
+// use bitcoin::secp256k1::Signature;
+// use bitcoin::util::bip143::SighashComponents;
+use bitcoin::sighash::SighashCache;
+use bitcoin::{TxIn, TxOut, Txid, Sequence, Witness, ScriptBuf};
 use two_party_ecdsa::curv::elliptic::curves::secp256_k1::{GE, PK};
 use two_party_ecdsa::curv::elliptic::curves::traits::ECPoint;
 use two_party_ecdsa::curv ::BigInt;
@@ -21,6 +22,7 @@ use electrumx_client::{electrumx_client::ElectrumxClient, interface::Electrumx};
 use kms::ecdsa::two_party::MasterKey2;
 use kms::ecdsa::two_party::*;
 use mockall::automock;
+use serde::{Deserialize, Serialize};
 use serde_json;
 use std::fs;
 use uuid::Uuid;
@@ -36,9 +38,13 @@ use super::ClientShim;
 use two_party_ecdsa::curv::arithmetic::traits::Converter;
 use hex;
 use itertools::Itertools;
-use secp256k1::Signature;
+// use secp256k1::{SecretKey, Signature};
 use std::collections::HashMap;
 use std::str::FromStr;
+use bitcoin::absolute::LockTime;
+use bitcoin::ecdsa::Signature;
+use log::debug;
+use crate::Client;
 
 // TODO: move that to a config file and double check electrum server addresses
 const ELECTRUM_HOST: &str = "ec2-34-219-15-143.us-west-2.compute.amazonaws.com:60001";
@@ -136,15 +142,17 @@ impl Wallet {
         }
     }
 
-    pub fn rotate<C: Client>(self, client_shim: &ClientShim<C>) -> Self {
-        ecdsa::rotate_master_key(self, client_shim)
-    }
+
+    // Rotation is not up to date
+    // pub fn rotate<C: Client>(self, client_shim: &ClientShim<C>) -> Self {
+    //     ecdsa::rotate_master_key(self, client_shim)
+    // }
 
     pub fn backup(&self, escrow_service: escrow::Escrow) {
         let g: GE = ECPoint::generator();
         let y = escrow_service.get_public_key();
         let (segments, encryptions) = self.private_share.master_key.private.to_encrypted_segment(
-            escrow::SEGMENT_SIZE,
+            &escrow::SEGMENT_SIZE,
             escrow::NUM_SEGMENTS,
             &y,
             &g,
@@ -191,6 +199,9 @@ impl Wallet {
         }
     }
 
+
+/*
+    // recover_master_key was removed from MasterKey2 in version 2.0
     pub fn recover_and_save_share<C: Client>(
         escrow_service: escrow::Escrow,
         net: &str,
@@ -239,7 +250,7 @@ impl Wallet {
 
         new_wallet
     }
-
+*/
     pub fn save_to(&self, filepath: &str) {
         let wallet_json = serde_json::to_string(self).unwrap();
 
@@ -284,13 +295,13 @@ impl Wallet {
             .clone()
             .into_iter()
             .map(|s| bitcoin::TxIn {
-                previous_output: bitcoin::OutPoint {
-                    txid: bitcoin::util::hash::Sha256dHash::from_hex(&s.tx_hash).unwrap(),
-                    vout: s.tx_pos as u32,
-                },
-                script_sig: bitcoin::Script::default(),
-                sequence: 0xFFFFFFFF,
-                witness: Vec::default(),
+                previous_output: bitcoin::OutPoint::new((&s.tx_hash).parse().unwrap(), s.tx_pos as u32),
+                //     txid: bitcoin::hashes::sha256d::Hash::from_str(&s.tx_hash),
+                //     vout: s.tx_pos as u32,
+                // },
+                script_sig: ScriptBuf::from(bitcoin::Script::empty()),
+                sequence: Sequence::MAX,
+                witness: Witness::new(),
             })
             .collect();
 
@@ -308,17 +319,17 @@ impl Wallet {
         let txs_out = vec![
             TxOut {
                 value: amount_satoshi,
-                script_pubkey: to_btc_adress.script_pubkey(),
+                script_pubkey: to_btc_adress.payload.script_pubkey(),
             },
             TxOut {
                 value: total_selected - amount_satoshi - fees,
-                script_pubkey: change_address.script_pubkey(),
+                script_pubkey: change_address.payload.script_pubkey(),
             },
         ];
 
         let transaction = bitcoin::Transaction {
             version: 0,
-            lock_time: 0,
+            lock_time: LockTime::ZERO,
             input: txs_in,
             output: txs_out,
         };
@@ -331,7 +342,8 @@ impl Wallet {
             let mk = &address_derivation.mk;
             let pk = mk.public.q.get_element();
 
-            let comp = SighashComponents::new(&transaction);
+
+            let comp = SighashCache::new(&transaction);
             let sig_hash = comp.sighash_all(
                 &transaction.input[i],
                 &bitcoin::Address::p2pkh(&to_bitcoin_public_key(pk), self.get_bitcoin_network())
@@ -358,12 +370,12 @@ impl Wallet {
                 .to_vec();
             sig_vec.push(1);
 
-            sig.push(01);
+            sig_vec.push(01);
             let mut witness = Vec::new();
-            witness.push(sig);
+            witness.push(sig_vec);
             witness.push(pk.serialize().to_vec());
 
-            signed_transaction.input[i].witness = witness;
+            signed_transaction.input[i].witness = Witness::from(witness);
         }
 
         let mut electrum = ElectrumxClient::new(ELECTRUM_HOST).unwrap();
@@ -533,20 +545,22 @@ impl Wallet {
 }
 
 // type conversion
-fn to_bitcoin_public_key(pk: PK) -> bitcoin::util::key::PublicKey {
-    bitcoin::util::key::PublicKey {
+fn to_bitcoin_public_key(pk: PK) -> bitcoin::PublicKey {
+    bitcoin::PublicKey {
         compressed: true,
-        key: pk,
+        inner: pk,
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use bitcoin::hashes::hex::ToHex;
+    // use bitcoin::hashes::hex::ToHex;
     use bitcoin::hashes::sha256d;
     use bitcoin::hashes::Hash;
-    use curv::arithmetic::traits::Converter;
-    use curv::BigInt;
+    use two_party_ecdsa::BigInt;
+    use two_party_ecdsa::party_one::Converter;
+    // use curv::arithmetic::traits::Converter;
+    // use curv::BigInt;
 
     #[test]
     fn test_message_conv() {
@@ -556,7 +570,7 @@ mod tests {
         ];
 
         // 14abf5ed107ff58bf844ee7f447bec317c276b00905c09a45434f8848599597e
-        let hash = Sha256dHash::from_data(&message);
+        let hash = bitcoin::hashes::sha256d::Hash::hash(&message);
 
         // 7e59998584f83454a4095c90006b277c31ec7b447fee44f88bf57f10edf5ab14
         let ser = hash.le_hex_string();
