@@ -11,10 +11,9 @@ use bitcoin;
 use bitcoin::consensus::encode::serialize;
 use bitcoin::hashes::{hex::FromHex, sha256d};
 use bitcoin::network::constants::Network;
-// use bitcoin::secp256k1::Signature;
-// use bitcoin::util::bip143::SighashComponents;
-use bitcoin::sighash::SighashCache;
-use bitcoin::{TxIn, TxOut, Txid, Sequence, Witness, ScriptBuf};
+use bitcoin::secp256k1::Signature;
+use bitcoin::util::bip143::SighashComponents;
+use bitcoin::{TxIn, TxOut, Txid};
 use two_party_ecdsa::curv::elliptic::curves::secp256_k1::{GE, PK};
 use two_party_ecdsa::curv::elliptic::curves::traits::ECPoint;
 use two_party_ecdsa::curv ::BigInt;
@@ -38,11 +37,8 @@ use super::ClientShim;
 use two_party_ecdsa::curv::arithmetic::traits::Converter;
 use hex;
 use itertools::Itertools;
-// use secp256k1::{SecretKey, Signature};
 use std::collections::HashMap;
 use std::str::FromStr;
-use bitcoin::absolute::LockTime;
-use bitcoin::ecdsa::Signature;
 use log::debug;
 use crate::Client;
 
@@ -295,13 +291,13 @@ impl Wallet {
             .clone()
             .into_iter()
             .map(|s| bitcoin::TxIn {
-                previous_output: bitcoin::OutPoint::new((&s.tx_hash).parse().unwrap(), s.tx_pos as u32),
-                //     txid: bitcoin::hashes::sha256d::Hash::from_str(&s.tx_hash),
-                //     vout: s.tx_pos as u32,
-                // },
-                script_sig: ScriptBuf::from(bitcoin::Script::empty()),
-                sequence: Sequence::MAX,
-                witness: Witness::new(),
+                previous_output: bitcoin::OutPoint {
+                    txid: s.tx_hash.parse().unwrap(),
+                    vout: s.tx_pos as u32,
+                },
+                script_sig: bitcoin::Script::default(),
+                sequence: 0xFFFFFFFF,
+                witness: Vec::default(),
             })
             .collect();
 
@@ -329,7 +325,7 @@ impl Wallet {
 
         let transaction = bitcoin::Transaction {
             version: 0,
-            lock_time: LockTime::ZERO,
+            lock_time: 0,
             input: txs_in,
             output: txs_out,
         };
@@ -342,8 +338,7 @@ impl Wallet {
             let mk = &address_derivation.mk;
             let pk = mk.public.q.get_element();
 
-
-            let comp = SighashCache::new(&transaction);
+            let comp = SighashComponents::new(&transaction);
             let sig_hash = comp.sighash_all(
                 &transaction.input[i],
                 &bitcoin::Address::p2pkh(&to_bitcoin_public_key(pk), self.get_bitcoin_network())
@@ -353,7 +348,7 @@ impl Wallet {
 
             let signature = ecdsa::sign(
                 client_shim,
-                BigInt::from_hex(&hex::encode(&sig_hash[..])).unwrap(),
+                BigInt::from_hex(&hex::encode(&sig_hash[..])),
                 mk,
                 BigInt::from(0u32),
                 BigInt::from(address_derivation.pos),
@@ -375,7 +370,7 @@ impl Wallet {
             witness.push(sig_vec);
             witness.push(pk.serialize().to_vec());
 
-            signed_transaction.input[i].witness = Witness::from(witness);
+            signed_transaction.input[i].witness = witness;
         }
 
         let mut electrum = ElectrumxClient::new(ELECTRUM_HOST).unwrap();
@@ -545,10 +540,10 @@ impl Wallet {
 }
 
 // type conversion
-fn to_bitcoin_public_key(pk: PK) -> bitcoin::PublicKey {
-    bitcoin::PublicKey {
+fn to_bitcoin_public_key(pk: PK) -> bitcoin::util::key::PublicKey {
+    bitcoin::util::key::PublicKey {
         compressed: true,
-        inner: pk,
+        key: pk,
     }
 }
 
