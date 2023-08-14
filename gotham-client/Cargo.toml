@@ -29,6 +29,7 @@ two-party-ecdsa.workspace = true
 kms.workspace = true
 clap.workspace = true
 hex.workspace = true
+config.workspace = true
 
 uuid = { version = "0.7", features = ["v4"] }
 bitcoin = "0.27.1"

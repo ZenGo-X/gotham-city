@@ -7,23 +7,27 @@
 // version 3 of the License, or (at your option) any later version.
 //
 
-
 use clap::{Args, Parser, Subcommand, ValueEnum};
+use config::Config;
+use client_lib::escrow;
+use client_lib::wallet::{ElectrumxBalanceFetcher, Wallet};
+use std::collections::HashMap;
+use std::time::Instant;
 
-
+const SETTINGS_FILENAME: &str = "../Settings.toml";
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
 struct Cli {
-    #[arg(short, long, help= "Sets the level of verbosity")]
-    verbose: bool,
+    // #[arg(short, long, help= "Sets the level of verbosity")]
+    // verbose: bool,
 
-    #[arg(short, long, help= "Address of an electrum address to use. \
-    In the format of a sockaddress (url:port)")]
+    #[arg(short, long, help= "Address for electrum address to use. \
+    In the format of a socket address (url:port)")]
     network: String,
 
-    #[arg(short, long, default_value = "http://localhost:8000" ,help= "Gotham server API endpoint")]
-    endpoint: String,
+    #[arg(short, long, help= "Gotham server API endpoint")]
+    server: String,
 
     #[command(subcommand)]
     command: Commands,
@@ -42,8 +46,6 @@ enum Commands {
 
 #[derive(Args)]
 struct CreateWalletStruct {
-    #[arg(short, long, help= "Sets the level of verbosity")]
-    verbose: bool,
 }
 
 #[derive(Args)]
@@ -93,11 +95,11 @@ enum WalletCommands {
     /// Backup verification
     Verify,
 
-    /// Private share recovery
-    Restore,
+    // /// Private share recovery
+    // Restore,
 
-    /// Private shares rotation
-    Rotate,
+    // /// Private shares rotation
+    // Rotate,
 
     /// Send a transaction
     Send(SendStruct),
@@ -115,137 +117,148 @@ struct SendStruct {
 fn main() {
     let cli = Cli::parse();
 
-    let client_shim = client_lib::ClientShim::new(cli.endpoint, None);
+    // let settings = Config::builder()
+    //     .add_source(config::File::with_name(SETTINGS_FILENAME))
+    //     .build()
+    //     .unwrap();
+    //
+    // let mut settings = settings
+    //     .try_deserialize::<HashMap<String, String>>().unwrap();
 
-    let network = cli.network;
+
+    // let endpoint = match_settings_and_cli(
+    //     settings.get("server").cloned(), cli.server, "server");
+    //
+    // let network = match_settings_and_cli(
+    //     settings.get("network").cloned(), cli.network,"network");
+
+    let client_shim = client_lib::ClientShim::new(cli.server, None);
+
 
     match &cli.command {
-        Commands::CreateWallet(createWallet) => {
-            // let wallet = Wallet::new(&client_shim, &network);
-        }
-        Commands::Wallet(wallet) => {
+        Commands::CreateWallet(create_wallet) => {
+            println!("Network: [{}], Creating wallet", &cli.network);
 
-        }
-        _ => {}
-    }
-}
-
-/*
-#[macro_use]
-extern crate clap;
-use clap::App;
-
-use client_lib::api;
-use client_lib::escrow;
-use client_lib::wallet;
-use time::PreciseTime;
-
-use std::collections::HashMap;
-
-
-fn main() {
-    let yaml = load_yaml!("../cli.yml");
-    let matches = App::from_yaml(yaml).get_matches();
-
-    let mut settings = config::Config::default();
-    settings
-        // Add in `./Settings.toml`
-        .merge(config::File::with_name("Settings")).unwrap()
-        // Add in settings from the environment (with prefix "APP")
-        // Eg.. `APP_DEBUG=1 ./target/app` would set the `debug` key
-        .merge(config::Environment::new()).unwrap();
-    let hm = settings.try_into::<HashMap<String, String>>().unwrap();
-    let endpoint = hm.get("endpoint").unwrap();
-
-    let client_shim = api::ClientShim::new(endpoint.to_string(), None);
-
-    let network = "testnet".to_string();
-
-    if let Some(_matches) = matches.subcommand_matches("create-wallet") {
-        println!("Network: [{}], Creating wallet", network);
-        let wallet = wallet::Wallet::new(&client_shim, &network);
-        wallet.save();
-        println!("Network: [{}], Wallet saved to disk", &network);
-
-        let _escrow = escrow::Escrow::new();
-        println!("Network: [{}], Escrow initiated", &network);
-    } else if let Some(matches) = matches.subcommand_matches("wallet") {
-        let mut wallet: wallet::Wallet = wallet::Wallet::load();
-
-        if matches.is_present("new-address") {
-            let address = wallet.get_new_bitcoin_address();
-            println!("Network: [{}], Address: [{}]", network, address.to_string());
+            let wallet = Wallet::new(&client_shim, &cli.network);
             wallet.save();
-        } else if matches.is_present("get-balance") {
-            let balance = wallet.get_balance();
-            println!(
-                "Network: [{}], Balance: [balance: {}, pending: {}]",
-                network, balance.confirmed, balance.unconfirmed
-            );
-        } else if matches.is_present("list-unspent") {
-            let unspent = wallet.list_unspent();
-            let hashes: Vec<String> = unspent.into_iter().map(|u| u.tx_hash).collect();
+            println!("Network: [{}], Wallet saved to disk", &cli.network);
 
-            println!(
-                "Network: [{}], Unspent tx hashes: [\n{}\n]",
-                network,
-                hashes.join("\n")
-            );
-        } else if matches.is_present("backup") {
-            let escrow = escrow::Escrow::load();
+            let _escrow = escrow::Escrow::new();
+            println!("Network: [{}], Escrow initiated", &cli.network);
+        },
+        Commands::Wallet(wallet_command) => {
+            let mut wallet: Wallet = Wallet::load();
 
-            println!("Backup private share pending (it can take some time)...");
+            match &wallet_command.command {
+                WalletCommands::NewAddress => {
+                    let address = wallet.get_new_bitcoin_address();
+                    println!("Network: [{}], Address: [{}]", cli.network, address.to_string());
+                    wallet.save();
+                },
+                WalletCommands::GetBalance => {
+                    let mut fetcher = ElectrumxBalanceFetcher::new("ec2-34-219-15-143.us-west-2.compute.amazonaws.com:60001");
 
-            let start = PreciseTime::now();
-            wallet.backup(escrow);
-            let end = PreciseTime::now();
+                    let balance = wallet.get_balance(&mut fetcher);
+                    println!(
+                        "Network: [{}], Balance: [balance: {}, pending: {}]",
+                        cli.network, balance.confirmed, balance.unconfirmed
+                    );
+                },
+                WalletCommands::ListUnspent => {
+                    let unspent = wallet.list_unspent();
+                    let hashes: Vec<String> = unspent.into_iter().map(|u| u.tx_hash).collect();
 
-            println!("Backup key saved in escrow (Took: {})", start.to(end));
-        } else if matches.is_present("verify") {
-            let escrow = escrow::Escrow::load();
+                    println!(
+                        "Network: [{}], Unspent tx hashes: [\n{}\n]",
+                        cli.network,
+                        hashes.join("\n")
+                    );
+                },
+                WalletCommands::Backup => {
+                    let escrow = escrow::Escrow::load();
 
-            println!("verify encrypted backup (it can take some time)...");
+                    println!("Backup private share pending (it can take some time)...");
 
-            let start = PreciseTime::now();
-            wallet.verify_backup(escrow);
-            let end = PreciseTime::now();
+                    let now = Instant::now();
+                    wallet.backup(escrow);
+                    let elapsed = now.elapsed();
 
-            println!(" (Took: {})", start.to(end));
-        } else if matches.is_present("restore") {
-            let escrow = escrow::Escrow::load();
+                    println!("Backup key saved in escrow (Took: {:?})", elapsed);
+                },
+                WalletCommands::Verify => {
+                    let escrow = escrow::Escrow::load();
 
-            println!("backup recovery in process 📲 (it can take some time)...");
+                    println!("verify encrypted backup (it can take some time)...");
 
-            let start = PreciseTime::now();
-            wallet::Wallet::recover_and_save_share(escrow, &network, &client_shim);
-            let end = PreciseTime::now();
+                    let now = Instant::now();
+                    wallet.verify_backup(escrow);
+                    let elapsed = now.elapsed();
 
-            println!(" Backup recovered 💾(Took: {})", start.to(end));
-        } else if matches.is_present("rotate") {
-            println!("Rotating secret shares");
+                    println!(" (Took: {:?})", elapsed);
+                },
+                /*
+                // recover_master_key was removed from MasterKey2 in version 2.0
+                WalletCommands::Restore => {
+                    let escrow = escrow::Escrow::load();
 
-            let start = PreciseTime::now();
-            let wallet = wallet.rotate(&client_shim);
-            wallet.save();
-            let end = PreciseTime::now();
+                    println!("backup recovery in process 📲 (it can take some time)...");
 
-            println!("key rotation complete, (Took: {})", start.to(end));
-        } else if matches.is_present("send") {
-            if let Some(matches) = matches.subcommand_matches("send") {
-                let to: &str = matches.value_of("to").unwrap();
-                let amount_btc: &str = matches.value_of("amount").unwrap();
-                let txid = wallet.send(
-                    to.to_string(),
-                    amount_btc.to_string().parse::<f32>().unwrap(),
-                    &client_shim,
-                );
-                wallet.save();
-                println!(
-                    "Network: [{}], Sent {} BTC to address {}. Transaction ID: {}",
-                    network, amount_btc, to, txid
-                );
+                    let now = Instant::now();
+                    Wallet::recover_and_save_share(escrow, &network, &client_shim);
+                    let elapsed = now.elapsed();
+
+                    println!(" Backup recovered 💾(Took: {:?})", elapsed);
+                },
+
+                 */
+
+                /* Rotation is not up to date
+                WalletCommands::Rotate => {
+                    println!("Rotating secret shares");
+
+                    let now = Instant::now();
+                    let wallet = wallet.rotate(&client_shim);
+                    wallet.save();
+                    let elapsed = now.elapsed();
+
+                    println!("key rotation complete, (Took: {:?})", elapsed);
+                },
+                 */
+                WalletCommands::Send(send_struct) => {
+                    let mut fetcher = ElectrumxBalanceFetcher::new("ec2-34-219-15-143.us-west-2.compute.amazonaws.com:60001");
+
+                    let txid = wallet.send(
+                        &send_struct.to,
+                        send_struct.amount,
+                        &client_shim,
+                        &mut fetcher
+                    );
+                    wallet.save();
+                    println!(
+                        "Network: [{}], Sent {} BTC to address {}. Transaction ID: {}",
+                        cli.network, send_struct.amount, send_struct.to, txid
+                    );
+                },
             }
+
         }
     }
 }
-*/
+
+fn match_settings_and_cli(settings_cli: Option<String>, cli_str: Option<String>, key_name: &str) -> String {
+    let endpoint = match (settings_cli, cli_str) {
+        (Some(s), Some(c)) => {
+            if s == c {
+                s
+            } else {
+                panic!("{} \"{}\" in {} is different from endpoint \"{}\" in cli",key_name, s, SETTINGS_FILENAME, c);
+            }
+        },
+        (Some(s), None) => s,
+        (None, Some(c)) => c,
+        (None, None) => {
+            panic!("Missing {} value in both {} and cli", key_name, SETTINGS_FILENAME);
+        }
+    };
+    endpoint
+}
