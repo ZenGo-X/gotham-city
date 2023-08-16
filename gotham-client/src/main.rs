@@ -10,28 +10,20 @@
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use config::Config;
 use client_lib::escrow;
-use client_lib::wallet::{ElectrumxBalanceFetcher, Wallet};
+use client_lib::wallet::{Wallet};
 use std::collections::HashMap;
 use std::time::Instant;
+use bitcoin::Network;
+use electrumx_client::electrumx_client::ElectrumxClient;
 
-const SETTINGS_FILENAME: &str = "../Settings.toml";
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
 struct Cli {
-    // #[arg(short, long, help= "Sets the level of verbosity")]
-    // verbose: bool,
 
-    #[arg(short, long, help= "Address for electrum address to use. \
-    In the format of a socket address (url:port)")]
-    network: String,
-
-    #[arg(short, long, help= "Gotham server API endpoint")]
-    server: String,
 
     #[command(subcommand)]
     command: Commands,
-
 }
 
 #[derive(Subcommand)]
@@ -44,56 +36,66 @@ enum Commands {
     Wallet(WalletStruct)
 }
 
+
+const GOTHAM_ARG_HELP: &str = "Gotham server (url:port)";
+const GOTHAM_ARG_DEFAULT: &str = "http://127.0.0.1:8000";
+
+const NETWORK_ARG_HELP: &str = "Bitcoin network [bitcoin|testnet|signet|regtest]";
+const NETWORK_ARG_DEFAULT: &str = "testnet";
+
+const ELECTRUM_ARG_HELP: &str = "Electrum server (url:port)";
+
+const WALLET_ARG_HELP: &str = "Wallet filepath";
+const WALLET_ARG_DEFAULT: &str = "wallet.json";
+
+const BACKUP_ARG_HELP: &str = "Backup filepath";
+const BACKUP_ARG_DEFAULT: &str = "backup.json";
+
+const ESCROW_ARG_HELP: &str = "Escrow filepath";
+const ESCROW_ARG_DEFAULT: &str = "escrow.json";
+
+
 #[derive(Args)]
 struct CreateWalletStruct {
+    #[arg(short, long, help = GOTHAM_ARG_HELP, default_value= GOTHAM_ARG_DEFAULT)]
+    gotham: String,
+
+    #[arg(short, long, help = NETWORK_ARG_HELP, default_value= NETWORK_ARG_DEFAULT)]
+    network: Network,
+
+    #[arg(short, long, help = WALLET_ARG_HELP, default_value= WALLET_ARG_DEFAULT)]
+    wallet: String,
+
+    #[arg(short, long, help = ESCROW_ARG_HELP, default_value= ESCROW_ARG_DEFAULT)]
+    escrow: String,
 }
 
 #[derive(Args)]
 struct WalletStruct {
+
+    #[arg(short, long, help = WALLET_ARG_HELP, default_value= WALLET_ARG_DEFAULT)]
+    wallet: String,
+
     #[command(subcommand)]
     command: WalletCommands,
-}
-
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
-enum WalletMode {
-    /// Generate a new address
-    NewAddress,
-
-    /// "Total balance"
-    GetBalance,
-
-    /// List unspent transactions (tx hash)
-    ListUnspent,
-
-    /// Private share backup
-    Backup,
-
-    /// Backup verification
-    Verify,
-
-    /// Private share recovery
-    Restore,
-
-    /// Private shares rotation
-    Rotate,
 }
 
 #[derive(Subcommand)]
 enum WalletCommands {
     /// Generate a new address
-    NewAddress,
+    NewAddress(NewAddressStruct),
 
-    /// "Total balance"
-    GetBalance,
+    /// Total balance
+    GetBalance(GetBalanceStruct),
 
     /// List unspent transactions (tx hash)
-    ListUnspent,
+    ListUnspent(ListUnspentStruct),
 
     /// Private share backup
-    Backup,
+    Backup(BackupStruct),
 
     /// Backup verification
-    Verify,
+    Verify(VerifyStruct),
 
     // /// Private share recovery
     // Restore,
@@ -105,8 +107,70 @@ enum WalletCommands {
     Send(SendStruct),
 }
 
+
+#[derive(Args)]
+struct NewAddressStruct {
+    #[arg(short, long, help = WALLET_ARG_HELP, default_value= WALLET_ARG_DEFAULT)]
+    wallet: String,
+
+    #[arg(short, long, help = NETWORK_ARG_HELP, default_value= NETWORK_ARG_DEFAULT)]
+    network: Network,
+}
+
+
+#[derive(Args)]
+struct ListUnspentStruct {
+    #[arg(short, long, help = NETWORK_ARG_HELP, default_value= NETWORK_ARG_DEFAULT)]
+    network: Network,
+
+    #[arg(short, long, help = ELECTRUM_ARG_HELP)]
+    electrum: String,
+}
+
+
+#[derive(Args)]
+struct BackupStruct {
+    #[arg(short, long, help = BACKUP_ARG_HELP, default_value= BACKUP_ARG_DEFAULT)]
+    backup: String,
+
+    #[arg(short, long, help = ESCROW_ARG_HELP, default_value= ESCROW_ARG_DEFAULT)]
+    escrow: String,
+}
+
+#[derive(Args)]
+struct VerifyStruct {
+    #[arg(short, long, help = BACKUP_ARG_HELP, default_value= BACKUP_ARG_DEFAULT)]
+    backup: String,
+
+    #[arg(short, long, help = ESCROW_ARG_HELP, default_value= ESCROW_ARG_DEFAULT)]
+    escrow: String,
+}
+
+
+#[derive(Args)]
+struct GetBalanceStruct {
+    #[arg(short, long, help = NETWORK_ARG_HELP, default_value= NETWORK_ARG_DEFAULT)]
+    network: Network,
+
+    #[arg(short, long, help = ELECTRUM_ARG_HELP)]
+    electrum: String,
+}
+
 #[derive(Args)]
 struct SendStruct {
+
+    #[arg(short, long, help = GOTHAM_ARG_HELP, default_value= GOTHAM_ARG_DEFAULT)]
+    gotham: String,
+
+    #[arg(short, long, help = ELECTRUM_ARG_HELP)]
+    electrum: String,
+
+    #[arg(short, long, help = WALLET_ARG_HELP, default_value= WALLET_ARG_DEFAULT)]
+    wallet: String,
+
+    #[arg(short, long, help = NETWORK_ARG_HELP, default_value= NETWORK_ARG_DEFAULT)]
+    network: Network,
+
     #[arg(short, long, help= "Recipient")]
     to: String,
 
@@ -117,81 +181,67 @@ struct SendStruct {
 fn main() {
     let cli = Cli::parse();
 
-    // let settings = Config::builder()
-    //     .add_source(config::File::with_name(SETTINGS_FILENAME))
-    //     .build()
-    //     .unwrap();
-    //
-    // let mut settings = settings
-    //     .try_deserialize::<HashMap<String, String>>().unwrap();
-
-
-    // let endpoint = match_settings_and_cli(
-    //     settings.get("server").cloned(), cli.server, "server");
-    //
-    // let network = match_settings_and_cli(
-    //     settings.get("network").cloned(), cli.network,"network");
-
-    let client_shim = client_lib::ClientShim::new(cli.server, None);
-
-
     match &cli.command {
         Commands::CreateWallet(create_wallet) => {
-            println!("Network: [{}], Creating wallet", &cli.network);
+            let client_shim = client_lib::ClientShim::new(create_wallet.gotham.clone(), None);
 
-            let wallet = Wallet::new(&client_shim, &cli.network);
-            wallet.save();
-            println!("Network: [{}], Wallet saved to disk", &cli.network);
+            println!("Network: [{}], Creating wallet", &create_wallet.network);
 
-            let _escrow = escrow::Escrow::new();
-            println!("Network: [{}], Escrow initiated", &cli.network);
+            let wallet = Wallet::new(&client_shim, &create_wallet.network.to_string());
+            wallet.save_to(&create_wallet.wallet);
+            println!("Network: [{}], Wallet saved to disk", &create_wallet.network);
+
+            let _escrow = escrow::Escrow::new(&create_wallet.escrow);
+            println!("Network: [{}], Escrow initiated", &create_wallet.network);
         },
         Commands::Wallet(wallet_command) => {
-            let mut wallet: Wallet = Wallet::load();
+            let mut wallet: Wallet = Wallet::load_from(&wallet_command.wallet);
 
             match &wallet_command.command {
-                WalletCommands::NewAddress => {
+                WalletCommands::NewAddress(new_address_struct) => {
                     let address = wallet.get_new_bitcoin_address();
-                    println!("Network: [{}], Address: [{}]", cli.network, address.to_string());
-                    wallet.save();
+                    println!("Network: [{}], Address: [{}]", &new_address_struct.network, address.to_string());
+                    wallet.save_to(&new_address_struct.wallet);
                 },
-                WalletCommands::GetBalance => {
-                    let mut fetcher = ElectrumxBalanceFetcher::new("ec2-34-219-15-143.us-west-2.compute.amazonaws.com:60001");
+                WalletCommands::GetBalance(get_balance_struct) => {
+                    let mut electrum = ElectrumxClient::new(&get_balance_struct.electrum).unwrap();
 
-                    let balance = wallet.get_balance(&mut fetcher);
+                    let balance = wallet.get_balance(&mut electrum);
                     println!(
                         "Network: [{}], Balance: [balance: {}, pending: {}]",
-                        cli.network, balance.confirmed, balance.unconfirmed
+                        &get_balance_struct.network, balance.confirmed, balance.unconfirmed
                     );
                 },
-                WalletCommands::ListUnspent => {
-                    let unspent = wallet.list_unspent();
+                WalletCommands::ListUnspent(list_unspent_struct) => {
+                    let mut electrum = ElectrumxClient::new(&list_unspent_struct.electrum).unwrap();
+
+                    let unspent = wallet.list_unspent(&mut electrum);
                     let hashes: Vec<String> = unspent.into_iter().map(|u| u.tx_hash).collect();
 
                     println!(
                         "Network: [{}], Unspent tx hashes: [\n{}\n]",
-                        cli.network,
+                        &list_unspent_struct.network,
                         hashes.join("\n")
                     );
                 },
-                WalletCommands::Backup => {
-                    let escrow = escrow::Escrow::load();
+                WalletCommands::Backup(backup_struct) => {
+                    let escrow = escrow::Escrow::load(&backup_struct.escrow);
 
                     println!("Backup private share pending (it can take some time)...");
 
                     let now = Instant::now();
-                    wallet.backup(escrow);
+                    wallet.backup(escrow, &backup_struct.backup);
                     let elapsed = now.elapsed();
 
                     println!("Backup key saved in escrow (Took: {:?})", elapsed);
                 },
-                WalletCommands::Verify => {
-                    let escrow = escrow::Escrow::load();
+                WalletCommands::Verify(verify_struct) => {
+                    let escrow = escrow::Escrow::load(&verify_struct.escrow);
 
                     println!("verify encrypted backup (it can take some time)...");
 
                     let now = Instant::now();
-                    wallet.verify_backup(escrow);
+                    wallet.verify_backup(escrow, &verify_struct.backup);
                     let elapsed = now.elapsed();
 
                     println!(" (Took: {:?})", elapsed);
@@ -225,40 +275,24 @@ fn main() {
                 },
                  */
                 WalletCommands::Send(send_struct) => {
-                    let mut fetcher = ElectrumxBalanceFetcher::new("ec2-34-219-15-143.us-west-2.compute.amazonaws.com:60001");
+                    let client_shim = client_lib::ClientShim::new(send_struct.gotham.clone(), None);
+
+                    let mut electrum = ElectrumxClient::new(&send_struct.electrum).unwrap();
 
                     let txid = wallet.send(
                         &send_struct.to,
                         send_struct.amount,
                         &client_shim,
-                        &mut fetcher
+                        &mut electrum
                     );
-                    wallet.save();
+                    wallet.save_to(&send_struct.wallet);
                     println!(
                         "Network: [{}], Sent {} BTC to address {}. Transaction ID: {}",
-                        cli.network, send_struct.amount, send_struct.to, txid
+                        send_struct.network, send_struct.amount, send_struct.to, txid
                     );
                 },
             }
 
         }
     }
-}
-
-fn match_settings_and_cli(settings_cli: Option<String>, cli_str: Option<String>, key_name: &str) -> String {
-    let endpoint = match (settings_cli, cli_str) {
-        (Some(s), Some(c)) => {
-            if s == c {
-                s
-            } else {
-                panic!("{} \"{}\" in {} is different from endpoint \"{}\" in cli",key_name, s, SETTINGS_FILENAME, c);
-            }
-        },
-        (Some(s), None) => s,
-        (None, Some(c)) => c,
-        (None, None) => {
-            panic!("Missing {} value in both {} and cli", key_name, SETTINGS_FILENAME);
-        }
-    };
-    endpoint
 }

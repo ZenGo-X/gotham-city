@@ -13,7 +13,7 @@ use bitcoin::hashes::{hex::FromHex, sha256d};
 use bitcoin::network::constants::Network;
 use bitcoin::secp256k1::Signature;
 use bitcoin::util::bip143::SighashComponents;
-use bitcoin::{TxIn, TxOut, Txid};
+use bitcoin::{TxIn, TxOut, Txid, Address};
 use two_party_ecdsa::curv::elliptic::curves::secp256_k1::{GE, PK};
 use two_party_ecdsa::curv::elliptic::curves::traits::ECPoint;
 use two_party_ecdsa::curv ::BigInt;
@@ -38,20 +38,17 @@ use two_party_ecdsa::curv::arithmetic::traits::Converter;
 use hex;
 use itertools::Itertools;
 use std::collections::HashMap;
+use std::net::ToSocketAddrs;
 use std::str::FromStr;
 use bitcoin::hashes::hex::ToHex;
 use log::debug;
 use crate::Client;
 
-// TODO: move that to a config file and double check electrum server addresses
-const ELECTRUM_HOST: &str = "ec2-34-219-15-143.us-west-2.compute.amazonaws.com:60001";
-//const ELECTRUM_HOST: &str = "testnetnode.arihanc.com:51001";
-const WALLET_FILENAME: &str = "wallet/wallet.data";
-const BACKUP_FILENAME: &str = "wallet/backup.data";
-
+/*
 #[automock]
 pub trait BalanceFetcher {
     fn get_balance(&mut self, address: &bitcoin::Address) -> GetBalanceResponse;
+
 }
 
 pub struct ElectrumxBalanceFetcher {
@@ -77,6 +74,8 @@ impl BalanceFetcher for ElectrumxBalanceFetcher {
         }
     }
 }
+
+ */
 
 #[derive(Serialize, Deserialize)]
 pub struct SignSecondMsgRequest {
@@ -128,11 +127,10 @@ impl Wallet {
         let private_share = ecdsa::get_master_key(client_shim);
         let last_derived_pos = 0;
         let addresses_derivation_map = HashMap::new();
-        let network = net;
 
         Wallet {
             id,
-            network: network.to_string(),
+            network: net.to_string(),
             private_share,
             last_derived_pos,
             addresses_derivation_map,
@@ -145,7 +143,7 @@ impl Wallet {
     //     ecdsa::rotate_master_key(self, client_shim)
     // }
 
-    pub fn backup(&self, escrow_service: escrow::Escrow) {
+    pub fn backup(&self, escrow_service: escrow::Escrow, path: &str) {
         let g: GE = ECPoint::generator();
         let y = escrow_service.get_public_key();
         let (segments, encryptions) = self.private_share.master_key.private.to_encrypted_segment(
@@ -166,16 +164,16 @@ impl Wallet {
         ))
         .unwrap();
 
-        fs::write(BACKUP_FILENAME, client_backup_json).expect("Unable to save client backup!");
+        fs::write(path, client_backup_json).expect("Unable to save client backup!");
 
         debug!("(wallet id: {}) Backup wallet with escrow", self.id);
     }
 
-    pub fn verify_backup(&self, escrow_service: escrow::Escrow) {
+    pub fn verify_backup(&self, escrow_service: escrow::Escrow, path: &str) {
         let g: GE = ECPoint::generator();
         let y = escrow_service.get_public_key();
 
-        let data = fs::read_to_string(BACKUP_FILENAME).expect("Unable to load client backup!");
+        let data = fs::read_to_string(path).expect("Unable to load client backup!");
         let (encryptions, proof, client_public, _, _): (
             Helgamalsegmented,
             Proof,
@@ -248,20 +246,17 @@ impl Wallet {
         new_wallet
     }
 */
-    pub fn save_to(&self, filepath: &str) {
+    pub fn save_to(&self, path: &str) {
         let wallet_json = serde_json::to_string(self).unwrap();
 
-        fs::write(filepath, wallet_json).expect("Unable to save wallet!");
+        fs::write(path, wallet_json).expect("Unable to save wallet!");
 
         debug!("(wallet id: {}) Saved wallet to disk", self.id);
     }
 
-    pub fn save(&self) {
-        self.save_to(WALLET_FILENAME)
-    }
 
-    pub fn load_from(filepath: &str) -> Wallet {
-        let data = fs::read_to_string(filepath).expect("Unable to load wallet!");
+    pub fn load_from(path: &str) -> Wallet {
+        let data = fs::read_to_string(path).expect("Unable to load wallet!");
 
         let wallet: Wallet = serde_json::from_str(&data).unwrap();
 
@@ -270,18 +265,16 @@ impl Wallet {
         wallet
     }
 
-    pub fn load() -> Wallet {
-        Wallet::load_from(WALLET_FILENAME)
-    }
 
-    pub fn send<E: BalanceFetcher, C: Client>(
+    pub fn send<C: Client>(
         &mut self,
         to_address: &String,
         amount_btc: f32,
         client_shim: &ClientShim<C>,
-        fetcher: &mut E,
+        electrumx: &mut dyn Electrumx
     ) -> String {
-        let selected = self.select_tx_in(amount_btc, fetcher);
+
+        let selected = self.select_tx_in(amount_btc, electrumx);
         if selected.is_empty() {
             panic!("Not enough fund");
         }
@@ -374,10 +367,9 @@ impl Wallet {
             signed_transaction.input[i].witness = witness;
         }
 
-        let mut electrum = ElectrumxClient::new(ELECTRUM_HOST).unwrap();
 
         let raw_tx_hex = hex::encode(serialize(&signed_transaction));
-        let txid = electrum.broadcast_transaction(raw_tx_hex);
+        let txid = electrumx.broadcast_transaction(raw_tx_hex);
 
         txid.unwrap()
     }
@@ -414,13 +406,16 @@ impl Wallet {
         }
     }
 
-    pub fn get_balance<E: BalanceFetcher>(&mut self, fetcher: &mut E) -> GetWalletBalanceResponse {
+    pub fn get_balance(
+        &mut self,
+        electrumx: &mut dyn Electrumx
+    ) -> GetWalletBalanceResponse {
         let mut aggregated_balance = GetWalletBalanceResponse {
             confirmed: 0,
             unconfirmed: 0,
         };
 
-        for b in self.get_all_addresses_balance(fetcher) {
+        for b in self.get_all_addresses_balance(electrumx) {
             aggregated_balance.unconfirmed += b.unconfirmed;
             aggregated_balance.confirmed += b.confirmed;
         }
@@ -429,17 +424,17 @@ impl Wallet {
     }
 
     // TODO: handle fees
-    pub fn select_tx_in<E: BalanceFetcher>(
+    pub fn select_tx_in(
         &self,
         amount_btc: f32,
-        fetcher: &mut E,
+        electrumx: &mut dyn Electrumx
     ) -> Vec<GetListUnspentResponse> {
         // greedy selection
         let list_unspent: Vec<GetListUnspentResponse> = self
-            .get_all_addresses_balance(fetcher)
+            .get_all_addresses_balance(electrumx)
             .into_iter()
             .filter(|b| b.confirmed > 0)
-            .map(|a| self.list_unspent_for_addresss(a.address.to_string()))
+            .map(|a| self.list_unspent_for_addresss(a.address.to_string(), electrumx))
             .flatten()
             .sorted_by(|a, b| a.value.partial_cmp(&b.value).unwrap())
             .into_iter()
@@ -460,11 +455,14 @@ impl Wallet {
         selected
     }
 
-    pub fn list_unspent(&self) -> Vec<GetListUnspentResponse> {
+    pub fn list_unspent(
+        &self,
+        electrumx: &mut dyn Electrumx
+    ) -> Vec<GetListUnspentResponse> {
         let response: Vec<GetListUnspentResponse> = self
             .get_all_addresses()
             .into_iter()
-            .map(|a| self.list_unspent_for_addresss(a.to_string()))
+            .map(|a| self.list_unspent_for_addresss(a.to_string(), electrumx))
             .flatten()
             .collect();
 
@@ -472,10 +470,14 @@ impl Wallet {
     }
 
     /* PRIVATE */
-    fn list_unspent_for_addresss(&self, address: String) -> Vec<GetListUnspentResponse> {
-        let mut client = ElectrumxClient::new(ELECTRUM_HOST).unwrap();
+    fn list_unspent_for_addresss(
+        &self,
+        address: String,
+        electrumx: &mut dyn Electrumx
+    ) -> Vec<GetListUnspentResponse> {
 
-        let resp = client.get_list_unspent(&address).unwrap();
+
+        let resp = electrumx.get_list_unspent(&address).unwrap();
 
         resp.into_iter()
             .map(|u| GetListUnspentResponse {
@@ -488,17 +490,27 @@ impl Wallet {
             .collect()
     }
 
-    fn get_all_addresses_balance<E: BalanceFetcher>(
+    fn get_all_addresses_balance(
         &self,
-        fetcher: &mut E,
+        electrumx: &mut dyn Electrumx
     ) -> Vec<GetBalanceResponse> {
         let response: Vec<GetBalanceResponse> = self
             .get_all_addresses()
             .into_iter()
             // .map(|a| Self::get_address_balance(&a))
-            .map(|a| fetcher.get_balance(&a))
+            .map(|a| self.get_balance_by_address(electrumx, &a))
             .collect();
         response
+    }
+
+    fn get_balance_by_address(&self, electrumx: &mut dyn Electrumx, a: &Address) -> GetBalanceResponse {
+        let response = electrumx.get_balance(&a.to_string()).unwrap();
+
+        GetBalanceResponse {
+            confirmed: response.confirmed,
+            unconfirmed: response.unconfirmed,
+            address: a.to_string(),
+        }
     }
 
     fn get_all_addresses(&self) -> Vec<bitcoin::Address> {

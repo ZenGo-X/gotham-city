@@ -24,17 +24,17 @@ pub struct Escrow {
 
 impl Default for Escrow {
     fn default() -> Self {
-        Self::new()
+        Self::new(ESCROW_SK_FILENAME)
     }
 }
 
 impl Escrow {
-    pub fn new() -> Escrow {
+    pub fn new(path: &str) -> Escrow {
         let secret: FE = ECScalar::new_random();
         let g: GE = ECPoint::generator();
         let public: GE = g * secret;
         fs::write(
-            ESCROW_SK_FILENAME,
+            path,
             serde_json::to_string(&(secret, public)).unwrap(),
         )
         .expect("Unable to save escrow secret!");
@@ -42,8 +42,8 @@ impl Escrow {
         Escrow { secret, public }
     }
 
-    pub fn load() -> Escrow {
-        let sec_data = fs::read_to_string(ESCROW_SK_FILENAME).expect("Unable to load wallet!");
+    pub fn load(path: &str) -> Escrow {
+        let sec_data = fs::read_to_string(path).expect("Unable to load wallet!");
         let (secret, public): (FE, GE) = serde_json::from_str(&sec_data).unwrap();
         Escrow { secret, public }
     }
