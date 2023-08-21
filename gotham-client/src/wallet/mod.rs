@@ -13,7 +13,7 @@ use bitcoin::hashes::{hex::FromHex, sha256d};
 use bitcoin::network::constants::Network;
 use bitcoin::secp256k1::Signature;
 use bitcoin::util::bip143::SighashComponents;
-use bitcoin::{TxIn, TxOut, Txid, Address};
+use bitcoin::{TxIn, TxOut, Txid, Address, secp256k1};
 use two_party_ecdsa::curv::elliptic::curves::secp256_k1::{GE, PK};
 use two_party_ecdsa::curv::elliptic::curves::traits::ECPoint;
 use two_party_ecdsa::curv ::BigInt;
@@ -295,7 +295,7 @@ impl Wallet {
             })
             .collect();
 
-        let fees = 10_000;
+        // let fees = 10_000;
 
         let amount_satoshi = (amount_btc * 100_000_000 as f32) as u64;
 
@@ -312,7 +312,7 @@ impl Wallet {
                 script_pubkey: to_btc_adress.payload.script_pubkey(),
             },
             TxOut {
-                value: total_selected - amount_satoshi - fees,
+                value: total_selected - amount_satoshi, //- fees,
                 script_pubkey: change_address.payload.script_pubkey(),
             },
         ];
@@ -326,23 +326,24 @@ impl Wallet {
 
         let mut signed_transaction = transaction.clone();
 
-        for (i, item) in selected.iter().enumerate().take(transaction.input.len()) {
+        for (idx, item) in selected.iter().enumerate() {
             let address_derivation = self.addresses_derivation_map.get(&item.address).unwrap();
 
             let mk = &address_derivation.mk;
             let pk = mk.public.q.get_element();
 
+
             let comp = SighashComponents::new(&transaction);
             let sig_hash = comp.sighash_all(
-                &transaction.input[i],
-                &bitcoin::Address::p2pkh(&to_bitcoin_public_key(pk), self.get_bitcoin_network())
+                &transaction.input[idx],
+                &bitcoin::Address::p2pkh(&Self::to_bitcoin_public_key(&pk), self.get_bitcoin_network())
                     .script_pubkey(),
                 (item.value as u32).into(),
             );
 
             let signature = ecdsa::sign(
                 client_shim,
-                BigInt::from_hex(&hex::encode(&sig_hash[..])),
+                BigInt::from(&sig_hash[..]),
                 mk,
                 BigInt::from(0u32),
                 BigInt::from(address_derivation.pos),
@@ -357,14 +358,13 @@ impl Wallet {
                 .unwrap()
                 .serialize_der()
                 .to_vec();
-            sig_vec.push(1);
 
             sig_vec.push(01);
             let mut witness = Vec::new();
             witness.push(sig_vec);
             witness.push(pk.serialize().to_vec());
 
-            signed_transaction.input[i].witness = witness;
+            signed_transaction.input[idx].witness = witness;
         }
 
 
@@ -378,10 +378,8 @@ impl Wallet {
         let (pos, mk) = Self::derive_new_key(&self.private_share, self.last_derived_pos);
         let pk = mk.public.q.get_element();
         let address =
-            bitcoin::Address::p2wpkh(&to_bitcoin_public_key(pk), self.get_bitcoin_network())
-                .expect(
-                    "Cannot panic because `to_bitcoin_public_key` creates a compressed address",
-                );
+            bitcoin::Address::p2wpkh(&Self::to_bitcoin_public_key(&pk), self.get_bitcoin_network())
+                .unwrap();
 
         self.addresses_derivation_map
             .insert(address.to_string(), AddressDerivation { mk, pos });
@@ -395,12 +393,7 @@ impl Wallet {
         for i in 0..self.last_derived_pos {
             let (pos, mk) = Self::derive_new_key(&self.private_share, i);
 
-            let address = bitcoin::Address::p2wpkh(
-                &to_bitcoin_public_key(mk.public.q.get_element()),
-                self.get_bitcoin_network(),
-            )
-            .expect("Cannot panic because `to_bitcoin_public_key` creates a compressed address");
-
+            let address = Self::to_bitcoin_address(&mk, self.get_bitcoin_network());
             self.addresses_derivation_map
                 .insert(address.to_string(), AddressDerivation { mk, pos });
         }
@@ -547,16 +540,16 @@ impl Wallet {
     }
 
     fn to_bitcoin_address(mk: &MasterKey2, network: Network) -> bitcoin::Address {
-        bitcoin::Address::p2wpkh(&to_bitcoin_public_key(mk.public.q.get_element()), network)
-            .expect("Cannot panic because `to_bitcoin_public_key` creates a compressed address")
+        bitcoin::Address::p2wpkh(&Self::to_bitcoin_public_key(&mk.public.q.get_element()), network).unwrap()
+    }
+
+    fn to_bitcoin_public_key(pk: &PK) -> bitcoin::util::key::PublicKey {
+        bitcoin::util::key::PublicKey::from_slice(&pk.serialize()).unwrap()
     }
 }
 
 // type conversion
-fn to_bitcoin_public_key(pk: PK) -> bitcoin::util::key::PublicKey {
-    bitcoin::util::key::PublicKey::from_str(&pk.to_hex().as_str())
-        .expect("Invalid PublicKey")
-}
+
 
 #[cfg(test)]
 mod tests {
