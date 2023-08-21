@@ -203,7 +203,7 @@ fn main() {
 
                     let balance = wallet.get_balance(&mut electrum);
                     println!(
-                        "Network: [{}], Balance: [balance: {}, pending: {}]",
+                        "Network: [{}], Balance (in satoshi): [balance: {}, pending: {}] ",
                         &get_balance_struct.network, balance.confirmed, balance.unconfirmed
                     );
                 }

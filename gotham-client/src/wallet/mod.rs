@@ -38,6 +38,7 @@ use itertools::Itertools;
 use log::debug;
 use std::collections::HashMap;
 use std::net::ToSocketAddrs;
+use std::process::exit;
 use std::str::FromStr;
 use two_party_ecdsa::curv::arithmetic::traits::Converter;
 
@@ -268,7 +269,8 @@ impl Wallet {
     ) -> String {
         let selected = self.select_tx_in(amount_btc, electrumx);
         if selected.is_empty() {
-            println!("Non-sufficient funds");
+            println!("Insufficient funds");
+            exit(-1);
         }
 
         let to_btc_adress = bitcoin::Address::from_str(to_address).unwrap();
