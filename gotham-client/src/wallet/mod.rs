@@ -12,23 +12,21 @@ use bitcoin::consensus::encode::serialize;
 use bitcoin::hashes::{hex::FromHex, sha256d};
 use bitcoin::network::constants::Network;
 use bitcoin::secp256k1::Signature;
-use bitcoin::util::bip143::SighashComponents;
-use bitcoin::{TxIn, TxOut, Txid, Address, secp256k1};
+use bitcoin::util::bip143::{SigHashCache};
+use bitcoin::{TxIn, TxOut, Txid, Address, secp256k1, SigHashType};
 use two_party_ecdsa::curv::elliptic::curves::secp256_k1::{GE, PK};
 use two_party_ecdsa::curv::elliptic::curves::traits::ECPoint;
 use two_party_ecdsa::curv ::BigInt;
-use electrumx_client::{electrumx_client::ElectrumxClient, interface::Electrumx};
+use electrumx_client::{interface::Electrumx};
 use kms::ecdsa::two_party::MasterKey2;
 use kms::ecdsa::two_party::*;
-use mockall::automock;
 use serde::{Deserialize, Serialize};
 use serde_json;
 use std::fs;
 use uuid::Uuid;
 
 use two_party_ecdsa::centipede::juggling::proof_system::{Helgamalsegmented, Proof};
-use two_party_ecdsa::centipede::juggling::segmentation::Msegmentation;
-use kms::chain_code::two_party::party2::ChainCode2;
+
 
 use super::ecdsa;
 use super::ecdsa::types::PrivateShare;
@@ -88,7 +86,7 @@ pub struct SignSecondMsgRequest {
 pub struct GetBalanceResponse {
     pub address: String,
     pub confirmed: u64,
-    pub unconfirmed: u64,
+    pub unconfirmed: i128,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -103,7 +101,7 @@ pub struct GetListUnspentResponse {
 #[derive(Debug, Deserialize)]
 pub struct GetWalletBalanceResponse {
     pub confirmed: u64,
-    pub unconfirmed: u64,
+    pub unconfirmed: i128,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -333,12 +331,16 @@ impl Wallet {
             let pk = mk.public.q.get_element();
 
 
-            let comp = SighashComponents::new(&transaction);
-            let sig_hash = comp.sighash_all(
-                &transaction.input[idx],
-                &bitcoin::Address::p2pkh(&Self::to_bitcoin_public_key(&pk), self.get_bitcoin_network())
-                    .script_pubkey(),
-                (item.value as u32).into(),
+
+            let script_code = &Address::p2pkh(
+                &Self::to_bitcoin_public_key(&pk),
+                self.get_bitcoin_network()).script_pubkey();
+
+            let mut cash = SigHashCache::new(&transaction);
+            let sig_hash = cash.signature_hash(idx,
+                                script_code,
+                                (item.value as u64).into(),
+                                SigHashType::All
             );
 
             let signature = ecdsa::sign(
