@@ -7,21 +7,18 @@
 // version 3 of the License, or (at your option) any later version.
 //
 
+use bitcoin::Network;
 use clap::{Args, Parser, Subcommand, ValueEnum};
-use config::Config;
 use client_lib::escrow;
-use client_lib::wallet::{Wallet};
+use client_lib::wallet::Wallet;
+use config::Config;
+use electrumx_client::electrumx_client::ElectrumxClient;
 use std::collections::HashMap;
 use std::time::Instant;
-use bitcoin::Network;
-use electrumx_client::electrumx_client::ElectrumxClient;
-
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
 struct Cli {
-
-
     #[command(subcommand)]
     command: Commands,
 }
@@ -33,9 +30,8 @@ enum Commands {
 
     /// Operation on wallet
     #[command(arg_required_else_help = true)]
-    Wallet(WalletStruct)
+    Wallet(WalletStruct),
 }
-
 
 const GOTHAM_ARG_HELP: &str = "Gotham server (url:port)";
 const GOTHAM_ARG_DEFAULT: &str = "http://127.0.0.1:8000";
@@ -54,7 +50,6 @@ const BACKUP_ARG_DEFAULT: &str = "backup.json";
 const ESCROW_ARG_HELP: &str = "Escrow filepath";
 const ESCROW_ARG_DEFAULT: &str = "escrow.json";
 
-
 #[derive(Args)]
 struct CreateWalletStruct {
     #[arg(short, long, help = GOTHAM_ARG_HELP, default_value= GOTHAM_ARG_DEFAULT)]
@@ -72,7 +67,6 @@ struct CreateWalletStruct {
 
 #[derive(Args)]
 struct WalletStruct {
-
     #[arg(short, long, help = WALLET_ARG_HELP, default_value= WALLET_ARG_DEFAULT)]
     wallet: String,
 
@@ -102,11 +96,9 @@ enum WalletCommands {
 
     // /// Private shares rotation
     // Rotate,
-
     /// Send a transaction
     Send(SendStruct),
 }
-
 
 #[derive(Args)]
 struct NewAddressStruct {
@@ -117,7 +109,6 @@ struct NewAddressStruct {
     network: Network,
 }
 
-
 #[derive(Args)]
 struct ListUnspentStruct {
     #[arg(short, long, help = NETWORK_ARG_HELP, default_value= NETWORK_ARG_DEFAULT)]
@@ -126,7 +117,6 @@ struct ListUnspentStruct {
     #[arg(short, long, help = ELECTRUM_ARG_HELP)]
     electrum: String,
 }
-
 
 #[derive(Args)]
 struct BackupStruct {
@@ -146,7 +136,6 @@ struct VerifyStruct {
     escrow: String,
 }
 
-
 #[derive(Args)]
 struct GetBalanceStruct {
     #[arg(short, long, help = NETWORK_ARG_HELP, default_value= NETWORK_ARG_DEFAULT)]
@@ -158,7 +147,6 @@ struct GetBalanceStruct {
 
 #[derive(Args)]
 struct SendStruct {
-
     #[arg(short, long, help = GOTHAM_ARG_HELP, default_value= GOTHAM_ARG_DEFAULT)]
     gotham: String,
 
@@ -171,11 +159,11 @@ struct SendStruct {
     #[arg(short, long, help = NETWORK_ARG_HELP, default_value= NETWORK_ARG_DEFAULT)]
     network: Network,
 
-    #[arg(short, long, help= "Recipient")]
+    #[arg(short, long, help = "Recipient")]
     to: String,
 
-    #[arg(short, long, help= "Amount in BTC")]
-    amount: f32
+    #[arg(short, long, help = "Amount in BTC")]
+    amount: f32,
 }
 
 fn main() {
@@ -189,20 +177,27 @@ fn main() {
 
             let wallet = Wallet::new(&client_shim, &create_wallet.network.to_string());
             wallet.save_to(&create_wallet.wallet);
-            println!("Network: [{}], Wallet saved to disk", &create_wallet.network);
+            println!(
+                "Network: [{}], Wallet saved to disk",
+                &create_wallet.network
+            );
 
             let _escrow = escrow::Escrow::new(&create_wallet.escrow);
             println!("Network: [{}], Escrow initiated", &create_wallet.network);
-        },
+        }
         Commands::Wallet(wallet_command) => {
             let mut wallet: Wallet = Wallet::load_from(&wallet_command.wallet);
 
             match &wallet_command.command {
                 WalletCommands::NewAddress(new_address_struct) => {
                     let address = wallet.get_new_bitcoin_address();
-                    println!("Network: [{}], Address: [{}]", &new_address_struct.network, address.to_string());
+                    println!(
+                        "Network: [{}], Address: [{}]",
+                        &new_address_struct.network,
+                        address.to_string()
+                    );
                     wallet.save_to(&new_address_struct.wallet);
-                },
+                }
                 WalletCommands::GetBalance(get_balance_struct) => {
                     let mut electrum = ElectrumxClient::new(&get_balance_struct.electrum).unwrap();
 
@@ -211,7 +206,7 @@ fn main() {
                         "Network: [{}], Balance: [balance: {}, pending: {}]",
                         &get_balance_struct.network, balance.confirmed, balance.unconfirmed
                     );
-                },
+                }
                 WalletCommands::ListUnspent(list_unspent_struct) => {
                     let mut electrum = ElectrumxClient::new(&list_unspent_struct.electrum).unwrap();
 
@@ -223,7 +218,7 @@ fn main() {
                         &list_unspent_struct.network,
                         hashes.join("\n")
                     );
-                },
+                }
                 WalletCommands::Backup(backup_struct) => {
                     let escrow = escrow::Escrow::load(&backup_struct.escrow);
 
@@ -234,7 +229,7 @@ fn main() {
                     let elapsed = now.elapsed();
 
                     println!("Backup key saved in escrow (Took: {:?})", elapsed);
-                },
+                }
                 WalletCommands::Verify(verify_struct) => {
                     let escrow = escrow::Escrow::load(&verify_struct.escrow);
 
@@ -245,7 +240,7 @@ fn main() {
                     let elapsed = now.elapsed();
 
                     println!(" (Took: {:?})", elapsed);
-                },
+                }
                 /*
                 // recover_master_key was removed from MasterKey2 in version 2.0
                 WalletCommands::Restore => {
@@ -283,16 +278,15 @@ fn main() {
                         &send_struct.to,
                         send_struct.amount,
                         &client_shim,
-                        &mut electrum
+                        &mut electrum,
                     );
                     wallet.save_to(&send_struct.wallet);
                     println!(
                         "Network: [{}], Sent {} BTC to address {}. Transaction ID: {}",
                         send_struct.network, send_struct.amount, send_struct.to, txid
                     );
-                },
+                }
             }
-
         }
     }
 }

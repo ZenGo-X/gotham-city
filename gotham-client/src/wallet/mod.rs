@@ -12,35 +12,34 @@ use bitcoin::consensus::encode::serialize;
 use bitcoin::hashes::{hex::FromHex, sha256d};
 use bitcoin::network::constants::Network;
 use bitcoin::secp256k1::Signature;
-use bitcoin::util::bip143::{SigHashCache};
-use bitcoin::{TxIn, TxOut, Txid, Address, secp256k1, SigHashType};
-use two_party_ecdsa::curv::elliptic::curves::secp256_k1::{GE, PK};
-use two_party_ecdsa::curv::elliptic::curves::traits::ECPoint;
-use two_party_ecdsa::curv ::BigInt;
-use electrumx_client::{interface::Electrumx};
+use bitcoin::util::bip143::SigHashCache;
+use bitcoin::{secp256k1, Address, SigHashType, TxIn, TxOut, Txid};
+use electrumx_client::interface::Electrumx;
 use kms::ecdsa::two_party::MasterKey2;
 use kms::ecdsa::two_party::*;
 use serde::{Deserialize, Serialize};
 use serde_json;
 use std::fs;
+use two_party_ecdsa::curv::elliptic::curves::secp256_k1::{GE, PK};
+use two_party_ecdsa::curv::elliptic::curves::traits::ECPoint;
+use two_party_ecdsa::curv::BigInt;
 use uuid::Uuid;
 
 use two_party_ecdsa::centipede::juggling::proof_system::{Helgamalsegmented, Proof};
-
 
 use super::ecdsa;
 use super::ecdsa::types::PrivateShare;
 use super::escrow;
 use super::ClientShim;
-use two_party_ecdsa::curv::arithmetic::traits::Converter;
+use crate::Client;
+use bitcoin::hashes::hex::ToHex;
 use hex;
 use itertools::Itertools;
+use log::debug;
 use std::collections::HashMap;
 use std::net::ToSocketAddrs;
 use std::str::FromStr;
-use bitcoin::hashes::hex::ToHex;
-use log::debug;
-use crate::Client;
+use two_party_ecdsa::curv::arithmetic::traits::Converter;
 
 /*
 #[automock]
@@ -135,7 +134,6 @@ impl Wallet {
         }
     }
 
-
     // Rotation is not up to date
     // pub fn rotate<C: Client>(self, client_shim: &ClientShim<C>) -> Self {
     //     ecdsa::rotate_master_key(self, client_shim)
@@ -192,58 +190,57 @@ impl Wallet {
         }
     }
 
+    /*
+        // recover_master_key was removed from MasterKey2 in version 2.0
+        pub fn recover_and_save_share<C: Client>(
+            escrow_service: escrow::Escrow,
+            net: &str,
+            client_shim: &ClientShim<C>,
+        ) -> Wallet {
+            let g: GE = ECPoint::generator();
+            let y_priv = escrow_service.get_private_key();
 
-/*
-    // recover_master_key was removed from MasterKey2 in version 2.0
-    pub fn recover_and_save_share<C: Client>(
-        escrow_service: escrow::Escrow,
-        net: &str,
-        client_shim: &ClientShim<C>,
-    ) -> Wallet {
-        let g: GE = ECPoint::generator();
-        let y_priv = escrow_service.get_private_key();
+            let data = fs::read_to_string(BACKUP_FILENAME).expect("Unable to load client backup!");
 
-        let data = fs::read_to_string(BACKUP_FILENAME).expect("Unable to load client backup!");
+            let (encryptions, _proof, public_data, chain_code2, key_id): (
+                Helgamalsegmented,
+                Proof,
+                Party2Public,
+                BigInt,
+                String,
+            ) = serde_json::from_str(&data).unwrap();
 
-        let (encryptions, _proof, public_data, chain_code2, key_id): (
-            Helgamalsegmented,
-            Proof,
-            Party2Public,
-            BigInt,
-            String,
-        ) = serde_json::from_str(&data).unwrap();
+            let sk = Msegmentation::decrypt(&encryptions, &g, &y_priv, &escrow::SEGMENT_SIZE);
 
-        let sk = Msegmentation::decrypt(&encryptions, &g, &y_priv, &escrow::SEGMENT_SIZE);
+            let client_master_key_recovered =
+                MasterKey2::recover_master_key(sk.unwrap(), public_data, chain_code2);
+            let pos_old: u32 =
+                client_shim.post(&format!("ecdsa/{}/recover", key_id)).unwrap();
 
-        let client_master_key_recovered =
-            MasterKey2::recover_master_key(sk.unwrap(), public_data, chain_code2);
-        let pos_old: u32 =
-            client_shim.post(&format!("ecdsa/{}/recover", key_id)).unwrap();
+            let pos_old = if pos_old < 10 { 10 } else { pos_old };
+            //TODO: temporary, server will keep updated pos, to do so we need to send update to server for every get_new_address
 
-        let pos_old = if pos_old < 10 { 10 } else { pos_old };
-        //TODO: temporary, server will keep updated pos, to do so we need to send update to server for every get_new_address
+            let id = Uuid::new_v4().to_string();
+            let addresses_derivation_map = HashMap::new(); //TODO: add a fucntion to recreate
+            let network = net;
 
-        let id = Uuid::new_v4().to_string();
-        let addresses_derivation_map = HashMap::new(); //TODO: add a fucntion to recreate
-        let network = net;
+            let new_wallet = Wallet {
+                id,
+                network: network.to_string(),
+                private_share: PrivateShare {
+                    master_key: client_master_key_recovered,
+                    id: key_id,
+                },
+                last_derived_pos: pos_old,
+                addresses_derivation_map,
+            };
 
-        let new_wallet = Wallet {
-            id,
-            network: network.to_string(),
-            private_share: PrivateShare {
-                master_key: client_master_key_recovered,
-                id: key_id,
-            },
-            last_derived_pos: pos_old,
-            addresses_derivation_map,
-        };
+            new_wallet.save();
+            println!("Recovery Completed Successfully ❤️");
 
-        new_wallet.save();
-        println!("Recovery Completed Successfully ❤️");
-
-        new_wallet
-    }
-*/
+            new_wallet
+        }
+    */
     pub fn save_to(&self, path: &str) {
         let wallet_json = serde_json::to_string(self).unwrap();
 
@@ -251,7 +248,6 @@ impl Wallet {
 
         debug!("(wallet id: {}) Saved wallet to disk", self.id);
     }
-
 
     pub fn load_from(path: &str) -> Wallet {
         let data = fs::read_to_string(path).expect("Unable to load wallet!");
@@ -263,18 +259,16 @@ impl Wallet {
         wallet
     }
 
-
     pub fn send<C: Client>(
         &mut self,
         to_address: &String,
         amount_btc: f32,
         client_shim: &ClientShim<C>,
-        electrumx: &mut dyn Electrumx
+        electrumx: &mut dyn Electrumx,
     ) -> String {
-
         let selected = self.select_tx_in(amount_btc, electrumx);
         if selected.is_empty() {
-            panic!("Not enough fund");
+            println!("Non-sufficient funds");
         }
 
         let to_btc_adress = bitcoin::Address::from_str(to_address).unwrap();
@@ -293,6 +287,7 @@ impl Wallet {
             })
             .collect();
 
+        // TODO: bring back correct fees and amount calculation
         // let fees = 10_000;
 
         let amount_satoshi = (amount_btc * 100_000_000 as f32) as u64;
@@ -330,17 +325,18 @@ impl Wallet {
             let mk = &address_derivation.mk;
             let pk = mk.public.q.get_element();
 
-
-
             let script_code = &Address::p2pkh(
                 &Self::to_bitcoin_public_key(&pk),
-                self.get_bitcoin_network()).script_pubkey();
+                self.get_bitcoin_network(),
+            )
+            .script_pubkey();
 
             let mut cash = SigHashCache::new(&transaction);
-            let sig_hash = cash.signature_hash(idx,
-                                script_code,
-                                (item.value as u64).into(),
-                                SigHashType::All
+            let sig_hash = cash.signature_hash(
+                idx,
+                script_code,
+                (item.value as u64).into(),
+                SigHashType::All,
             );
 
             let signature = ecdsa::sign(
@@ -369,7 +365,6 @@ impl Wallet {
             signed_transaction.input[idx].witness = witness;
         }
 
-
         let raw_tx_hex = hex::encode(serialize(&signed_transaction));
         let txid = electrumx.broadcast_transaction(raw_tx_hex);
 
@@ -379,9 +374,11 @@ impl Wallet {
     pub fn get_new_bitcoin_address(&mut self) -> bitcoin::Address {
         let (pos, mk) = Self::derive_new_key(&self.private_share, self.last_derived_pos);
         let pk = mk.public.q.get_element();
-        let address =
-            bitcoin::Address::p2wpkh(&Self::to_bitcoin_public_key(&pk), self.get_bitcoin_network())
-                .unwrap();
+        let address = bitcoin::Address::p2wpkh(
+            &Self::to_bitcoin_public_key(&pk),
+            self.get_bitcoin_network(),
+        )
+        .unwrap();
 
         self.addresses_derivation_map
             .insert(address.to_string(), AddressDerivation { mk, pos });
@@ -401,10 +398,7 @@ impl Wallet {
         }
     }
 
-    pub fn get_balance(
-        &mut self,
-        electrumx: &mut dyn Electrumx
-    ) -> GetWalletBalanceResponse {
+    pub fn get_balance(&mut self, electrumx: &mut dyn Electrumx) -> GetWalletBalanceResponse {
         let mut aggregated_balance = GetWalletBalanceResponse {
             confirmed: 0,
             unconfirmed: 0,
@@ -422,7 +416,7 @@ impl Wallet {
     pub fn select_tx_in(
         &self,
         amount_btc: f32,
-        electrumx: &mut dyn Electrumx
+        electrumx: &mut dyn Electrumx,
     ) -> Vec<GetListUnspentResponse> {
         // greedy selection
         let list_unspent: Vec<GetListUnspentResponse> = self
@@ -450,10 +444,7 @@ impl Wallet {
         selected
     }
 
-    pub fn list_unspent(
-        &self,
-        electrumx: &mut dyn Electrumx
-    ) -> Vec<GetListUnspentResponse> {
+    pub fn list_unspent(&self, electrumx: &mut dyn Electrumx) -> Vec<GetListUnspentResponse> {
         let response: Vec<GetListUnspentResponse> = self
             .get_all_addresses()
             .into_iter()
@@ -468,10 +459,8 @@ impl Wallet {
     fn list_unspent_for_addresss(
         &self,
         address: String,
-        electrumx: &mut dyn Electrumx
+        electrumx: &mut dyn Electrumx,
     ) -> Vec<GetListUnspentResponse> {
-
-
         let resp = electrumx.get_list_unspent(&address).unwrap();
 
         resp.into_iter()
@@ -485,10 +474,7 @@ impl Wallet {
             .collect()
     }
 
-    fn get_all_addresses_balance(
-        &self,
-        electrumx: &mut dyn Electrumx
-    ) -> Vec<GetBalanceResponse> {
+    fn get_all_addresses_balance(&self, electrumx: &mut dyn Electrumx) -> Vec<GetBalanceResponse> {
         let response: Vec<GetBalanceResponse> = self
             .get_all_addresses()
             .into_iter()
@@ -498,7 +484,11 @@ impl Wallet {
         response
     }
 
-    fn get_balance_by_address(&self, electrumx: &mut dyn Electrumx, a: &Address) -> GetBalanceResponse {
+    fn get_balance_by_address(
+        &self,
+        electrumx: &mut dyn Electrumx,
+        a: &Address,
+    ) -> GetBalanceResponse {
         let response = electrumx.get_balance(&a.to_string()).unwrap();
 
         GetBalanceResponse {
@@ -542,7 +532,11 @@ impl Wallet {
     }
 
     fn to_bitcoin_address(mk: &MasterKey2, network: Network) -> bitcoin::Address {
-        bitcoin::Address::p2wpkh(&Self::to_bitcoin_public_key(&mk.public.q.get_element()), network).unwrap()
+        bitcoin::Address::p2wpkh(
+            &Self::to_bitcoin_public_key(&mk.public.q.get_element()),
+            network,
+        )
+        .unwrap()
     }
 
     fn to_bitcoin_public_key(pk: &PK) -> bitcoin::util::key::PublicKey {
@@ -552,14 +546,13 @@ impl Wallet {
 
 // type conversion
 
-
 #[cfg(test)]
 mod tests {
     // use bitcoin::hashes::hex::ToHex;
     use bitcoin::hashes::sha256d;
     use bitcoin::hashes::Hash;
-    use two_party_ecdsa::BigInt;
     use two_party_ecdsa::party_one::Converter;
+    use two_party_ecdsa::BigInt;
     // use curv::arithmetic::traits::Converter;
     // use curv::BigInt;
 

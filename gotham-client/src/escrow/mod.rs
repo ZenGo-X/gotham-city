@@ -33,11 +33,8 @@ impl Escrow {
         let secret: FE = ECScalar::new_random();
         let g: GE = ECPoint::generator();
         let public: GE = g * secret;
-        fs::write(
-            path,
-            serde_json::to_string(&(secret, public)).unwrap(),
-        )
-        .expect("Unable to save escrow secret!");
+        fs::write(path, serde_json::to_string(&(secret, public)).unwrap())
+            .expect("Unable to save escrow secret!");
 
         Escrow { secret, public }
     }
