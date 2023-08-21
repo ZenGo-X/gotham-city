@@ -178,7 +178,7 @@ impl Wallet {
             Helgamalsegmented,
             Proof,
             Party2Public,
-            ChainCode2,
+            String,
             String,
         ) = serde_json::from_str(&data).unwrap();
         let verify = proof.verify(
