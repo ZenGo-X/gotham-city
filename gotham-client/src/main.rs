@@ -8,12 +8,10 @@
 //
 
 use bitcoin::Network;
-use clap::{Args, Parser, Subcommand, ValueEnum};
+use clap::{Args, Parser, Subcommand};
 use client_lib::escrow;
 use client_lib::wallet::Wallet;
-use config::Config;
 use electrumx_client::electrumx_client::ElectrumxClient;
-use std::collections::HashMap;
 use std::time::Instant;
 
 #[derive(Parser)]
@@ -59,16 +57,16 @@ struct CreateWalletStruct {
     network: Network,
 
     #[arg(short, long, help = WALLET_ARG_HELP, default_value= WALLET_ARG_DEFAULT)]
-    wallet: String,
+    path: String,
 
     #[arg(short, long, help = ESCROW_ARG_HELP, default_value= ESCROW_ARG_DEFAULT)]
-    escrow: String,
+    escrow_path: String,
 }
 
 #[derive(Args)]
 struct WalletStruct {
     #[arg(short, long, help = WALLET_ARG_HELP, default_value= WALLET_ARG_DEFAULT)]
-    wallet: String,
+    path: String,
 
     #[command(subcommand)]
     command: WalletCommands,
@@ -102,9 +100,6 @@ enum WalletCommands {
 
 #[derive(Args)]
 struct NewAddressStruct {
-    #[arg(short, long, help = WALLET_ARG_HELP, default_value= WALLET_ARG_DEFAULT)]
-    wallet: String,
-
     #[arg(short, long, help = NETWORK_ARG_HELP, default_value= NETWORK_ARG_DEFAULT)]
     network: Network,
 }
@@ -121,19 +116,19 @@ struct ListUnspentStruct {
 #[derive(Args)]
 struct BackupStruct {
     #[arg(short, long, help = BACKUP_ARG_HELP, default_value= BACKUP_ARG_DEFAULT)]
-    backup: String,
+    backup_path: String,
 
     #[arg(short, long, help = ESCROW_ARG_HELP, default_value= ESCROW_ARG_DEFAULT)]
-    escrow: String,
+    escrow_path: String,
 }
 
 #[derive(Args)]
 struct VerifyStruct {
     #[arg(short, long, help = BACKUP_ARG_HELP, default_value= BACKUP_ARG_DEFAULT)]
-    backup: String,
+    backup_path: String,
 
     #[arg(short, long, help = ESCROW_ARG_HELP, default_value= ESCROW_ARG_DEFAULT)]
-    escrow: String,
+    escrow_path: String,
 }
 
 #[derive(Args)]
@@ -153,9 +148,8 @@ struct SendStruct {
     #[arg(short, long, help = ELECTRUM_ARG_HELP)]
     electrum: String,
 
-    #[arg(short, long, help = WALLET_ARG_HELP, default_value= WALLET_ARG_DEFAULT)]
-    wallet: String,
-
+    // #[arg(short, long, help = WALLET_ARG_HELP, default_value= WALLET_ARG_DEFAULT)]
+    // wallet: String,
     #[arg(short, long, help = NETWORK_ARG_HELP, default_value= NETWORK_ARG_DEFAULT)]
     network: Network,
 
@@ -176,17 +170,19 @@ fn main() {
             println!("Network: [{}], Creating wallet", &create_wallet.network);
 
             let wallet = Wallet::new(&client_shim, &create_wallet.network.to_string());
-            wallet.save_to(&create_wallet.wallet);
+            wallet.save_to(&create_wallet.path);
             println!(
                 "Network: [{}], Wallet saved to disk",
                 &create_wallet.network
             );
 
-            let _escrow = escrow::Escrow::new(&create_wallet.escrow);
+            let _escrow = escrow::Escrow::new(&create_wallet.escrow_path);
             println!("Network: [{}], Escrow initiated", &create_wallet.network);
         }
         Commands::Wallet(wallet_command) => {
-            let mut wallet: Wallet = Wallet::load_from(&wallet_command.wallet);
+            println!("Loading wallet from [{}]", wallet_command.path);
+
+            let mut wallet: Wallet = Wallet::load_from(&wallet_command.path);
 
             match &wallet_command.command {
                 WalletCommands::NewAddress(new_address_struct) => {
@@ -196,7 +192,7 @@ fn main() {
                         &new_address_struct.network,
                         address.to_string()
                     );
-                    wallet.save_to(&new_address_struct.wallet);
+                    wallet.save_to(&wallet_command.path);
                 }
                 WalletCommands::GetBalance(get_balance_struct) => {
                     let mut electrum = ElectrumxClient::new(&get_balance_struct.electrum).unwrap();
@@ -220,23 +216,23 @@ fn main() {
                     );
                 }
                 WalletCommands::Backup(backup_struct) => {
-                    let escrow = escrow::Escrow::load(&backup_struct.escrow);
+                    let escrow = escrow::Escrow::load(&backup_struct.escrow_path);
 
                     println!("Backup private share pending (it can take some time)...");
 
                     let now = Instant::now();
-                    wallet.backup(escrow, &backup_struct.backup);
+                    wallet.backup(escrow, &backup_struct.backup_path);
                     let elapsed = now.elapsed();
 
                     println!("Backup key saved in escrow (Took: {:?})", elapsed);
                 }
                 WalletCommands::Verify(verify_struct) => {
-                    let escrow = escrow::Escrow::load(&verify_struct.escrow);
+                    let escrow = escrow::Escrow::load(&verify_struct.escrow_path);
 
                     println!("verify encrypted backup (it can take some time)...");
 
                     let now = Instant::now();
-                    wallet.verify_backup(escrow, &verify_struct.backup);
+                    wallet.verify_backup(escrow, &verify_struct.backup_path);
                     let elapsed = now.elapsed();
 
                     println!(" (Took: {:?})", elapsed);
@@ -280,7 +276,7 @@ fn main() {
                         &client_shim,
                         &mut electrum,
                     );
-                    wallet.save_to(&send_struct.wallet);
+                    wallet.save_to(&wallet_command.path);
                     println!(
                         "Network: [{}], Sent {} BTC to address {}. Transaction ID: {}",
                         send_struct.network, send_struct.amount, send_struct.to, txid
