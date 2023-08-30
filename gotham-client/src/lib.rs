@@ -97,5 +97,5 @@ impl Client for reqwest::Client {
     }
 }
 
-pub use two_party_ecdsa::curv::{arithmetic::traits::Converter, BigInt};
+pub use two_party_ecdsa::curv::{arithmetic::traits::Converter, BigInt, elliptic::curves::traits::ECPoint};
 // pub use multi_party_eddsa::protocols::aggsig::*;
