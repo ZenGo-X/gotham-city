@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "demo-wallet",
     "gotham-server",
     "gotham-client",
     "integration-tests",

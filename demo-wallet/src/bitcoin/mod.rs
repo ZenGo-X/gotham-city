@@ -27,13 +27,12 @@ use uuid::Uuid;
 
 use two_party_ecdsa::centipede::juggling::proof_system::{Helgamalsegmented, Proof};
 
-use super::ecdsa;
-use super::ecdsa::types::PrivateShare;
-use super::escrow;
-use super::ClientShim;
-use crate::Client;
+use crate::core::utils::hex;
 use bitcoin::hashes::hex::ToHex;
-use hex;
+use client_lib::ecdsa;
+use client_lib::ecdsa::types::PrivateShare;
+use client_lib::Client;
+use client_lib::ClientShim;
 use itertools::Itertools;
 use log::debug;
 use std::collections::HashMap;
@@ -41,6 +40,9 @@ use std::net::ToSocketAddrs;
 use std::process::exit;
 use std::str::FromStr;
 use two_party_ecdsa::curv::arithmetic::traits::Converter;
+
+pub mod cli;
+pub mod escrow;
 
 /*
 #[automock]
@@ -111,7 +113,7 @@ pub struct AddressDerivation {
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct Wallet {
+pub struct BitcoinWallet {
     pub id: String,
     pub network: String,
     pub private_share: PrivateShare,
@@ -119,14 +121,14 @@ pub struct Wallet {
     pub addresses_derivation_map: HashMap<String, AddressDerivation>,
 }
 
-impl Wallet {
-    pub fn new<C: Client>(client_shim: &ClientShim<C>, net: &str) -> Wallet {
+impl BitcoinWallet {
+    pub fn new<C: Client>(client_shim: &ClientShim<C>, net: &str) -> BitcoinWallet {
         let id = Uuid::new_v4().to_string();
         let private_share = ecdsa::get_master_key(client_shim);
         let last_derived_pos = 0;
         let addresses_derivation_map = HashMap::new();
 
-        Wallet {
+        BitcoinWallet {
             id,
             network: net.to_string(),
             private_share,
@@ -250,10 +252,10 @@ impl Wallet {
         debug!("(wallet id: {}) Saved wallet to disk", self.id);
     }
 
-    pub fn load_from(path: &str) -> Wallet {
+    pub fn load_from(path: &str) -> BitcoinWallet {
         let data = fs::read_to_string(path).expect("Unable to load wallet!");
 
-        let wallet: Wallet = serde_json::from_str(&data).unwrap();
+        let wallet: BitcoinWallet = serde_json::from_str(&data).unwrap();
 
         debug!("(wallet id: {}) Loaded wallet to memory", wallet.id);
 
@@ -543,38 +545,5 @@ impl Wallet {
 
     fn to_bitcoin_public_key(pk: &PK) -> bitcoin::util::key::PublicKey {
         bitcoin::util::key::PublicKey::from_slice(&pk.serialize()).unwrap()
-    }
-}
-
-// type conversion
-
-#[cfg(test)]
-mod tests {
-    // use bitcoin::hashes::hex::ToHex;
-    use bitcoin::hashes::sha256d;
-    use bitcoin::hashes::Hash;
-    use two_party_ecdsa::party_one::Converter;
-    use two_party_ecdsa::BigInt;
-    // use curv::arithmetic::traits::Converter;
-    // use curv::BigInt;
-
-    #[test]
-    #[ignore]
-    fn test_message_conv() {
-        let message: [u8; 32] = [
-            1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0,
-        ];
-
-        // 14abf5ed107ff58bf844ee7f447bec317c276b00905c09a45434f8848599597e
-        let hash = bitcoin::hashes::sha256d::Hash::hash(&message);
-
-        // 7e59998584f83454a4095c90006b277c31ec7b447fee44f88bf57f10edf5ab14
-        // let ser = hash.le_hex_string();
-
-        // 57149727877124134702546803488322951680010683936655914236113461592936003513108
-        // let b: BigInt = BigInt::from_hex(&ser);
-
-        // println!("({},{},{})", hash, ser, b.to_hex());
     }
 }

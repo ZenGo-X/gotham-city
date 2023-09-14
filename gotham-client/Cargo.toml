@@ -31,12 +31,6 @@ clap.workspace = true
 hex.workspace = true
 config.workspace = true
 
-uuid = { version = "0.7", features = ["v4"] }
-bitcoin = "0.27.1"
-mockall = "0.11.4"
-itertools = "0.11.0"
-
-electrumx_client = { git = "https://github.com/ZenGo-X/rust-electrumx-client.git", tag = "bitcoin@0.26.0"}
 
 [dev-dependencies]
 mockall = "0.11"
