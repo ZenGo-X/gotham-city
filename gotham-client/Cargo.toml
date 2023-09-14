@@ -27,9 +27,6 @@ failure.workspace = true
 floating-duration.workspace = true
 two-party-ecdsa.workspace = true
 kms.workspace = true
-hex.workspace = true
-config.workspace = true
-
 
 [dev-dependencies]
 mockall = "0.11"
