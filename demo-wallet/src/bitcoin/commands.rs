@@ -5,6 +5,7 @@ use std::time::Instant;
 use electrumx_client::electrumx_client::ElectrumxClient;
 use crate::bitcoin::BitcoinWallet;
 use crate::bitcoin::escrow::Escrow;
+use crate::Settings;
 
 #[derive(Args)]
 pub struct BitcoinArgs {
@@ -152,7 +153,7 @@ pub struct SendStruct {
 }
 
 
-pub async fn bitcoin_commands(top_args: &BitcoinArgs) -> Result<(), Box<dyn std::error::Error>>{
+pub async fn bitcoin_commands(settings: Settings, top_args: &BitcoinArgs) -> Result<(), Box<dyn std::error::Error>>{
     match &top_args.commands {
         BitcoinSubCommands::CreateWallet(create_wallet) => {
             let client_shim = client_lib::ClientShim::new(create_wallet.gotham.clone(), None);

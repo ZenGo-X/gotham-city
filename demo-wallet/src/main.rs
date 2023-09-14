@@ -59,7 +59,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     match &cli.commands {
         TopLevelSubCommands::Evm(top_args) => evm_commands(settings, &top_args).await?,
-        TopLevelSubCommands::Bitcoin(top_args) => bitcoin_commands(&top_args).await?,
+        TopLevelSubCommands::Bitcoin(top_args) => bitcoin_commands(settings, &top_args).await?,
     }
 
     Ok(())
