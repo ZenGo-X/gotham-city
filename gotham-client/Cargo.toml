@@ -27,7 +27,6 @@ failure.workspace = true
 floating-duration.workspace = true
 two-party-ecdsa.workspace = true
 kms.workspace = true
-clap.workspace = true
 hex.workspace = true
 config.workspace = true
 
