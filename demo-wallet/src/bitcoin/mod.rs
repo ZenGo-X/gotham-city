@@ -24,10 +24,9 @@ use two_party_ecdsa::curv::elliptic::curves::secp256_k1::{GE, PK};
 use two_party_ecdsa::curv::elliptic::curves::traits::ECPoint;
 use two_party_ecdsa::curv::BigInt;
 use uuid::Uuid;
-
+use hex;
 use two_party_ecdsa::centipede::juggling::proof_system::{Helgamalsegmented, Proof};
 
-use crate::core::utils::hex;
 use bitcoin::hashes::hex::ToHex;
 use client_lib::ecdsa;
 use client_lib::ecdsa::types::PrivateShare;
@@ -41,7 +40,7 @@ use std::process::exit;
 use std::str::FromStr;
 use two_party_ecdsa::curv::arithmetic::traits::Converter;
 
-pub mod cli;
+pub mod commands;
 pub mod escrow;
 
 /*

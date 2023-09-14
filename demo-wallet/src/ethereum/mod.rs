@@ -17,7 +17,7 @@ use ethers::utils::keccak256;
 
 use serde::{Deserialize, Serialize};
 
-pub mod cli;
+pub mod commands;
 
 #[derive(Serialize, Deserialize)]
 pub struct GothamWallet {

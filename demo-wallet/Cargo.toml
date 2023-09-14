@@ -27,6 +27,7 @@ electrumx_client = { git = "https://github.com/ZenGo-X/rust-electrumx-client.git
 kms.workspace = true
 two-party-ecdsa.workspace = true
 log.workspace = true
+hex.workspace = true
 
 # Client
 gotham-client.workspace = true
