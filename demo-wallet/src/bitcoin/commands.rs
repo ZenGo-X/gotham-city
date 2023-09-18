@@ -23,33 +23,30 @@ pub enum BitcoinSubCommands {
     Wallet(WalletStruct),
 }
 
-const GOTHAM_ARG_HELP: &str = "Gotham server (url:port)";
-const GOTHAM_ARG_DEFAULT: &str = "http://127.0.0.1:8000";
+// const GOTHAM_ARG_HELP: &str = "Gotham server (url:port)";
+// const GOTHAM_ARG_DEFAULT: &str = "http://127.0.0.1:8000";
 
 const NETWORK_ARG_HELP: &str = "Bitcoin network [bitcoin|testnet|signet|regtest]";
 const NETWORK_ARG_DEFAULT: &str = "testnet";
 
-const ELECTRUM_ARG_HELP: &str = "Electrum server (url:port)";
+// const ELECTRUM_ARG_HELP: &str = "Electrum server (url:port)";
 
-const WALLET_ARG_HELP: &str = "Wallet filepath";
-const WALLET_ARG_DEFAULT: &str = "wallet.json";
+const WALLET_ARG_HELP: &str = "Output filepath";
+const WALLET_ARG_DEFAULT: &str = "wallet-bitcoin.json";
 
 const BACKUP_ARG_HELP: &str = "Backup filepath";
-const BACKUP_ARG_DEFAULT: &str = "backup.json";
+const BACKUP_ARG_DEFAULT: &str = "backup-bitcoin.json";
 
 const ESCROW_ARG_HELP: &str = "Escrow filepath";
-const ESCROW_ARG_DEFAULT: &str = "escrow.json";
+const ESCROW_ARG_DEFAULT: &str = "escrow-bitcoin.json";
 
 #[derive(Args)]
 pub struct CreateWalletStruct {
-    #[arg(short, long, help = GOTHAM_ARG_HELP, default_value= GOTHAM_ARG_DEFAULT)]
-    pub gotham: String,
-
     #[arg(short, long, help = NETWORK_ARG_HELP, default_value= NETWORK_ARG_DEFAULT)]
     pub network: Network,
 
     #[arg(short, long, help = WALLET_ARG_HELP, default_value= WALLET_ARG_DEFAULT)]
-    pub path: String,
+    pub output: String,
 
     #[arg(short, long, help = ESCROW_ARG_HELP, default_value= ESCROW_ARG_DEFAULT)]
     pub escrow_path: String,
@@ -57,9 +54,6 @@ pub struct CreateWalletStruct {
 
 #[derive(Args)]
 pub struct WalletStruct {
-    #[arg(short, long, help = WALLET_ARG_HELP, default_value= WALLET_ARG_DEFAULT)]
-    pub path: String,
-
     #[command(subcommand)]
     pub command: WalletCommands,
 }
@@ -81,29 +75,15 @@ pub enum WalletCommands {
     /// Backup verification
     Verify(VerifyStruct),
 
-    // /// Private share recovery
-    // Restore,
-
-    // /// Private shares rotation
-    // Rotate,
     /// Send a transaction
     Send(SendStruct),
 }
 
 #[derive(Args)]
-pub struct NewAddressStruct {
-    #[arg(short, long, help = NETWORK_ARG_HELP, default_value= NETWORK_ARG_DEFAULT)]
-    pub network: Network,
-}
+pub struct NewAddressStruct {}
 
 #[derive(Args)]
-pub struct ListUnspentStruct {
-    #[arg(short, long, help = NETWORK_ARG_HELP, default_value= NETWORK_ARG_DEFAULT)]
-    pub network: Network,
-
-    #[arg(short, long, help = ELECTRUM_ARG_HELP)]
-    pub electrum: String,
-}
+pub struct ListUnspentStruct {}
 
 #[derive(Args)]
 pub struct BackupStruct {
@@ -124,27 +104,10 @@ pub struct VerifyStruct {
 }
 
 #[derive(Args)]
-pub struct GetBalanceStruct {
-    #[arg(short, long, help = NETWORK_ARG_HELP, default_value= NETWORK_ARG_DEFAULT)]
-    pub network: Network,
-
-    #[arg(short, long, help = ELECTRUM_ARG_HELP)]
-    pub electrum: String,
-}
+pub struct GetBalanceStruct {}
 
 #[derive(Args)]
 pub struct SendStruct {
-    #[arg(short, long, help = GOTHAM_ARG_HELP, default_value= GOTHAM_ARG_DEFAULT)]
-    pub gotham: String,
-
-    #[arg(short, long, help = ELECTRUM_ARG_HELP)]
-    pub electrum: String,
-
-    // #[arg(short, long, help = WALLET_ARG_HELP, default_value= WALLET_ARG_DEFAULT)]
-    // wallet: String,
-    #[arg(short, long, help = NETWORK_ARG_HELP, default_value= NETWORK_ARG_DEFAULT)]
-    pub network: Network,
-
     #[arg(short, long, help = "Recipient")]
     pub to: String,
 
@@ -158,12 +121,17 @@ pub async fn bitcoin_commands(
 ) -> Result<(), Box<dyn std::error::Error>> {
     match &top_args.commands {
         BitcoinSubCommands::CreateWallet(create_wallet) => {
-            let client_shim = client_lib::ClientShim::new(create_wallet.gotham.clone(), None);
+            let client_shim = client_lib::ClientShim::new(
+                settings
+                    .gotham_server_url
+                    .expect("Missing 'gotham_server_url' in settings.toml"),
+                None,
+            );
 
             println!("Network: [{}], Creating wallet", &create_wallet.network);
 
             let wallet = BitcoinWallet::new(&client_shim, &create_wallet.network.to_string());
-            wallet.save_to(&create_wallet.path);
+            wallet.save_to(&create_wallet.output.clone());
             println!(
                 "Network: [{}], Wallet saved to disk",
                 &create_wallet.network
@@ -173,38 +141,55 @@ pub async fn bitcoin_commands(
             println!("Network: [{}], Escrow initiated", &create_wallet.network);
         }
         BitcoinSubCommands::Wallet(wallet_command) => {
-            println!("Loading wallet from [{}]", wallet_command.path);
+            let wallet_file = settings
+                .wallet_file
+                .clone()
+                .expect("Missing 'wallet_file' in settings.toml");
+            println!("Loading wallet from [{}]", wallet_file);
 
-            let mut wallet: BitcoinWallet = BitcoinWallet::load_from(&wallet_command.path);
+            let mut wallet: BitcoinWallet = BitcoinWallet::load_from(&wallet_file);
 
             match &wallet_command.command {
                 WalletCommands::NewAddress(new_address_struct) => {
                     let address = wallet.get_new_bitcoin_address();
                     println!(
                         "Network: [{}], Address: [{}]",
-                        &new_address_struct.network,
+                        &wallet.network,
                         address.to_string()
                     );
-                    wallet.save_to(&wallet_command.path);
+                    wallet.save_to(
+                        &settings
+                            .wallet_file
+                            .expect("Missing 'wallet_file' in settings.toml"),
+                    );
                 }
                 WalletCommands::GetBalance(get_balance_struct) => {
-                    let mut electrum = ElectrumxClient::new(&get_balance_struct.electrum).unwrap();
+                    let electrum_server_url = settings
+                        .electrum_server_url
+                        .expect("Missing 'electrum_server_url' in settings.toml");
+                    let mut electrum = ElectrumxClient::new(electrum_server_url.clone())
+                        .expect(format!("Unable to connect to {}", electrum_server_url).as_str());
 
                     let balance = wallet.get_balance(&mut electrum);
                     println!(
                         "Network: [{}], Balance (in satoshi): [balance: {}, pending: {}] ",
-                        &get_balance_struct.network, balance.confirmed, balance.unconfirmed
+                        &wallet.network, balance.confirmed, balance.unconfirmed
                     );
                 }
                 WalletCommands::ListUnspent(list_unspent_struct) => {
-                    let mut electrum = ElectrumxClient::new(&list_unspent_struct.electrum).unwrap();
+                    let electrum_server_url = settings
+                        .electrum_server_url
+                        .expect("Missing 'electrum_server_url' in settings.toml");
+
+                    let mut electrum = ElectrumxClient::new(electrum_server_url.clone())
+                        .expect(format!("Unable to connect to {}", electrum_server_url).as_str());
 
                     let unspent = wallet.list_unspent(&mut electrum);
                     let hashes: Vec<String> = unspent.into_iter().map(|u| u.tx_hash).collect();
 
                     println!(
                         "Network: [{}], Unspent tx hashes: [\n{}\n]",
-                        &list_unspent_struct.network,
+                        &wallet.network,
                         hashes.join("\n")
                     );
                 }
@@ -259,9 +244,24 @@ pub async fn bitcoin_commands(
                 },
                  */
                 WalletCommands::Send(send_struct) => {
-                    let client_shim = client_lib::ClientShim::new(send_struct.gotham.clone(), None);
+                    let wallet_file = settings
+                        .wallet_file
+                        .clone()
+                        .expect("Missing 'wallet_file' in settings.toml");
 
-                    let mut electrum = ElectrumxClient::new(&send_struct.electrum).unwrap();
+                    let client_shim = client_lib::ClientShim::new(
+                        settings
+                            .gotham_server_url
+                            .expect("Missing 'gotham_server_url' in settings.toml"),
+                        None,
+                    );
+
+                    let electrum_server_url = settings
+                        .electrum_server_url
+                        .expect("Missing 'electrum_server_url' in settings.toml");
+
+                    let mut electrum = ElectrumxClient::new(electrum_server_url.clone())
+                        .expect(format!("Unable to connect to {}", electrum_server_url).as_str());
 
                     let txid = wallet.send(
                         &send_struct.to,
@@ -269,10 +269,10 @@ pub async fn bitcoin_commands(
                         &client_shim,
                         &mut electrum,
                     );
-                    wallet.save_to(&wallet_command.path);
+                    wallet.save_to(&wallet_file);
                     println!(
                         "Network: [{}], Sent {} BTC to address {}. Transaction ID: {}",
-                        send_struct.network, send_struct.amount, send_struct.to, txid
+                        wallet.network, send_struct.amount, send_struct.to, txid
                     );
                 }
             }

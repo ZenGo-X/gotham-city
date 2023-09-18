@@ -30,17 +30,21 @@ pub enum TopLevelSubCommands {
 
     ///{n} Bitcoin blockchain {n}
     /// ------------------ {n}
+    /// Mandatory variables in settings.toml file for MPC Gotham wallet: {n}
+    /// 'electrum_server_url', 'gotham_wallet_file', 'gotham_server_url' {n}
     Bitcoin(BitcoinArgs),
 }
 
 #[derive(Debug, Deserialize)]
 pub struct Settings {
-    pub gotham_wallet_file: Option<String>,
+    pub wallet_file: Option<String>,
     pub rpc_url: Option<String>,
     pub gotham_server_url: Option<String>,
 
     pub private_key: Option<String>,
     pub chain_id: Option<u64>,
+
+    pub electrum_server_url: Option<String>,
 }
 
 #[tokio::main]

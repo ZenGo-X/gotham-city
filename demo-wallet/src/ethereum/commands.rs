@@ -44,6 +44,14 @@ pub struct NewEvmWalletArgs {
     pub chain_id: u64,
 
     #[arg(
+        short,
+        long,
+        help = "Output filepath",
+        default_value = "wallet-ethereum.json"
+    )]
+    pub output: String,
+
+    #[arg(
         long,
         use_value_delimiter = true,
         value_delimiter = ',',
@@ -125,8 +133,10 @@ pub async fn evm_commands(
     match &top_args.commands {
         EvmSubCommands::New(args) => {
             create_new_wallet(
-                settings.gotham_wallet_file.unwrap(),
-                settings.gotham_server_url.unwrap(),
+                args.output.clone(),
+                settings
+                    .gotham_server_url
+                    .expect("Missing 'gotham_server_url' in settings.toml"),
                 args.hd_path.clone(),
                 args.chain_id,
             );
@@ -141,11 +151,18 @@ pub async fn evm_commands(
             };
 
             if top_args.no_mpc {
-                let wallet = settings.private_key.unwrap().parse::<LocalWallet>()?;
+                let wallet = settings
+                    .private_key
+                    .expect("Missing 'private_key' in settings.toml")
+                    .parse::<LocalWallet>()?;
 
                 send_transaction(
-                    settings.rpc_url.unwrap(),
-                    settings.chain_id.unwrap(),
+                    settings
+                        .rpc_url
+                        .expect("Missing 'rpc_url' in settings.toml"),
+                    settings
+                        .chain_id
+                        .expect("Missing 'chain_id' in settings.toml"),
                     wallet,
                     details,
                 )
@@ -153,14 +170,22 @@ pub async fn evm_commands(
             } else {
                 let signer = GothamSigner {
                     gotham_client_shim: GothamClient::ClientShim::new(
-                        settings.gotham_server_url.unwrap(),
+                        settings
+                            .gotham_server_url
+                            .expect("Missing 'gotham_server_url' in settings.toml"),
                         None,
                     ),
-                    wallet: GothamWallet::load(settings.gotham_wallet_file.unwrap()),
+                    wallet: GothamWallet::load(
+                        settings
+                            .wallet_file
+                            .expect("Missing 'wallet_file' in settings.toml"),
+                    ),
                 };
 
                 send_transaction(
-                    settings.rpc_url.unwrap(),
+                    settings
+                        .rpc_url
+                        .expect("Missing 'rpc_url' in settings.toml"),
                     signer.chain_id(),
                     signer,
                     details,
@@ -180,11 +205,18 @@ pub async fn evm_commands(
             };
 
             if top_args.no_mpc == true {
-                let wallet = settings.private_key.unwrap().parse::<LocalWallet>()?;
+                let wallet = settings
+                    .private_key
+                    .expect("Missing 'private_key' in settings.toml")
+                    .parse::<LocalWallet>()?;
 
                 transfer_erc20(
-                    settings.rpc_url.unwrap(),
-                    settings.chain_id.unwrap(),
+                    settings
+                        .rpc_url
+                        .expect("Missing 'rpc_url' in settings.toml"),
+                    settings
+                        .chain_id
+                        .expect("Missing 'chain_id' in settings.toml"),
                     wallet,
                     details,
                 )
@@ -192,14 +224,22 @@ pub async fn evm_commands(
             } else {
                 let signer = GothamSigner {
                     gotham_client_shim: GothamClient::ClientShim::new(
-                        settings.gotham_server_url.unwrap(),
+                        settings
+                            .gotham_server_url
+                            .expect("Missing 'gotham_server_url' in settings.toml"),
                         None,
                     ),
-                    wallet: GothamWallet::load(settings.gotham_wallet_file.unwrap()),
+                    wallet: GothamWallet::load(
+                        settings
+                            .wallet_file
+                            .expect("Missing 'wallet_file' in settings.toml"),
+                    ),
                 };
 
                 transfer_erc20(
-                    settings.rpc_url.unwrap(),
+                    settings
+                        .rpc_url
+                        .expect("Missing 'rpc_url' in settings.toml"),
                     signer.chain_id(),
                     signer,
                     details,
@@ -213,14 +253,26 @@ pub async fn evm_commands(
                 address = settings
                     .private_key
                     .clone()
-                    .unwrap()
+                    .expect("Missing 'private_key' in settings.toml")
                     .parse::<LocalWallet>()?
                     .address();
             } else {
-                address = GothamWallet::load(settings.gotham_wallet_file.unwrap()).address;
+                address = GothamWallet::load(
+                    settings
+                        .wallet_file
+                        .expect("Missing 'wallet_file' in settings.toml"),
+                )
+                .address;
             }
 
-            get_balance(settings.rpc_url.unwrap(), address, args.tokens.clone()).await?;
+            get_balance(
+                settings
+                    .rpc_url
+                    .expect("Missing 'rpc_url' in settings.toml"),
+                address,
+                args.tokens.clone(),
+            )
+            .await?;
         }
     }
 

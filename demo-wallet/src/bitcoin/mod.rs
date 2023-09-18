@@ -244,7 +244,7 @@ impl BitcoinWallet {
         }
     */
     pub fn save_to(&self, path: &str) {
-        let wallet_json = serde_json::to_string(self).unwrap();
+        let wallet_json = serde_json::to_string_pretty(self).unwrap();
 
         fs::write(path, wallet_json).expect("Unable to save wallet!");
 
