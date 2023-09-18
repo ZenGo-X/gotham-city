@@ -1,11 +1,11 @@
+use crate::bitcoin::escrow::Escrow;
+use crate::bitcoin::BitcoinWallet;
+use crate::Settings;
 use bitcoin::Network;
 use clap::{Args, Parser, Subcommand};
+use electrumx_client::electrumx_client::ElectrumxClient;
 use std::path::PathBuf;
 use std::time::Instant;
-use electrumx_client::electrumx_client::ElectrumxClient;
-use crate::bitcoin::BitcoinWallet;
-use crate::bitcoin::escrow::Escrow;
-use crate::Settings;
 
 #[derive(Args)]
 pub struct BitcoinArgs {
@@ -152,8 +152,10 @@ pub struct SendStruct {
     pub amount: f32,
 }
 
-
-pub async fn bitcoin_commands(settings: Settings, top_args: &BitcoinArgs) -> Result<(), Box<dyn std::error::Error>>{
+pub async fn bitcoin_commands(
+    settings: Settings,
+    top_args: &BitcoinArgs,
+) -> Result<(), Box<dyn std::error::Error>> {
     match &top_args.commands {
         BitcoinSubCommands::CreateWallet(create_wallet) => {
             let client_shim = client_lib::ClientShim::new(create_wallet.gotham.clone(), None);
@@ -186,8 +188,7 @@ pub async fn bitcoin_commands(settings: Settings, top_args: &BitcoinArgs) -> Res
                     wallet.save_to(&wallet_command.path);
                 }
                 WalletCommands::GetBalance(get_balance_struct) => {
-                    let mut electrum =
-                        ElectrumxClient::new(&get_balance_struct.electrum).unwrap();
+                    let mut electrum = ElectrumxClient::new(&get_balance_struct.electrum).unwrap();
 
                     let balance = wallet.get_balance(&mut electrum);
                     println!(
@@ -196,8 +197,7 @@ pub async fn bitcoin_commands(settings: Settings, top_args: &BitcoinArgs) -> Res
                     );
                 }
                 WalletCommands::ListUnspent(list_unspent_struct) => {
-                    let mut electrum =
-                        ElectrumxClient::new(&list_unspent_struct.electrum).unwrap();
+                    let mut electrum = ElectrumxClient::new(&list_unspent_struct.electrum).unwrap();
 
                     let unspent = wallet.list_unspent(&mut electrum);
                     let hashes: Vec<String> = unspent.into_iter().map(|u| u.tx_hash).collect();
@@ -259,8 +259,7 @@ pub async fn bitcoin_commands(settings: Settings, top_args: &BitcoinArgs) -> Res
                 },
                  */
                 WalletCommands::Send(send_struct) => {
-                    let client_shim =
-                        client_lib::ClientShim::new(send_struct.gotham.clone(), None);
+                    let client_shim = client_lib::ClientShim::new(send_struct.gotham.clone(), None);
 
                     let mut electrum = ElectrumxClient::new(&send_struct.electrum).unwrap();
 
@@ -282,4 +281,3 @@ pub async fn bitcoin_commands(settings: Settings, top_args: &BitcoinArgs) -> Res
 
     Ok(())
 }
-

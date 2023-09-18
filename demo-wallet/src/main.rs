@@ -2,16 +2,12 @@ use crate::bitcoin::commands::*;
 use crate::ethereum::commands::*;
 use clap::{Args, Parser, Subcommand};
 
-
 use std::error::Error;
 use std::ops::Deref;
 use std::str::FromStr;
 
-
 use config::{Config, File};
 use serde::Deserialize;
-
-
 
 pub mod bitcoin;
 pub mod ethereum;
@@ -64,5 +60,3 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
-
-
