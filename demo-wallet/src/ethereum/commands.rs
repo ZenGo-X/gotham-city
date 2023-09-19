@@ -47,7 +47,7 @@ pub struct NewEvmWalletArgs {
         short,
         long,
         help = "Output filepath",
-        default_value = "wallet-ethereum.json"
+        default_value = "wallet.json"
     )]
     pub output: String,
 

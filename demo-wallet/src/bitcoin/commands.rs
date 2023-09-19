@@ -15,12 +15,27 @@ pub struct BitcoinArgs {
 
 #[derive(Subcommand)]
 pub enum BitcoinSubCommands {
-    /// Create an MPC wallet
+    /// Create an MPC Bitcoin wallet
     CreateWallet(CreateWalletStruct),
 
-    /// Operation on wallet
-    #[command(arg_required_else_help = true)]
-    Wallet(WalletStruct),
+    /// Generate a new address
+    NewAddress(NewAddressStruct),
+
+    /// Total balance
+    GetBalance(GetBalanceStruct),
+
+    /// List unspent transactions (tx hash)
+    ListUnspent(ListUnspentStruct),
+
+    /// Send a transaction
+    Send(SendStruct),
+
+    /// Private share backup
+    Backup(BackupStruct),
+
+    /// Backup verification
+    Verify(VerifyStruct),
+
 }
 
 // const GOTHAM_ARG_HELP: &str = "Gotham server (url:port)";
@@ -32,7 +47,7 @@ const NETWORK_ARG_DEFAULT: &str = "testnet";
 // const ELECTRUM_ARG_HELP: &str = "Electrum server (url:port)";
 
 const WALLET_ARG_HELP: &str = "Output filepath";
-const WALLET_ARG_DEFAULT: &str = "wallet-bitcoin.json";
+const WALLET_ARG_DEFAULT: &str = "wallet.json";
 
 const BACKUP_ARG_HELP: &str = "Backup filepath";
 const BACKUP_ARG_DEFAULT: &str = "backup-bitcoin.json";
@@ -50,33 +65,6 @@ pub struct CreateWalletStruct {
 
     #[arg(short, long, help = ESCROW_ARG_HELP, default_value= ESCROW_ARG_DEFAULT)]
     pub escrow_path: String,
-}
-
-#[derive(Args)]
-pub struct WalletStruct {
-    #[command(subcommand)]
-    pub command: WalletCommands,
-}
-
-#[derive(Subcommand)]
-pub enum WalletCommands {
-    /// Generate a new address
-    NewAddress(NewAddressStruct),
-
-    /// Total balance
-    GetBalance(GetBalanceStruct),
-
-    /// List unspent transactions (tx hash)
-    ListUnspent(ListUnspentStruct),
-
-    /// Private share backup
-    Backup(BackupStruct),
-
-    /// Backup verification
-    Verify(VerifyStruct),
-
-    /// Send a transaction
-    Send(SendStruct),
 }
 
 #[derive(Args)]
@@ -140,144 +128,155 @@ pub async fn bitcoin_commands(
             let _escrow = Escrow::new(&create_wallet.escrow_path);
             println!("Network: [{}], Escrow initiated", &create_wallet.network);
         }
-        BitcoinSubCommands::Wallet(wallet_command) => {
+        BitcoinSubCommands::NewAddress(new_address_struct) => {
+            let mut wallet = load_wallet_from_file(&settings);
+            let address = wallet.get_new_bitcoin_address();
+            println!(
+                "Network: [{}], Address: [{}]",
+                &wallet.network,
+                address.to_string()
+            );
+            wallet.save_to(
+                &settings
+                    .wallet_file
+                    .expect("Missing 'wallet_file' in settings.toml"),
+            );
+        }
+        BitcoinSubCommands::GetBalance(get_balance_struct) => {
+            let mut wallet = load_wallet_from_file(&settings);
+
+            let electrum_server_url = settings
+                .electrum_server_url
+                .expect("Missing 'electrum_server_url' in settings.toml");
+            let mut electrum = ElectrumxClient::new(electrum_server_url.clone())
+                .expect(format!("Unable to connect to {}", electrum_server_url).as_str());
+
+            let balance = wallet.get_balance(&mut electrum);
+            println!(
+                "Network: [{}], Balance (in satoshi): [balance: {}, pending: {}] ",
+                &wallet.network, balance.confirmed, balance.unconfirmed
+            );
+        }
+        BitcoinSubCommands::ListUnspent(list_unspent_struct) => {
+            let mut wallet = load_wallet_from_file(&settings);
+
+            let electrum_server_url = settings
+                .electrum_server_url
+                .expect("Missing 'electrum_server_url' in settings.toml");
+
+            let mut electrum = ElectrumxClient::new(electrum_server_url.clone())
+                .expect(format!("Unable to connect to {}", electrum_server_url).as_str());
+
+            let unspent = wallet.list_unspent(&mut electrum);
+            let hashes: Vec<String> = unspent.into_iter().map(|u| u.tx_hash).collect();
+
+            println!(
+                "Network: [{}], Unspent tx hashes: [\n{}\n]",
+                &wallet.network,
+                hashes.join("\n")
+            );
+        }
+        BitcoinSubCommands::Backup(backup_struct) => {
+            let mut wallet = load_wallet_from_file(&settings);
+
+            let escrow = Escrow::load(&backup_struct.escrow_path);
+
+            println!("Backup private share pending (it can take some time)...");
+
+            let now = Instant::now();
+            wallet.backup(escrow, &backup_struct.backup_path);
+            let elapsed = now.elapsed();
+
+            println!("Backup key saved in escrow (Took: {:?})", elapsed);
+        }
+        BitcoinSubCommands::Verify(verify_struct) => {
+            let mut wallet = load_wallet_from_file(&settings);
+
+            let escrow = Escrow::load(&verify_struct.escrow_path);
+
+            println!("verify encrypted backup (it can take some time)...");
+
+            let now = Instant::now();
+            wallet.verify_backup(escrow, &verify_struct.backup_path);
+            let elapsed = now.elapsed();
+
+            println!(" (Took: {:?})", elapsed);
+        }
+        /*
+        // recover_master_key was removed from MasterKey2 in version 2.0
+        WalletCommands::Restore => {
+            let escrow = escrow::Escrow::load();
+
+            println!("backup recovery in process 📲 (it can take some time)...");
+
+            let now = Instant::now();
+            Wallet::recover_and_save_share(escrow, &network, &client_shim);
+            let elapsed = now.elapsed();
+
+            println!(" Backup recovered 💾(Took: {:?})", elapsed);
+        },
+
+         */
+
+        /* Rotation is not up to date
+        WalletCommands::Rotate => {
+            println!("Rotating secret shares");
+
+            let now = Instant::now();
+            let wallet = wallet.rotate(&client_shim);
+            wallet.save();
+            let elapsed = now.elapsed();
+
+            println!("key rotation complete, (Took: {:?})", elapsed);
+        },
+         */
+        BitcoinSubCommands::Send(send_struct) => {
+
             let wallet_file = settings
                 .wallet_file
                 .clone()
                 .expect("Missing 'wallet_file' in settings.toml");
-            println!("Loading wallet from [{}]", wallet_file);
 
-            let mut wallet: BitcoinWallet = BitcoinWallet::load_from(&wallet_file);
+            let mut wallet = load_wallet_from_file(&settings);
 
-            match &wallet_command.command {
-                WalletCommands::NewAddress(new_address_struct) => {
-                    let address = wallet.get_new_bitcoin_address();
-                    println!(
-                        "Network: [{}], Address: [{}]",
-                        &wallet.network,
-                        address.to_string()
-                    );
-                    wallet.save_to(
-                        &settings
-                            .wallet_file
-                            .expect("Missing 'wallet_file' in settings.toml"),
-                    );
-                }
-                WalletCommands::GetBalance(get_balance_struct) => {
-                    let electrum_server_url = settings
-                        .electrum_server_url
-                        .expect("Missing 'electrum_server_url' in settings.toml");
-                    let mut electrum = ElectrumxClient::new(electrum_server_url.clone())
-                        .expect(format!("Unable to connect to {}", electrum_server_url).as_str());
+            let client_shim = client_lib::ClientShim::new(
+                settings
+                    .gotham_server_url
+                    .expect("Missing 'gotham_server_url' in settings.toml"),
+                None,
+            );
 
-                    let balance = wallet.get_balance(&mut electrum);
-                    println!(
-                        "Network: [{}], Balance (in satoshi): [balance: {}, pending: {}] ",
-                        &wallet.network, balance.confirmed, balance.unconfirmed
-                    );
-                }
-                WalletCommands::ListUnspent(list_unspent_struct) => {
-                    let electrum_server_url = settings
-                        .electrum_server_url
-                        .expect("Missing 'electrum_server_url' in settings.toml");
+            let electrum_server_url = settings
+                .electrum_server_url
+                .expect("Missing 'electrum_server_url' in settings.toml");
 
-                    let mut electrum = ElectrumxClient::new(electrum_server_url.clone())
-                        .expect(format!("Unable to connect to {}", electrum_server_url).as_str());
+            let mut electrum = ElectrumxClient::new(electrum_server_url.clone())
+                .expect(format!("Unable to connect to {}", electrum_server_url).as_str());
 
-                    let unspent = wallet.list_unspent(&mut electrum);
-                    let hashes: Vec<String> = unspent.into_iter().map(|u| u.tx_hash).collect();
-
-                    println!(
-                        "Network: [{}], Unspent tx hashes: [\n{}\n]",
-                        &wallet.network,
-                        hashes.join("\n")
-                    );
-                }
-                WalletCommands::Backup(backup_struct) => {
-                    let escrow = Escrow::load(&backup_struct.escrow_path);
-
-                    println!("Backup private share pending (it can take some time)...");
-
-                    let now = Instant::now();
-                    wallet.backup(escrow, &backup_struct.backup_path);
-                    let elapsed = now.elapsed();
-
-                    println!("Backup key saved in escrow (Took: {:?})", elapsed);
-                }
-                WalletCommands::Verify(verify_struct) => {
-                    let escrow = Escrow::load(&verify_struct.escrow_path);
-
-                    println!("verify encrypted backup (it can take some time)...");
-
-                    let now = Instant::now();
-                    wallet.verify_backup(escrow, &verify_struct.backup_path);
-                    let elapsed = now.elapsed();
-
-                    println!(" (Took: {:?})", elapsed);
-                }
-                /*
-                // recover_master_key was removed from MasterKey2 in version 2.0
-                WalletCommands::Restore => {
-                    let escrow = escrow::Escrow::load();
-
-                    println!("backup recovery in process 📲 (it can take some time)...");
-
-                    let now = Instant::now();
-                    Wallet::recover_and_save_share(escrow, &network, &client_shim);
-                    let elapsed = now.elapsed();
-
-                    println!(" Backup recovered 💾(Took: {:?})", elapsed);
-                },
-
-                 */
-
-                /* Rotation is not up to date
-                WalletCommands::Rotate => {
-                    println!("Rotating secret shares");
-
-                    let now = Instant::now();
-                    let wallet = wallet.rotate(&client_shim);
-                    wallet.save();
-                    let elapsed = now.elapsed();
-
-                    println!("key rotation complete, (Took: {:?})", elapsed);
-                },
-                 */
-                WalletCommands::Send(send_struct) => {
-                    let wallet_file = settings
-                        .wallet_file
-                        .clone()
-                        .expect("Missing 'wallet_file' in settings.toml");
-
-                    let client_shim = client_lib::ClientShim::new(
-                        settings
-                            .gotham_server_url
-                            .expect("Missing 'gotham_server_url' in settings.toml"),
-                        None,
-                    );
-
-                    let electrum_server_url = settings
-                        .electrum_server_url
-                        .expect("Missing 'electrum_server_url' in settings.toml");
-
-                    let mut electrum = ElectrumxClient::new(electrum_server_url.clone())
-                        .expect(format!("Unable to connect to {}", electrum_server_url).as_str());
-
-                    let txid = wallet.send(
-                        &send_struct.to,
-                        send_struct.amount,
-                        &client_shim,
-                        &mut electrum,
-                    );
-                    wallet.save_to(&wallet_file);
-                    println!(
-                        "Network: [{}], Sent {} BTC to address {}. Transaction ID: {}",
-                        wallet.network, send_struct.amount, send_struct.to, txid
-                    );
-                }
-            }
+            let txid = wallet.send(
+                &send_struct.to,
+                send_struct.amount,
+                &client_shim,
+                &mut electrum,
+            );
+            wallet.save_to(&wallet_file);
+            println!(
+                "Network: [{}], Sent {} BTC to address {}. Transaction ID: {}",
+                wallet.network, send_struct.amount, send_struct.to, txid
+            );
         }
+
     }
 
     Ok(())
+}
+
+fn load_wallet_from_file(settings: &Settings) -> BitcoinWallet{
+    let wallet_file = settings
+        .wallet_file
+        .clone()
+        .expect("Missing 'wallet_file' in settings.toml");
+    println!("Loading wallet from [{}]", wallet_file);
+
+    BitcoinWallet::load_from(&wallet_file)
 }
