@@ -35,7 +35,6 @@ pub enum BitcoinSubCommands {
 
     /// Backup verification
     Verify(VerifyStruct),
-
 }
 
 // const GOTHAM_ARG_HELP: &str = "Gotham server (url:port)";
@@ -231,7 +230,6 @@ pub async fn bitcoin_commands(
         },
          */
         BitcoinSubCommands::Send(send_struct) => {
-
             let wallet_file = settings
                 .wallet_file
                 .clone()
@@ -265,13 +263,12 @@ pub async fn bitcoin_commands(
                 wallet.network, send_struct.amount, send_struct.to, txid
             );
         }
-
     }
 
     Ok(())
 }
 
-fn load_wallet_from_file(settings: &Settings) -> BitcoinWallet{
+fn load_wallet_from_file(settings: &Settings) -> BitcoinWallet {
     let wallet_file = settings
         .wallet_file
         .clone()

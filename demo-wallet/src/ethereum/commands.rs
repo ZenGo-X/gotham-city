@@ -43,12 +43,7 @@ pub struct NewEvmWalletArgs {
     #[arg(long, help = "Network Chain ID")]
     pub chain_id: u64,
 
-    #[arg(
-        short,
-        long,
-        help = "Output filepath",
-        default_value = "wallet.json"
-    )]
+    #[arg(short, long, help = "Output filepath", default_value = "wallet.json")]
     pub output: String,
 
     #[arg(
