@@ -2,7 +2,7 @@
 name = "demo-wallet"
 version = "0.1.0"
 edition = "2021"
-description = "Gotham Citi Wallet"
+description = "Bitcoin and Ethereum minimalist wallet CLI app on top of Gotham City Client"
 
 [dependencies]
 # Common

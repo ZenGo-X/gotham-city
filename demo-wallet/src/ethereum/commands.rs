@@ -40,7 +40,7 @@ pub enum EvmSubCommands {
 
 #[derive(Args)]
 pub struct NewEvmWalletArgs {
-    #[arg(long, help = "Network's Chain ID")]
+    #[arg(long, help = "Network Chain ID")]
     pub chain_id: u64,
 
     #[arg(
@@ -89,7 +89,12 @@ pub struct SendEvmWalletArgs {
 
 #[derive(Args)]
 pub struct BalanceEvmWalletArgs {
-    #[arg(long, help = "ERC20 token addresses")]
+    #[arg(
+        long,
+        use_value_delimiter = true,
+        value_delimiter = ',',
+        help = "ERC20 token addresses seperated by commas"
+    )]
     pub tokens: Option<Vec<String>>,
 }
 

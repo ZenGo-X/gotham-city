@@ -15,23 +15,31 @@ pub mod ethereum;
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
 pub struct Cli {
+    #[arg(short, long, help = "Settings file", default_value = "settings.toml")]
+    pub settings: String,
+
     #[command(subcommand)]
     pub commands: TopLevelSubCommands,
 }
 
 #[derive(Subcommand)]
 pub enum TopLevelSubCommands {
-    ///{n} EVM-compatible blockchains {n}
-    /// -------------------------- {n}
-    /// Mandatory variables in settings.toml file: {n}
-    /// 1. For MPC Gotham wallet: 'rpc_url', 'gotham_wallet_file', 'gotham_server_url' {n}
-    /// 2. For locally stored private key: 'rpc_url', 'private_key', 'chain_id' {n}
+    #[command(
+        about = "EVM-compatible blockchain",
+        long_about = "Configuration variables in settings file: \n \
+    `rpc_url` - endpoint to communicate with the Ethereum network \n \
+    `wallet_file` - file-path to wallet JSON file `[default: wallet.json]` \n \
+    `gotham_server_url` - URL to Gotham Server `[default: http://127.0.0.1:8000]`"
+    )]
     Evm(EvmArgs),
 
-    ///{n} Bitcoin blockchain {n}
-    /// ------------------ {n}
-    /// Mandatory variables in settings.toml file for MPC Gotham wallet: {n}
-    /// 'electrum_server_url', 'gotham_wallet_file', 'gotham_server_url' {n}
+    #[command(
+        about = "Bitcoin blockchain",
+        long_about = "Configuration variables in settings file: \n \
+    `electrum_server_url` - endpoint of Electrum server \n \
+    `wallet_file` - file-path to wallet JSON file `[default: wallet.json]` \n \
+    `gotham_server_url` - URL to Gotham Server `[default: http://127.0.0.1:8000]`"
+    )]
     Bitcoin(BitcoinArgs),
 }
 
@@ -49,13 +57,23 @@ pub struct Settings {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let cli = Cli::parse();
+
     let config = Config::builder()
-        .add_source(File::with_name("settings.toml").required(false))
+        .add_source(File::with_name(&cli.settings).required(false))
         .add_source(config::Environment::with_prefix("GOTHAM"))
         .build()?;
-    let settings = config.try_deserialize::<Settings>().unwrap();
+    let mut settings = config
+        .try_deserialize::<Settings>()
+        .expect("Unable to load settings file");
 
-    let cli = Cli::parse();
+    if settings.gotham_server_url.is_none() {
+        settings.gotham_server_url = Option::from("http://127.0.0.1:8000".to_string())
+    }
+
+    if settings.wallet_file.is_none() {
+        settings.wallet_file = Option::from("wallet.json".to_string());
+    }
 
     match &cli.commands {
         TopLevelSubCommands::Evm(top_args) => evm_commands(settings, &top_args).await?,
