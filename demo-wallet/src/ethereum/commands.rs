@@ -60,8 +60,8 @@ pub struct SendEvmWalletArgs {
     #[arg(long, help = "Recipient address")]
     pub to: String,
 
-    #[arg(long, help = "Amount of Wei to transfer (10^18 Wei = 1 ETH)")]
-    pub amount: u128,
+    #[arg(long, help = "Amount of ETH to transfer")]
+    pub amount: f64,
 
     #[arg(
         long,

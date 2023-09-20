@@ -271,7 +271,7 @@ pub async fn transfer_erc20<S: Signer + 'static>(
 
 pub struct TransactionDetails {
     pub to_address: String,
-    pub amount: u128,
+    pub amount: f64,
     pub gas_limit: Option<u128>,
     pub gas_price: Option<f64>,
     pub nonce: Option<u128>,
@@ -284,12 +284,13 @@ pub async fn send_transaction<S: Signer + 'static>(
     details: TransactionDetails,
 ) -> Result<(), Box<dyn Error>> {
     let provider = Provider::<Http>::try_from(rpc_url)?.with_signer(signer.with_chain_id(chain_id));
+    let amount: U256 = parse_units(details.amount, "ether").unwrap().into();
 
     let mut tx: TypedTransaction = TransactionRequest::new()
         .from(provider.address())
         .chain_id(chain_id)
         .to(details.to_address.parse::<Address>()?)
-        .value(U256::from(details.amount))
+        .value(amount)
         .into();
 
     if let Some(gas_limit) = details.gas_limit {
