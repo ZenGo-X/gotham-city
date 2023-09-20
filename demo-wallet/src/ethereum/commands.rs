@@ -73,7 +73,7 @@ pub struct SendEvmWalletArgs {
         long,
         help = "Amount of Giga-Wei to pay for gas (10^9 Giga-Wei = 1 ETH)"
     )]
-    pub gas_price: Option<u128>,
+    pub gas_price: Option<f64>,
 
     #[arg(
         long,
@@ -102,7 +102,7 @@ pub struct TransferEvmWalletArgs {
     pub to: String,
 
     #[arg(long, help = "Amount of tokens to transfer")]
-    pub amount: u128,
+    pub amount: f64,
 
     #[arg(long, help = "Custom number of decimals to use")]
     pub decimals: Option<u8>,
@@ -117,7 +117,7 @@ pub struct TransferEvmWalletArgs {
         long,
         help = "Amount of Giga-Wei to pay for gas (10^9 Giga-Wei = 1 ETH)"
     )]
-    pub gas_price: Option<u128>,
+    pub gas_price: Option<f64>,
 
     #[arg(
         long,
@@ -198,7 +198,6 @@ pub async fn evm_commands(
                 contract_address: args.token.clone(),
                 to_address: args.to.clone(),
                 amount: args.amount.clone(),
-                decimals: args.decimals.clone(),
                 gas_limit: args.gas_limit.clone(),
                 gas_price: args.gas_price.clone(),
                 nonce: args.nonce.clone(),

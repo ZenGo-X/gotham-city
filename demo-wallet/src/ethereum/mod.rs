@@ -13,7 +13,7 @@ use ethers::prelude::transaction::eip2718::TypedTransaction;
 use ethers::prelude::transaction::eip712::Eip712;
 use ethers::prelude::*;
 use ethers::signers::Signer;
-use ethers::utils::keccak256;
+use ethers::utils::{format_units, keccak256, parse_units, ParseUnits};
 
 use serde::{Deserialize, Serialize};
 
@@ -223,10 +223,9 @@ abigen!(
 pub struct TransferDetails {
     pub contract_address: String,
     pub to_address: String,
-    pub amount: u128,
-    pub decimals: Option<u8>,
+    pub amount: f64,
     pub gas_limit: Option<u128>,
-    pub gas_price: Option<u128>,
+    pub gas_price: Option<f64>,
     pub nonce: Option<u128>,
 }
 
@@ -244,23 +243,21 @@ pub async fn transfer_erc20<S: Signer + 'static>(
         Arc::clone(&provider),
     );
 
-    let mut decimals = contract.decimals().call().await?;
+    let decimals = contract.decimals().call().await?;
 
-    if let Some(dec) = details.decimals {
-        decimals = dec;
-    }
-
-    let decimal_amount = U256::from(details.amount) * U256::exp10(decimals as usize);
+    let float_amount = details.amount * (10.0_f64).powi(decimals.into());
+    let decimal_amount = U256::from(float_amount.floor() as u128);
 
     let mut contract_call =
         contract.transfer(details.to_address.parse::<Address>()?, decimal_amount);
 
     if let Some(gas_limit) = details.gas_limit {
-        let _ = contract_call.tx.set_gas(U256::from(gas_limit));
+        contract_call.tx.set_gas(U256::from(gas_limit));
     }
 
     if let Some(gas_price) = details.gas_price {
-        let _ = contract_call.tx.set_gas_price(U256::from(gas_price));
+        let gas_price: U256 = parse_units(gas_price, "gwei").unwrap().into();
+        contract_call.tx.set_gas_price(gas_price);
     }
 
     if let Some(nonce) = details.nonce {
@@ -268,7 +265,7 @@ pub async fn transfer_erc20<S: Signer + 'static>(
     }
 
     let receipt = contract_call.send().await?.await?.unwrap();
-    println!("Transaction Hash: {}", receipt.transaction_hash);
+    println!("Transaction Hash: {:?}", receipt.transaction_hash);
     Ok(())
 }
 
@@ -276,7 +273,7 @@ pub struct TransactionDetails {
     pub to_address: String,
     pub amount: u128,
     pub gas_limit: Option<u128>,
-    pub gas_price: Option<u128>,
+    pub gas_price: Option<f64>,
     pub nonce: Option<u128>,
 }
 
@@ -300,7 +297,8 @@ pub async fn send_transaction<S: Signer + 'static>(
     }
 
     if let Some(gas_price) = details.gas_price {
-        tx.set_gas_price(U256::from(gas_price));
+        let gas_price: U256 = parse_units(gas_price, "gwei").unwrap().into();
+        tx.set_gas_price(gas_price);
     }
 
     if let Some(nonce) = details.nonce {
@@ -308,7 +306,7 @@ pub async fn send_transaction<S: Signer + 'static>(
     }
 
     let receipt = provider.send_transaction(tx, None).await?.await?.unwrap();
-    println!("Transaction Hash: {}", receipt.transaction_hash);
+    println!("Transaction Hash: {:?}", receipt.transaction_hash);
 
     Ok(())
 }
@@ -321,8 +319,7 @@ pub async fn get_balance(
     let provider = Arc::new(Provider::<Http>::try_from(rpc_url)?);
 
     let balance = provider.get_balance(address, None).await?;
-
-    println!("[Native Token] = {}", balance);
+    println!("[Native Token] = {}", format_units(balance, "ether")?);
 
     if let Some(contract_addresses) = contracts {
         for contract_address in contract_addresses.iter() {
@@ -332,8 +329,7 @@ pub async fn get_balance(
             let name = contract.name().call().await?;
 
             let balance = contract.balance_of(address).call().await?;
-
-            println!("[{}] = {}", name, balance);
+            println!("[{}] = {}", name, format_units(balance, "ether")?);
         }
     }
     Ok(())
