@@ -2,10 +2,6 @@ use crate::bitcoin::commands::*;
 use crate::ethereum::commands::*;
 use clap::{Parser, Subcommand};
 
-
-
-
-
 use config::{Config, File};
 use serde::Deserialize;
 

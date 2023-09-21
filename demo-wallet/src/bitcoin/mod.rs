@@ -27,7 +27,6 @@ use two_party_ecdsa::curv::elliptic::curves::traits::ECPoint;
 use two_party_ecdsa::curv::BigInt;
 use uuid::Uuid;
 
-
 use client_lib::ecdsa;
 use client_lib::ecdsa::types::PrivateShare;
 use client_lib::Client;

@@ -6,7 +6,6 @@ use crate::Settings;
 use clap::{Args, Subcommand};
 use ethers::prelude::{Address, LocalWallet, Signer};
 
-
 use client_lib as GothamClient;
 
 #[derive(Args)]
