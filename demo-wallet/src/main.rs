@@ -1,10 +1,10 @@
 use crate::bitcoin::commands::*;
 use crate::ethereum::commands::*;
-use clap::{Args, Parser, Subcommand};
+use clap::{Parser, Subcommand};
 
-use std::error::Error;
-use std::ops::Deref;
-use std::str::FromStr;
+
+
+
 
 use config::{Config, File};
 use serde::Deserialize;

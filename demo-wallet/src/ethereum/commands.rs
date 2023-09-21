@@ -3,9 +3,9 @@ use crate::ethereum::{
     TransactionDetails, TransferDetails,
 };
 use crate::Settings;
-use clap::{Args, Parser, Subcommand};
+use clap::{Args, Subcommand};
 use ethers::prelude::{Address, LocalWallet, Signer};
-use std::path::PathBuf;
+
 
 use client_lib as GothamClient;
 

@@ -9,11 +9,11 @@
 
 use bitcoin;
 use bitcoin::consensus::encode::serialize;
-use bitcoin::hashes::{hex::FromHex, sha256d};
+
 use bitcoin::network::constants::Network;
 use bitcoin::secp256k1::Signature;
 use bitcoin::util::bip143::SigHashCache;
-use bitcoin::{secp256k1, Address, SigHashType, TxIn, TxOut, Txid};
+use bitcoin::{Address, SigHashType, TxIn, TxOut};
 use electrumx_client::interface::Electrumx;
 use hex;
 use kms::ecdsa::two_party::MasterKey2;
@@ -27,7 +27,7 @@ use two_party_ecdsa::curv::elliptic::curves::traits::ECPoint;
 use two_party_ecdsa::curv::BigInt;
 use uuid::Uuid;
 
-use bitcoin::hashes::hex::ToHex;
+
 use client_lib::ecdsa;
 use client_lib::ecdsa::types::PrivateShare;
 use client_lib::Client;
@@ -35,7 +35,7 @@ use client_lib::ClientShim;
 use itertools::Itertools;
 use log::debug;
 use std::collections::HashMap;
-use std::net::ToSocketAddrs;
+
 use std::process::exit;
 use std::str::FromStr;
 use two_party_ecdsa::curv::arithmetic::traits::Converter;

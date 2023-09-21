@@ -2,9 +2,9 @@ use crate::bitcoin::escrow::Escrow;
 use crate::bitcoin::BitcoinWallet;
 use crate::Settings;
 use bitcoin::Network;
-use clap::{Args, Parser, Subcommand};
+use clap::{Args, Subcommand};
 use electrumx_client::electrumx_client::ElectrumxClient;
-use std::path::PathBuf;
+
 use std::time::Instant;
 
 #[derive(Args)]
@@ -127,7 +127,7 @@ pub async fn bitcoin_commands(
             let _escrow = Escrow::new(&create_wallet.escrow_path);
             println!("Network: [{}], Escrow initiated", &create_wallet.network);
         }
-        BitcoinSubCommands::NewAddress(new_address_struct) => {
+        BitcoinSubCommands::NewAddress(_new_address_struct) => {
             let mut wallet = load_wallet_from_file(&settings);
             let address = wallet.get_new_bitcoin_address();
             println!(
@@ -141,7 +141,7 @@ pub async fn bitcoin_commands(
                     .expect("Missing 'wallet_file' in settings.toml"),
             );
         }
-        BitcoinSubCommands::GetBalance(get_balance_struct) => {
+        BitcoinSubCommands::GetBalance(_get_balance_struct) => {
             let mut wallet = load_wallet_from_file(&settings);
 
             let electrum_server_url = settings
@@ -156,8 +156,8 @@ pub async fn bitcoin_commands(
                 &wallet.network, balance.confirmed, balance.unconfirmed
             );
         }
-        BitcoinSubCommands::ListUnspent(list_unspent_struct) => {
-            let mut wallet = load_wallet_from_file(&settings);
+        BitcoinSubCommands::ListUnspent(_list_unspent_struct) => {
+            let wallet = load_wallet_from_file(&settings);
 
             let electrum_server_url = settings
                 .electrum_server_url
@@ -176,7 +176,7 @@ pub async fn bitcoin_commands(
             );
         }
         BitcoinSubCommands::Backup(backup_struct) => {
-            let mut wallet = load_wallet_from_file(&settings);
+            let wallet = load_wallet_from_file(&settings);
 
             let escrow = Escrow::load(&backup_struct.escrow_path);
 
@@ -189,7 +189,7 @@ pub async fn bitcoin_commands(
             println!("Backup key saved in escrow (Took: {:?})", elapsed);
         }
         BitcoinSubCommands::Verify(verify_struct) => {
-            let mut wallet = load_wallet_from_file(&settings);
+            let wallet = load_wallet_from_file(&settings);
 
             let escrow = Escrow::load(&verify_struct.escrow_path);
 

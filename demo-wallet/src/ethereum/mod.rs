@@ -1,8 +1,7 @@
 use std::error::Error;
 use std::fs::File;
-use std::io::Write;
 use std::path::Path;
-use std::str::FromStr;
+
 use std::sync::Arc;
 
 use client_lib as GothamClient;
@@ -13,7 +12,7 @@ use ethers::prelude::transaction::eip2718::TypedTransaction;
 use ethers::prelude::transaction::eip712::Eip712;
 use ethers::prelude::*;
 use ethers::signers::Signer;
-use ethers::utils::{format_units, keccak256, parse_units, ParseUnits};
+use ethers::utils::{format_units, keccak256, parse_units};
 
 use serde::{Deserialize, Serialize};
 
@@ -95,7 +94,7 @@ pub enum GothamSignerError {
 }
 
 impl<C: GothamClient::Client> std::fmt::Debug for GothamSigner<C> {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, _f: &mut std::fmt::Formatter) -> std::fmt::Result {
         todo!()
     }
 }
