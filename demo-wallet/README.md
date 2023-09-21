@@ -66,7 +66,6 @@ Options:
       --token <TOKEN>          ERC20 token address
       --to <TO>                Recipient address
       --amount <AMOUNT>        Amount of tokens to transfer
-      --decimals <DECIMALS>    Custom number of decimals to use
       --gas-limit <GAS_LIMIT>  Maximum amount of gas units this transaction can consume
       --gas-price <GAS_PRICE>  Amount of Giga-Wei to pay for gas (10^9 Giga-Wei = 1 ETH)
       --nonce <NONCE>          Sequentially incrementing counter to indicates transaction number
