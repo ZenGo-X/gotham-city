@@ -28,6 +28,25 @@ Configuration variables in settings file:
 * __wallet_file__ - file-path to wallet JSON file `[default: wallet.json]`.
 * __gotham_server_url__ - URL to Gotham Server`[default: http://127.0.0.1:8000]`.
 
+### Commands
+```
+Usage: demo-wallet evm [OPTIONS] <COMMAND>
+
+Commands:
+  new       Create new MPC EVM wallet
+  send      Broadcast a transaction to the network
+  transfer  Broadcast an ERC20 transfer command to the network
+  balance   Retrieve wallet balance
+  help      Print this message or the help of the given subcommand(s)
+
+Options:
+      --no-mpc
+          Disable MPC Gotham wallet, use a wallet instantiated with a locally stored private key
+
+  -h, --help
+          Print help (see a summary with '-h')
+```
+
 ### New wallet
 Create new MPC EVM wallet
 
@@ -88,6 +107,25 @@ Configuration variables in settings file:
 * __electrum_server_url__ - endpoint of [Electrum server](https://thebitcoinmanual.com/articles/btc-electrum-server/).
 * __wallet_file__ - file-path to wallet JSON file `[default: wallet.json]`.
 * __gotham_server_url__ - URL to Gotham Server`[default: http://127.0.0.1:8000]`.
+
+### Commands
+```
+Usage: demo-wallet bitcoin <COMMAND>
+
+Commands:
+  create-wallet  Create an MPC Bitcoin wallet
+  new-address    Generate a new address
+  get-balance    Total balance
+  list-unspent   List unspent transactions (tx hash)
+  send           Send a transaction
+  backup         Private share backup
+  verify         Backup verification
+  help           Print this message or the help of the given subcommand(s)
+
+Options:
+  -h, --help
+          Print help (see a summary with '-h')
+```
 
 ### New wallet
 Create an MPC Bitcoin wallet
