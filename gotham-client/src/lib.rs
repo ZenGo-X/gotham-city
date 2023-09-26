@@ -11,7 +11,6 @@ use log::info;
 use serde::{de::DeserializeOwned, Serialize};
 use std::time::Instant;
 pub mod ecdsa;
-pub mod escrow;
 
 mod utilities;
 
@@ -96,5 +95,7 @@ impl Client for reqwest::Client {
     }
 }
 
-pub use two_party_ecdsa::curv::{arithmetic::traits::Converter, BigInt};
+pub use two_party_ecdsa::curv::{
+    arithmetic::traits::Converter, elliptic::curves::traits::*, BigInt,
+};
 // pub use multi_party_eddsa::protocols::aggsig::*;

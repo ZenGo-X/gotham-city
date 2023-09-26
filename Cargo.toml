@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "demo-wallet",
     "gotham-server",
     "gotham-client",
     "integration-tests",
@@ -8,7 +9,7 @@ members = [
 [workspace.dependencies]
 gotham-server = { path = "gotham-server" }
 gotham-client = { path = "gotham-client" }
-serde = { version = "1", features = ["serde_derive"] }
+serde = { version = "1", features = ["derive", "serde_derive"] }
 serde_json = "1"
 log = "0.4"
 reqwest = "0.9.5"
@@ -19,6 +20,8 @@ config = "0.9.2"
 uuid = { version = "0.7", features = ["v4"] }
 jsonwebtoken = "8"
 hex = "0.4"
+secp256k1 = {version = "0.21.0", features = ["global-context"]}
+rand = "0.8"
 
 two-party-ecdsa = { git = "https://github.com/ZenGo-X/two-party-ecdsa.git" }
 kms = { git = "https://github.com/ZenGo-X/kms-secp256k1.git", branch = "2.0" }
