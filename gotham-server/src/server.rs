@@ -13,6 +13,8 @@ use serde::Deserialize;
 
 use super::{storage::db, Config};
 
+use rusoto_core::credential::StaticProvider;
+use rusoto_core::HttpClient;
 use std::collections::HashMap;
 use std::str::FromStr;
 
@@ -114,10 +116,28 @@ fn get_db(settings: HashMap<String, String>) -> db::DB {
             let region_option = settings.get("aws_region");
             match region_option {
                 Some(s) => {
-                    let region_res = Region::from_str(s);
-                    match region_res {
-                        Ok(region) => db::DB::AWS(DynamoDbClient::new(region), env),
-                        Err(_e) => panic!("Set 'DB = AWS' but 'region' is not a valid value"),
+                    if s.eq("local") {
+                        let local_dynamodb_endpoint = settings
+                            .get("local_dynamodb_endpoint")
+                            .unwrap_or(&"http://localhost:9000".to_string())
+                            .to_string();
+
+                        let db_client = DynamoDbClient::new_with(
+                            HttpClient::new().unwrap(),
+                            StaticProvider::new_minimal("dummy".to_string(), "dummy".to_string()),
+                            Region::Custom {
+                                name: "local".to_owned(),
+                                endpoint: local_dynamodb_endpoint,
+                            },
+                        );
+
+                        db::DB::AWS(db_client, env)
+                    } else {
+                        let region_res = Region::from_str(s);
+                        match region_res {
+                            Ok(region) => db::DB::AWS(DynamoDbClient::new(region), env),
+                            Err(_e) => panic!("Set 'DB = AWS' but 'region' is not a valid value"),
+                        }
                     }
                 }
                 None => panic!("Set 'DB = AWS' but 'region' is empty"),

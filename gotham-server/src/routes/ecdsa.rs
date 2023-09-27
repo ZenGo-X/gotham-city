@@ -157,7 +157,11 @@ pub async fn first_message(
     .await
     .or(Err("Failed to insert into db"))?;
 
-    db::insert(&state.db, &claim.sub, &id, &EcdsaStruct::Abort, "false")
+    let item = Aborted {
+        isAborted: "false".to_string(),
+    };
+
+    db::insert(&state.db, &claim.sub, &id, &EcdsaStruct::Abort, &item)
         .await
         .or(Err("Failed to insert into db"))?;
 
@@ -526,6 +530,11 @@ pub struct SignSecondMsgRequest {
     pub y_pos_child_key: BigInt,
 }
 
+#[derive(Serialize, Deserialize)]
+struct Aborted {
+    isAborted: String,
+}
+
 #[post("/ecdsa/sign/<id>/second", format = "json", data = "<request>")]
 pub async fn sign_second(
     state: &State<Config>,
@@ -563,8 +572,11 @@ pub async fn sign_second(
     );
 
     if signature_with_recid.is_err() {
+        let item = Aborted {
+            isAborted: "true".to_string(),
+        };
         println!("signature failed, user tainted[{:?}]", id);
-        db::insert(&state.db, &claim.sub, &id, &EcdsaStruct::Abort, "true")
+        db::insert(&state.db, &claim.sub, &id, &EcdsaStruct::Abort, &item)
             .await
             .or(Err("Failed to insert into db"))?;
         panic!("Server sign_second: validation of signature failed. Potential adversary")

@@ -1,7 +1,8 @@
 # "local" or "aws"
-db = "local"
+db = "aws"
 # if db = aws (also set environment variables AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY):
-# aws_region =
+aws_region = "local"
+local_dynamodb_endpoint = "http://localhost:9000"
 
 region = "" # Override with ENV variable!
 pool_id = "" # Override with ENV variable!
