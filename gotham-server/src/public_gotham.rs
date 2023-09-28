@@ -23,6 +23,12 @@ pub enum DB {
     Local(rocksdb::DB),
 }
 
+impl Txauthorization for PublicGotham {
+    /// the granted function implements the logic of tx authorization. If no tx authorization is needed the function returns always true
+    fn granted(&self) -> Result<bool, DatabaseError> {
+        Result(true)
+    }
+}
 fn get_settings_as_map() -> HashMap<String, String> {
     let config_file = include_str!("../Settings.toml");
     let mut settings = config::Config::default();
