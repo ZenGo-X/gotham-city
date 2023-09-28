@@ -14,7 +14,7 @@ use gotham_engine::types::*;
 pub struct PublicGotham {
     rocksdb_client: rocksdb::DB,
 }
-
+pub struct Authorizer{}
 pub struct Config {
     pub db: DB,
 }
@@ -23,10 +23,10 @@ pub enum DB {
     Local(rocksdb::DB),
 }
 
-impl Txauthorization for PublicGotham {
+impl Txauthorization for Authorizer {
     /// the granted function implements the logic of tx authorization. If no tx authorization is needed the function returns always true
     fn granted(&self) -> Result<bool, DatabaseError> {
-        Result(true)
+        Ok(true)
     }
 }
 fn get_settings_as_map() -> HashMap<String, String> {
@@ -57,11 +57,6 @@ impl PublicGotham {
     }
 }
 
-impl Default for PublicGotham {
-    fn default() -> Self {
-        Self::new()
-    }
-}
 
 impl KeyGen for PublicGotham {}
 

@@ -219,7 +219,7 @@ mod tests {
     }
 
     #[test]
-    fn key_gen_and_sign() {
+    fn unit_test_key_gen_and_sign() {
         // Passthrough mode
         env::set_var("region", "");
         env::set_var("pool_id", "");

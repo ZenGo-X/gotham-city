@@ -1,4 +1,4 @@
-use crate::public_gotham::{Config, PublicGotham, DB};
+use crate::public_gotham::{Authorizer, Config, PublicGotham, DB};
 use rocket::{self, catch, catchers, routes, Build, Request, Rocket};
 use std::collections::HashMap;
 use tokio::sync::Mutex;
@@ -24,6 +24,7 @@ pub fn get_server(settings: HashMap<String, String>) -> Rocket<Build> {
         db: get_db(settings.clone()),
     };
     let x = PublicGotham::new();
+    let tx = Authorizer{};
     rocket::Rocket::build()
         .register("/", catchers![internal_error, not_found, bad_request])
         .mount(
@@ -40,11 +41,12 @@ pub fn get_server(settings: HashMap<String, String>) -> Rocket<Build> {
             ],
         )
         .manage(Mutex::new(Box::new(x) as Box<dyn gotham_engine::traits::Db>))
+        .manage(Mutex::new(Box::new(tx) as Box<dyn gotham_engine::traits::Txauthorization>))
         .manage(db_config)
 }
 
 fn get_db(settings: HashMap<String, String>) -> DB {
-    let db_name = settings.get("db_name").unwrap_or(&"db".to_string()).clone();
+    let db_name = settings.get("db_name").unwrap().clone();
     if !db_name.chars().all(|e| char::is_ascii_alphanumeric(&e)) {
         panic!("DB name is illegal, may only contain alphanumeric characters");
     }
