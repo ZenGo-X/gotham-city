@@ -109,9 +109,7 @@ use two_party_ecdsa::curv::elliptic::curves::traits::ECPoint;
 // #[rocket::async_test]
 fn integration_test_ecdsa_key_signing() {
     let mut rng = StepRng::new(0, 1);
-    let settings = HashMap::<String, String>::from([
-        ("db_name".into(), "testEcdsaSigning".into()),
-    ]);
+    let settings = HashMap::<String, String>::from([("db_name".into(), "testEcdsaSigning".into())]);
     let rocket = server::get_server(settings);
     let client = RocketClient::new(rocket);
 
