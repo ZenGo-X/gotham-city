@@ -7,7 +7,6 @@
 // version 3 of the License, or (at your option) any later version.
 //
 
-use two_party_ecdsa::kms::ecdsa::two_party::{MasterKey1, MasterKey2};
 use serde_json::Error;
 use two_party_ecdsa::centipede::juggling::proof_system::Helgamalsegmented;
 use two_party_ecdsa::centipede::juggling::segmentation::Msegmentation;
@@ -15,6 +14,7 @@ use two_party_ecdsa::curv::arithmetic::traits::{Converter, Modulo};
 use two_party_ecdsa::curv::elliptic::curves::secp256_k1::{FE, GE};
 use two_party_ecdsa::curv::elliptic::curves::traits::{ECPoint, ECScalar};
 use two_party_ecdsa::curv::BigInt;
+use two_party_ecdsa::kms::ecdsa::two_party::{MasterKey1, MasterKey2};
 // iOS bindings
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;

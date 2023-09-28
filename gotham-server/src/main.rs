@@ -1,5 +1,5 @@
-mod server;
 mod public_gotham;
+mod server;
 
 use std::collections::HashMap;
 
