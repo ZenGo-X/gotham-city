@@ -14,7 +14,7 @@ use gotham_engine::types::*;
 pub struct PublicGotham {
     rocksdb_client: rocksdb::DB,
 }
-pub struct Authorizer{}
+pub struct Authorizer {}
 pub struct Config {
     pub db: DB,
 }
@@ -56,7 +56,6 @@ impl PublicGotham {
         PublicGotham { rocksdb_client }
     }
 }
-
 
 impl KeyGen for PublicGotham {}
 

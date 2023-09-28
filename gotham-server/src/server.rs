@@ -24,7 +24,7 @@ pub fn get_server(settings: HashMap<String, String>) -> Rocket<Build> {
         db: get_db(settings.clone()),
     };
     let x = PublicGotham::new();
-    let tx = Authorizer{};
+    let tx = Authorizer {};
     rocket::Rocket::build()
         .register("/", catchers![internal_error, not_found, bad_request])
         .mount(
@@ -41,7 +41,9 @@ pub fn get_server(settings: HashMap<String, String>) -> Rocket<Build> {
             ],
         )
         .manage(Mutex::new(Box::new(x) as Box<dyn gotham_engine::traits::Db>))
-        .manage(Mutex::new(Box::new(tx) as Box<dyn gotham_engine::traits::Txauthorization>))
+        .manage(Mutex::new(
+            Box::new(tx) as Box<dyn gotham_engine::traits::Txauthorization>
+        ))
         .manage(db_config)
 }
 
