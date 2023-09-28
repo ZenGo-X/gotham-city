@@ -1,4 +1,4 @@
-use kms::ecdsa::two_party::MasterKey2;
+use two_party_ecdsa::kms::ecdsa::two_party::MasterKey2;
 use serde::{Deserialize, Serialize};
 use two_party_ecdsa::curv::BigInt;
 

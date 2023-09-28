@@ -7,7 +7,7 @@
 // version 3 of the License, or (at your option) any later version.
 //
 
-use kms::ecdsa::two_party::{MasterKey1, MasterKey2};
+use two_party_ecdsa::kms::ecdsa::two_party::{MasterKey1, MasterKey2};
 use serde_json::Error;
 use two_party_ecdsa::centipede::juggling::proof_system::Helgamalsegmented;
 use two_party_ecdsa::centipede::juggling::segmentation::Msegmentation;

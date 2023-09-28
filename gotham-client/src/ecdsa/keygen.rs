@@ -11,8 +11,8 @@ use floating_duration::TimeFormat;
 
 use two_party_ecdsa::curv::cryptographic_primitives::twoparty::dh_key_exchange_variant_with_pok_comm::*;
 use two_party_ecdsa::party_one;
-use kms::chain_code::two_party as chain_code;
-use kms::ecdsa::two_party::{MasterKey2, party1};
+use two_party_ecdsa::kms::chain_code::two_party as chain_code;
+use two_party_ecdsa::kms::ecdsa::two_party::{MasterKey2, party1};
 // iOS bindings
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;

@@ -1,6 +1,6 @@
 [workspace]
 members = [
-    "demo-wallet",
+#    "demo-wallet",
     "gotham-server",
     "gotham-client",
     "integration-tests",
@@ -22,6 +22,5 @@ jsonwebtoken = "8"
 hex = "0.4"
 secp256k1 = {version = "0.21.0", features = ["global-context"]}
 rand = "0.8"
-
-two-party-ecdsa = { git = "https://github.com/ZenGo-X/two-party-ecdsa.git" }
-kms = { git = "https://github.com/ZenGo-X/kms-secp256k1.git", branch = "2.0" }
+two-party-ecdsa = { git = "https://github.com/ZenGo-X/two-party-ecdsa.git", branch="compatibility_gotham_engine" }
+gotham-engine = { git = "https://github.com/ZenGo-X/gotham-engine.git" }

@@ -1,6 +1,6 @@
 [package]
 name = "gotham-server"
-version = "1.0.0"
+version = "2.0.0"
 authors = [
     "x@zengo.com"
 ]
@@ -25,20 +25,22 @@ failure.workspace = true
 jsonwebtoken.workspace = true
 hex.workspace = true
 two-party-ecdsa.workspace = true
-kms.workspace = true
-rocksdb = { version = "0.20.1", optional = true }
-rusoto_dynamodb = {version = "0.47", optional = true}
-rusoto_core = {version = "0.47", optional = true}
+gotham-engine.workspace = true
+
+rocksdb = { version = "0.21.0" , optional = true}
+chrono = "0.4.26"
+cargo-pants = "0.4.16"
+redis = { version = "0.23.0", features = ["cluster"] }
+thiserror = "1.0"
+erased-serde = "0.3"
+async-trait = "0.1.73"
+tokio = { version = "1", features = ["full"] }
 
 [features]
-default = ["local", "aws"]
+default = ["local"]
 local = ["rocksdb"]
-aws = ["rusoto_dynamodb", "rusoto_core"]
 
-[dependencies.serde_dynamodb]
-git = "https://github.com/KZen-networks/serde_dynamodb"
-features = ["native-tls"]
-default-features = false
+
 
 [dev-dependencies]
 time-test = "0.2.1"
