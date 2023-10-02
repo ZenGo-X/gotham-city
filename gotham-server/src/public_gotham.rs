@@ -15,13 +15,6 @@ pub struct PublicGotham {
     rocksdb_client: rocksdb::DB,
 }
 pub struct Authorizer {}
-pub struct Config {
-    pub db: DB,
-}
-
-pub enum DB {
-    Local(rocksdb::DB),
-}
 
 impl Txauthorization for Authorizer {
     /// the granted function implements the logic of tx authorization. If no tx authorization is needed the function returns always true

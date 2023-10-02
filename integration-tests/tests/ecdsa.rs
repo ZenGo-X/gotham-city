@@ -2,11 +2,10 @@ use client_lib::{ecdsa, ClientShim};
 use rand::rngs::mock::StepRng;
 use rand::Rng;
 use rocket::serde::{DeserializeOwned, Serialize};
-use rocket::{Config, Ignite, Rocket};
+use rocket::Rocket;
 use secp256k1::{ecdsa::Signature, Message, SECP256K1};
 use server_lib::server;
 use std::collections::HashMap;
-use std::{thread, time};
 use two_party_ecdsa::curv::arithmetic::big_gmp::BigInt;
 use two_party_ecdsa::curv::arithmetic::traits::Converter;
 use two_party_ecdsa::curv::elliptic::curves::traits::ECPoint;
@@ -110,7 +109,7 @@ use two_party_ecdsa::curv::elliptic::curves::traits::ECPoint;
 fn integration_test_ecdsa_key_signing() {
     let mut rng = StepRng::new(0, 1);
     let settings = HashMap::<String, String>::from([("db_name".into(), "testEcdsaSigning".into())]);
-    let rocket = server::get_server(settings);
+    let rocket = server::get_server();
     let client = RocketClient::new(rocket);
 
     let client_shim =

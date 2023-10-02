@@ -231,7 +231,7 @@ mod tests {
             ("db".to_string(), "local".to_string()),
             ("db_name".to_string(), "KeyGenAndSign".to_string()),
         ]);
-        let server = server::get_server(settings);
+        let server = server::get_server();
         let client = Client::tracked(server).expect("valid rocket instance");
         let (id, master_key_2) = key_gen(&client);
 
