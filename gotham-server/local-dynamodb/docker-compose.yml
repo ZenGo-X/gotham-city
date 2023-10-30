@@ -17,5 +17,3 @@ services:
      DYNAMO_ENDPOINT: "http://dynamodb-local:8002"
    depends_on:
      - dynamodb-local
-   links:
-     - dynamodb-local
