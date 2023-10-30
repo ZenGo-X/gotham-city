@@ -16,12 +16,6 @@ pub struct PublicGotham {
 }
 pub struct Authorizer {}
 
-impl Txauthorization for Authorizer {
-    /// the granted function implements the logic of tx authorization. If no tx authorization is needed the function returns always true
-    fn granted(&self) -> Result<bool, DatabaseError> {
-        Ok(true)
-    }
-}
 fn get_settings_as_map() -> HashMap<String, String> {
     let config_file = include_str!("../Settings.toml");
     let mut settings = config::Config::default();
@@ -94,6 +88,10 @@ impl Db for PublicGotham {
             }
             None => Ok(None),
         }
+    }
+    /// the granted function implements the logic of tx authorization. If no tx authorization is needed the function returns always true
+    fn granted(&self, message: &str, customer_id: &str) -> Result<bool, DatabaseError> {
+        Ok(true)
     }
     async fn has_active_share(&self, _user_id: &str) -> Result<bool, String> {
         Ok(false)
