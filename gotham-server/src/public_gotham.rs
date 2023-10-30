@@ -67,7 +67,7 @@ impl Db for PublicGotham {
         table_name: &dyn MPCStruct,
         value: &dyn Value,
     ) -> Result<(), DatabaseError> {
-        let identifier = idify(key.clone().customer_id, key.clone().id, table_name);
+        let identifier = idify(key.clone().customerId, key.clone().id, table_name);
         let v_string = serde_json::to_string(&value).unwrap();
         let _ = self.rocksdb_client.put(identifier, v_string.clone());
         Ok(())
@@ -78,7 +78,7 @@ impl Db for PublicGotham {
         key: &DbIndex,
         table_name: &dyn MPCStruct,
     ) -> Result<Option<Box<dyn Value>>, DatabaseError> {
-        let identifier = idify(key.clone().customer_id, key.clone().id, table_name);
+        let identifier = idify(key.clone().customerId, key.clone().id, table_name);
         // debug!("Getting from db ({})", identifier);
         let result = self.rocksdb_client.get(identifier.clone()).unwrap();
         let vec_option: Option<Vec<u8>> = result.map(|v| v.to_vec());

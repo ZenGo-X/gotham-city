@@ -1,4 +1,4 @@
-use crate::public_gotham::{Authorizer, PublicGotham};
+use crate::public_gotham::PublicGotham;
 use rocket::{self, catch, catchers, routes, Build, Request, Rocket};
 use std::collections::HashMap;
 use tokio::sync::Mutex;
@@ -19,12 +19,7 @@ fn not_found(req: &Request) -> String {
 }
 
 pub fn get_server() -> Rocket<Build> {
-    // let settings = get_settings_as_map();
-    // let db_config = Config {
-    //     db: get_db(settings.clone()),
-    // };
     let x = PublicGotham::new();
-    let tx = Authorizer {};
     rocket::Rocket::build()
         .register("/", catchers![internal_error, not_found, bad_request])
         .mount(
@@ -41,8 +36,4 @@ pub fn get_server() -> Rocket<Build> {
             ],
         )
         .manage(Mutex::new(Box::new(x) as Box<dyn gotham_engine::traits::Db>))
-        .manage(Mutex::new(
-            Box::new(tx) as Box<dyn gotham_engine::traits::Txauthorization>
-        ))
-    // .manage(db_config)
 }
