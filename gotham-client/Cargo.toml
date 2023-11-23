@@ -2,8 +2,7 @@
 name = "gotham-client"
 version = "0.1.0"
 authors = [
-    "gbenattar <g.benattar@gmail.com>",
-    "Oded Leiba <odedleiba5@gmail.com"
+    "z@zengo.com"
 ]
 edition = "2021"
 
@@ -26,7 +25,6 @@ reqwest.workspace = true
 failure.workspace = true
 floating-duration.workspace = true
 two-party-ecdsa.workspace = true
-kms.workspace = true
 
 [dev-dependencies]
 mockall = "0.11"

@@ -16,8 +16,6 @@ use bitcoin::util::bip143::SigHashCache;
 use bitcoin::{Address, SigHashType, TxIn, TxOut};
 use electrumx_client::interface::Electrumx;
 use hex;
-use kms::ecdsa::two_party::MasterKey2;
-use kms::ecdsa::two_party::*;
 use serde::{Deserialize, Serialize};
 use serde_json;
 use std::fs;
@@ -25,6 +23,8 @@ use two_party_ecdsa::centipede::juggling::proof_system::{Helgamalsegmented, Proo
 use two_party_ecdsa::curv::elliptic::curves::secp256_k1::{GE, PK};
 use two_party_ecdsa::curv::elliptic::curves::traits::ECPoint;
 use two_party_ecdsa::curv::BigInt;
+use two_party_ecdsa::kms::ecdsa::two_party::MasterKey2;
+use two_party_ecdsa::kms::ecdsa::two_party::*;
 use uuid::Uuid;
 
 use client_lib::ecdsa;
