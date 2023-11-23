@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.0.0](https://github.com/ZenGo-X/gotham-city/compare/v1.2.0...v2.0.0) (2023-11-23)
+
+
+### ⚠ BREAKING CHANGES
+
+* gotham-city goes gotham-engine ([#86](https://github.com/ZenGo-X/gotham-city/issues/86))
+
+### Features
+
+* gotham-city goes gotham-engine ([#86](https://github.com/ZenGo-X/gotham-city/issues/86)) ([0767b2b](https://github.com/ZenGo-X/gotham-city/commit/0767b2b7efed1edb520066cd34992675e2575318))
+
 ## [1.2.0](https://github.com/ZenGo-X/gotham-city/compare/v1.1.0...v1.2.0) (2023-09-26)
 
 
