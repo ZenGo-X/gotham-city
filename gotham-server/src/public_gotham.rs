@@ -4,7 +4,7 @@ use rocket::async_trait;
 use std::collections::HashMap;
 use std::string::String;
 
-use two_party_ecdsa::party_one::Value;
+use two_party_ecdsa::party_one::{v, Value};
 
 use gotham_engine::keygen::KeyGen;
 use gotham_engine::sign::Sign;
@@ -73,7 +73,7 @@ impl Db for PublicGotham {
         table_name: &dyn MPCStruct,
     ) -> Result<Option<Box<dyn Value>>, DatabaseError> {
         let identifier = idify(key.clone().customerId, key.clone().id, table_name);
-        // debug!("Getting from db ({})", identifier);
+        println!("Getting from db ({})", identifier);
         let result = self.rocksdb_client.get(identifier.clone()).unwrap();
         let vec_option: Option<Vec<u8>> = result.map(|v| v.to_vec());
         match vec_option {
@@ -86,7 +86,14 @@ impl Db for PublicGotham {
                 .unwrap();
                 Ok(Option::from(final_val))
             }
-            None => Ok(None),
+            None => {
+                println! {"ok none"}
+                let value = v {
+                    value: "false".parse().unwrap(),
+                };
+                let final_val: Box<dyn Value> = Box::new(value);
+                Ok(Option::from(final_val))
+            }
         }
     }
     /// the granted function implements the logic of tx authorization. If no tx authorization is needed the function returns always true

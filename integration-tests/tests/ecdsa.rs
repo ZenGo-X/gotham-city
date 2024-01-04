@@ -6,6 +6,7 @@ use rocket::Rocket;
 use secp256k1::{ecdsa::Signature, Message, SECP256K1};
 use server_lib::server;
 use std::collections::HashMap;
+use rocket::http::Header;
 use two_party_ecdsa::curv::arithmetic::big_gmp::BigInt;
 use two_party_ecdsa::curv::arithmetic::traits::Converter;
 use two_party_ecdsa::curv::elliptic::curves::traits::ECPoint;
@@ -208,8 +209,10 @@ impl client_lib::Client for RocketClient {
         _: Option<String>,
         body: T,
     ) -> Option<V> {
+        let x_customer_header = Header::new("x-customer-id", "xxx");
         self.0
             .post(["/", uri].concat())
+            .header(x_customer_header.clone())
             .json(&body)
             .dispatch()
             .into_string()
