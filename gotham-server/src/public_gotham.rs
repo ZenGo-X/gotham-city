@@ -4,7 +4,8 @@ use rocket::async_trait;
 use std::collections::HashMap;
 use std::string::String;
 
-use two_party_ecdsa::party_one::{v, Value};
+use two_party_ecdsa::party_one::v;
+use two_party_ecdsa::typetags::Value;
 
 use gotham_engine::keygen::KeyGen;
 use gotham_engine::sign::Sign;

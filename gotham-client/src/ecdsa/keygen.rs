@@ -58,7 +58,7 @@ pub fn get_master_key<C: Client>(client_shim: &ClientShim<C>) -> PrivateShare {
 
     let body = &party_two_second_message.pdl_first_message;
 
-    let party_one_third_message: party_one::PDLFirstMessage = client_shim
+    let party_one_third_message: party_one::Party1PDLFirstMessage = client_shim
         .postb(&format!("{}/{}/third", KG_PATH_PRE, id), body)
         .unwrap();
 
@@ -68,7 +68,7 @@ pub fn get_master_key<C: Client>(client_shim: &ClientShim<C>) -> PrivateShare {
 
     let body = &party_2_pdl_second_message;
 
-    let party_one_pdl_second_message: party_one::PDLSecondMessage = client_shim
+    let party_one_pdl_second_message: party_one::Party1PDLSecondMessage = client_shim
         .postb(&format!("{}/{}/fourth", KG_PATH_PRE, id), body)
         .unwrap();
 
@@ -79,7 +79,7 @@ pub fn get_master_key<C: Client>(client_shim: &ClientShim<C>) -> PrivateShare {
     )
     .expect("pdl error party1");
 
-    let cc_party_one_first_message: Party1FirstMessage = client_shim
+    let cc_party_one_first_message: Party1FirstMessageDHPoK = client_shim
         .post(&format!("{}/{}/chaincode/first", KG_PATH_PRE, id))
         .unwrap();
 
@@ -88,7 +88,7 @@ pub fn get_master_key<C: Client>(client_shim: &ClientShim<C>) -> PrivateShare {
 
     let body = &cc_party_two_first_message.d_log_proof;
 
-    let cc_party_one_second_message: Party1SecondMessage = client_shim
+    let cc_party_one_second_message: Party1SecondMessageDHPoK = client_shim
         .postb(&format!("{}/{}/chaincode/second", KG_PATH_PRE, id), body)
         .unwrap();
 
