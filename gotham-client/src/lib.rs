@@ -86,7 +86,9 @@ impl Client for reqwest::Client {
         bearer_token: Option<String>,
         body: T,
     ) -> Option<V> {
-        let mut b = self.post(&format!("{}/{}", endpoint, uri));
+        let mut b = self
+            .post(&format!("{}/{}", endpoint, uri))
+            .header("x-customer-id", "xxx");
         if let Some(token) = bearer_token {
             b = b.bearer_auth(token);
         }

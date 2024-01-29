@@ -12,12 +12,16 @@ mod tests {
     use two_party_ecdsa::kms::chain_code::two_party::party2::ChainCode2;
     use two_party_ecdsa::kms::ecdsa;
     use gotham_engine::types::SignSecondMsgRequest;
+    use rocket::http::Header;
     use two_party_ecdsa::party_one::Converter;
 
     fn key_gen(client: &Client) -> (String, MasterKey2) {
+        let x_customer_header = Header::new("x-customer-id", "xxx");
+
         let response = client
             .post("/ecdsa/keygen/first")
             .header(ContentType::JSON)
+            .header(x_customer_header.clone())
             .dispatch();
         assert_eq!(response.status(), Status::Ok);
         let res_body = response.into_string().unwrap();
@@ -36,6 +40,7 @@ mod tests {
             .post(format!("/ecdsa/keygen/{}/second", id))
             .body(body)
             .header(ContentType::JSON)
+            .header(x_customer_header.clone())
             .dispatch();
         assert_eq!(response.status(), Status::Ok);
 
@@ -61,6 +66,7 @@ mod tests {
             .post(format!("/ecdsa/keygen/{}/third", id))
             .body(body)
             .header(ContentType::JSON)
+            .header(x_customer_header.clone())
             .dispatch();
         assert_eq!(response.status(), Status::Ok);
 
@@ -84,6 +90,7 @@ mod tests {
             .post(format!("/ecdsa/keygen/{}/fourth", id))
             .body(body)
             .header(ContentType::JSON)
+            .header(x_customer_header.clone())
             .dispatch();
         assert_eq!(response.status(), Status::Ok);
 
@@ -103,6 +110,7 @@ mod tests {
         let response = client
             .post(format!("/ecdsa/keygen/{}/chaincode/first", id))
             .header(ContentType::JSON)
+            .header(x_customer_header.clone())
             .dispatch();
         assert_eq!(response.status(), Status::Ok);
 
@@ -121,6 +129,7 @@ mod tests {
             .post(format!("/ecdsa/keygen/{}/chaincode/second", id))
             .body(body)
             .header(ContentType::JSON)
+            .header(x_customer_header.clone())
             .dispatch();
         assert_eq!(response.status(), Status::Ok);
 
@@ -164,6 +173,8 @@ mod tests {
         master_key_2: MasterKey2,
         message: BigInt,
     ) -> party_one::SignatureRecid {
+        let x_customer_header = Header::new("x-customer-id", "xxx");
+
         let (eph_key_gen_first_message_party_two, eph_comm_witness, eph_ec_key_pair_party2) =
             MasterKey2::sign_first_message();
 
@@ -175,6 +186,7 @@ mod tests {
             .post(format!("/ecdsa/sign/{}/first", id))
             .body(body)
             .header(ContentType::JSON)
+            .header(x_customer_header.clone())
             .dispatch();
         assert_eq!(response.status(), Status::Ok);
 
@@ -209,6 +221,7 @@ mod tests {
             .post(format!("/ecdsa/sign/{}/second", id))
             .body(body)
             .header(ContentType::JSON)
+            .header(x_customer_header.clone())
             .dispatch();
         assert_eq!(response.status(), Status::Ok);
 
