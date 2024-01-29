@@ -7,7 +7,7 @@ mod tests {
     use crate::server;
     use rocket::{http::ContentType, http::{Status}, local::blocking::Client};
     use two_party_ecdsa::{BigInt, party_one, party_two};
-    use two_party_ecdsa::curv::cryptographic_primitives::twoparty::dh_key_exchange_variant_with_pok_comm::{Party1FirstMessageDHPoK, Party1SecondMessageDHPoK};
+    use two_party_ecdsa::curv::cryptographic_primitives::twoparty::dh_key_exchange_variant_with_pok_comm::{Party1FirstMessage, Party1SecondMessage};
     use two_party_ecdsa::kms::ecdsa::two_party::{MasterKey2, party1};
     use two_party_ecdsa::kms::chain_code::two_party::party2::ChainCode2;
     use two_party_ecdsa::kms::ecdsa;
@@ -71,7 +71,7 @@ mod tests {
         assert_eq!(response.status(), Status::Ok);
 
         let res_body = response.into_string().unwrap();
-        let party_one_third_message: party_one::Party1PDLFirstMessage =
+        let party_one_third_message: party_one::PDLFirstMessage =
             serde_json::from_str(&res_body).unwrap();
 
         let start = Instant::now();
@@ -95,7 +95,7 @@ mod tests {
         assert_eq!(response.status(), Status::Ok);
 
         let res_body = response.into_string().unwrap();
-        let party_one_pdl_second_message: party_one::Party1PDLSecondMessage =
+        let party_one_pdl_second_message: party_one::PDLSecondMessage =
             serde_json::from_str(&res_body).unwrap();
 
         MasterKey2::key_gen_fourth_message(
@@ -115,7 +115,7 @@ mod tests {
         assert_eq!(response.status(), Status::Ok);
 
         let res_body = response.into_string().unwrap();
-        let cc_party_one_first_message: Party1FirstMessageDHPoK =
+        let cc_party_one_first_message: Party1FirstMessage =
             serde_json::from_str(&res_body).unwrap();
 
         let (cc_party_two_first_message, cc_ec_key_pair2) = ChainCode2::chain_code_first_message();
@@ -134,7 +134,7 @@ mod tests {
         assert_eq!(response.status(), Status::Ok);
 
         let res_body = response.into_string().unwrap();
-        let cc_party_one_second_message: Party1SecondMessageDHPoK =
+        let cc_party_one_second_message: Party1SecondMessage =
             serde_json::from_str(&res_body).unwrap();
 
         let _cc_party_two_second_message = ChainCode2::chain_code_second_message(
