@@ -33,6 +33,10 @@ pub fn get_server() -> Rocket<Build> {
                 gotham_engine::routes::wrap_chain_code_second_message,
                 gotham_engine::routes::wrap_sign_first,
                 gotham_engine::routes::wrap_sign_second,
+                gotham_engine::routes::wrap_rotate_first,
+                gotham_engine::routes::wrap_rotate_second,
+                gotham_engine::routes::wrap_rotate_third,
+                gotham_engine::routes::wrap_rotate_forth,
             ],
         )
         .manage(Mutex::new(Box::new(x) as Box<dyn gotham_engine::traits::Db>))

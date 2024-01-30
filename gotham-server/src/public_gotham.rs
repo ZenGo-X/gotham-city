@@ -64,6 +64,8 @@ impl Db for PublicGotham {
     ) -> Result<(), DatabaseError> {
         let identifier = idify(key.clone().customerId, key.clone().id, table_name);
         let v_string = serde_json::to_string(&value).unwrap();
+        println!("Inserting into db ({})", identifier);
+
         let _ = self.rocksdb_client.put(identifier, v_string.clone());
         Ok(())
     }

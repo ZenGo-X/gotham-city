@@ -13,13 +13,16 @@ mod tests {
     use two_party_ecdsa::kms::ecdsa;
     use gotham_engine::types::SignSecondMsgRequest;
     use rocket::http::Header;
+    use two_party_ecdsa::curv::cryptographic_primitives::twoparty::coin_flip_optimal_rounds;
+    use two_party_ecdsa::kms::ecdsa::two_party::party1::RotationParty1Message1;
+    use two_party_ecdsa::kms::rotation::two_party::party2::Rotation2;
     use two_party_ecdsa::party_one::Converter;
 
     fn key_gen(client: &Client) -> (String, MasterKey2) {
         let x_customer_header = Header::new("x-customer-id", "xxx");
 
         let response = client
-            .post("/ecdsa/keygen/first")
+            .post("/ecdsa/keygen_v2/first")
             .header(ContentType::JSON)
             .header(x_customer_header.clone())
             .dispatch();
@@ -37,7 +40,7 @@ mod tests {
         /*************** START: SECOND MESSAGE ***************/
         let body = serde_json::to_string(&kg_party_two_first_message.d_log_proof).unwrap();
         let response = client
-            .post(format!("/ecdsa/keygen/{}/second", id))
+            .post(format!("/ecdsa/keygen_v2/{}/second", id))
             .body(body)
             .header(ContentType::JSON)
             .header(x_customer_header.clone())
@@ -63,7 +66,7 @@ mod tests {
         let body = serde_json::to_string(&party_two_second_message.pdl_first_message).unwrap();
 
         let response = client
-            .post(format!("/ecdsa/keygen/{}/third", id))
+            .post(format!("/ecdsa/keygen_v2/{}/third", id))
             .body(body)
             .header(ContentType::JSON)
             .header(x_customer_header.clone())
@@ -87,7 +90,7 @@ mod tests {
         let body = serde_json::to_string(&request).unwrap();
 
         let response = client
-            .post(format!("/ecdsa/keygen/{}/fourth", id))
+            .post(format!("/ecdsa/keygen_v2/{}/fourth", id))
             .body(body)
             .header(ContentType::JSON)
             .header(x_customer_header.clone())
@@ -108,7 +111,7 @@ mod tests {
         /*************** START: CHAINCODE FIRST MESSAGE ***************/
 
         let response = client
-            .post(format!("/ecdsa/keygen/{}/chaincode/first", id))
+            .post(format!("/ecdsa/keygen_v2/{}/chaincode/first", id))
             .header(ContentType::JSON)
             .header(x_customer_header.clone())
             .dispatch();
@@ -126,7 +129,7 @@ mod tests {
         let body = serde_json::to_string(&cc_party_two_first_message.d_log_proof).unwrap();
 
         let response = client
-            .post(format!("/ecdsa/keygen/{}/chaincode/second", id))
+            .post(format!("/ecdsa/keygen_v2/{}/chaincode/second", id))
             .body(body)
             .header(ContentType::JSON)
             .header(x_customer_header.clone())
@@ -231,6 +234,169 @@ mod tests {
         signature_recid
     }
 
+    fn rotate(
+        client: &Client,
+        id: String,
+        master_key_2: MasterKey2
+    ) ->  MasterKey2 {
+        // let settings = HashMap::<String, String>::from([
+        //     ("db".to_string(), "local".to_string()),
+        //     ("db_name".to_string(), "Rotate".to_string()),
+        // ]);
+        //
+        // let server = server::get_server();
+        // let client = Client::tracked(server).expect("valid rocket instance");
+        // let (id, master_key_2) = key_gen(&client);
+
+        let x_customer_header = Header::new("x-customer-id", "xxx");
+
+        /*************** START: FIRST MESSAGE ***************/
+
+        let response = client
+            .post(format!("/ecdsa/rotate/{}/first", id))
+            .header(ContentType::JSON)
+            .header(x_customer_header.clone())
+            .dispatch();
+        assert_eq!(response.status(), Status::Ok);
+        let res_body = response.into_string().unwrap();
+
+        let coin_flip_party1_first_message: coin_flip_optimal_rounds::Party1FirstMessage =
+            serde_json::from_str(&res_body).unwrap();
+
+        let coin_flip_party2_first_message =
+            Rotation2::key_rotate_first_message(&coin_flip_party1_first_message);
+
+        /*************** END: FIRST MESSAGE ***************/
+
+        /*************** START: SECOND MESSAGE ***************/
+
+        let mut second_message: Option<(
+            coin_flip_optimal_rounds::Party1SecondMessage,
+            RotationParty1Message1,
+        )> = None;
+
+        while second_message.is_none() {
+            let body = serde_json::to_string(&coin_flip_party2_first_message).unwrap();
+
+            let response = client
+                .post(format!("/ecdsa/rotate/{}/second", id))
+                .body(body)
+
+                .header(ContentType::JSON)
+                .header(x_customer_header.clone())
+                .dispatch();
+            assert_eq!(response.status(), Status::Ok);
+            let res_body = response.into_string().unwrap();
+            second_message = serde_json::from_str(&res_body).unwrap();
+            if second_message.is_none() {
+                println!("second_message is None");
+            }
+        }
+
+        println!("second_message is not None");
+
+
+        let (coin_flip_party1_second_message, rotation_party1_first_message) = second_message.unwrap();
+
+        let random2 = Rotation2::key_rotate_second_message(
+            &coin_flip_party1_second_message,
+            &coin_flip_party2_first_message,
+            &coin_flip_party1_first_message
+        );
+
+        let tmp_mk = master_key_2.clone();
+        let result_rotate_party_one_first_message =
+            tmp_mk.rotate_first_message(&random2, &rotation_party1_first_message);
+
+        assert!(result_rotate_party_one_first_message.is_ok());
+
+        let (rotation_party_two_first_message, party_two_pdl_chal, party_two_paillier) =
+            result_rotate_party_one_first_message.unwrap();
+
+
+        /*************** END: SECOND MESSAGE ***************/
+
+        /*************** START: THIRD MESSAGE ***************/
+
+        let body = serde_json::to_string(&rotation_party_two_first_message).unwrap();
+
+        let response = client
+            .post(format!("/ecdsa/rotate/{}/third", id))
+            .body(body)
+            .header(ContentType::JSON)
+            .header(x_customer_header.clone())
+            .dispatch();
+        assert_eq!(response.status(), Status::Ok);
+
+        let res_body = response.into_string().unwrap();
+
+        let rotation_party1_second_message: party_one::Party1PDLFirstMessage =
+            serde_json::from_str(&res_body).unwrap();
+
+        let rotation_party_two_second_message = MasterKey2::rotate_second_message(&party_two_pdl_chal);
+
+        /*************** END: THIRD MESSAGE ***************/
+
+        /*************** START: FORTH MESSAGE ***************/
+
+        let body = serde_json::to_string(&rotation_party_two_second_message).unwrap();
+
+        let response = client
+            .post(format!("/ecdsa/rotate/{}/forth", id))
+            .body(body)
+            .header(ContentType::JSON)
+            .header(x_customer_header.clone())
+            .dispatch();
+        assert_eq!(response.status(), Status::Ok);
+
+        let res_body = response.into_string().unwrap();
+
+        let rotation_party1_third_message: party_one::Party1PDLSecondMessage =
+            serde_json::from_str(&res_body).unwrap();
+
+        let tmp_mk = master_key_2.clone();
+        let result_rotate_party_one_third_message = tmp_mk.rotate_third_message(
+            &random2,
+            &party_two_paillier,
+            &party_two_pdl_chal,
+            &rotation_party1_second_message,
+            &rotation_party1_third_message,
+        );
+
+        assert!(result_rotate_party_one_third_message.is_ok());
+
+        let rotated_mk = result_rotate_party_one_third_message.unwrap();
+
+        /*************** END: FORTH MESSAGE ***************/
+        rotated_mk
+    }
+
+    #[test]
+    fn unit_test_keygen_sign_rotate() {
+        let settings = HashMap::<String, String>::from([
+            ("db".to_string(), "local".to_string()),
+            ("db_name".to_string(), "Rotate".to_string()),
+        ]);
+
+        let server = server::get_server();
+        let client = Client::tracked(server).expect("valid rocket instance");
+        let (id, master_key_2) = key_gen(&client);
+
+        let message = BigInt::from(1234u32);
+
+        let sign_first_mk = master_key_2.clone();
+
+        let signature: party_one::SignatureRecid =
+            sign(&client, id.clone(), sign_first_mk, message.clone());
+
+        let tmp_mk = master_key_2.clone();
+
+        let rotated_master_key_2 = rotate(&client, id.clone(), tmp_mk);
+
+        let signature: party_one::SignatureRecid =
+            sign(&client, id.clone(), rotated_master_key_2, message.clone());
+
+    }
     #[test]
     fn unit_test_key_gen_and_sign() {
         // Passthrough mode

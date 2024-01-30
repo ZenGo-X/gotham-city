@@ -12,17 +12,16 @@ use two_party_ecdsa::kms::ecdsa::two_party::MasterKey2;
 use two_party_ecdsa::kms::ecdsa::two_party::party1::RotationParty1Message1;
 use two_party_ecdsa::kms::rotation::two_party::party2::Rotation2;
 use two_party_ecdsa::party_one;
-use two_party_ecdsa::party_one::{Party1PDLFirstMessage, Party1PDLSecondMessage};
 use crate::{Client, ClientShim};
 use crate::ecdsa::PrivateShare;
 
 const ROT_PATH_PRE: &str = "ecdsa/rotate";
 
 pub fn rotate_master_key<C: Client>(client_shim: &ClientShim<C>,
-                                    mk: &MasterKey2,
+                                    master_key_2: &MasterKey2,
                                     id: &str) -> PrivateShare {
     let coin_flip_party1_first_message: coin_flip_optimal_rounds::Party1FirstMessage =
-        client_shim.post(&format!("{}/{}/first", ROT_PATH_PRE, id)).expect("asac");
+        client_shim.post(&format!("{}/{}/first", ROT_PATH_PRE, id)).unwrap();
 
     let coin_flip_party2_first_message =
         Rotation2::key_rotate_first_message(&coin_flip_party1_first_message);
@@ -51,7 +50,7 @@ pub fn rotate_master_key<C: Client>(client_shim: &ClientShim<C>,
         &coin_flip_party1_first_message
     );
 
-    let tmp_mk = mk.clone();
+    let tmp_mk = master_key_2.clone();
     let result_rotate_party_one_first_message =
         tmp_mk.rotate_first_message(&random2, &rotation_party1_first_message);
 
@@ -64,7 +63,7 @@ pub fn rotate_master_key<C: Client>(client_shim: &ClientShim<C>,
 
     let body = &rotation_party_two_first_message;
 
-    let rotation_party1_second_message: Party1PDLFirstMessage = client_shim.postb(
+    let rotation_party1_second_message: party_one::Party1PDLFirstMessage = client_shim.postb(
         &format!("{}/{}/third", ROT_PATH_PRE, id),
         body,
     ).unwrap();
@@ -73,13 +72,13 @@ pub fn rotate_master_key<C: Client>(client_shim: &ClientShim<C>,
 
     let body = &rotation_party_two_second_message;
 
-    let rotation_party1_third_message: Party1PDLSecondMessage = client_shim.postb(
+    let rotation_party1_third_message: party_one::Party1PDLSecondMessage = client_shim.postb(
         &format!("{}/{}/fourth", ROT_PATH_PRE, id),
         body,
     )
     .unwrap();
 
-    let tmp_mk = mk.clone();
+    let tmp_mk = master_key_2.clone();
     let result_rotate_party_one_third_message = tmp_mk.rotate_third_message(
         &random2,
         &party_two_paillier,
