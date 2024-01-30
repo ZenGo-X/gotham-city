@@ -7,10 +7,12 @@
 // version 3 of the License, or (at your option) any later version.
 //
 pub mod keygen;
+pub mod rotate;
 pub mod recover;
 pub mod sign;
 pub mod types;
 
 pub use keygen::get_master_key;
 pub use sign::sign;
+pub use rotate::rotate_master_key;
 pub use types::PrivateShare;
