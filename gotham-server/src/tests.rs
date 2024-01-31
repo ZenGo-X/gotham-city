@@ -376,7 +376,7 @@ mod tests {
             sign(&client, id.clone(), customer_id.clone(), &master_key, message.clone());
 
         println!(
-            "first_signature: s = (r: {}, s: {}, recid: {})",
+            "First signature: (r: {}, s: {}, recid: {})",
             first_signature.r.to_hex(),
             first_signature.s.to_hex(),
             first_signature.recid
@@ -388,7 +388,7 @@ mod tests {
             sign(&client, id.clone(), customer_id.clone(), &rotated_master_key, message.clone());
 
         println!(
-            "second_signature: s = (r: {}, s: {}, recid: {})",
+            "Second signature: (r: {}, s: {}, recid: {})",
             second_signature.r.to_hex(),
             second_signature.s.to_hex(),
             second_signature.recid

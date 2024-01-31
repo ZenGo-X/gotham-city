@@ -67,6 +67,8 @@ fn sign_and_verify(rng: &mut StepRng,
     rng.fill(&mut msg_buf);
     let msg: BigInt = BigInt::from(&msg_buf[..]);
 
+    println!("Message: {}", msg);
+
     let signature = ecdsa::sign(
         &client_shim,
         msg,
@@ -88,6 +90,11 @@ fn sign_and_verify(rng: &mut StepRng,
     let sig = Signature::from_compact(&sig).unwrap();
 
     SECP256K1.verify_ecdsa(&msg, &sig, &pk).unwrap();
+
+    println!("ECDSA signature verified: (r: {}, s: {}, recid: {})",
+             signature.r.to_hex(),
+             signature.s.to_hex(),
+             signature.recid);
 }
 
 struct RocketClient(pub rocket::local::blocking::Client);
@@ -106,7 +113,7 @@ impl client_lib::Client for RocketClient {
         _: Option<String>,
         body: T,
     ) -> Option<V> {
-        let x_customer_header = Header::new("x-customer-id", "xxx");
+        let x_customer_header = Header::new("x-customer-id", "x-customer-id");
         self.0
             .post(["/", uri].concat())
             .header(x_customer_header.clone())

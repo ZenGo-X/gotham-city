@@ -90,7 +90,6 @@ impl Db for PublicGotham {
                 Ok(Option::from(final_val))
             }
             None => {
-                println! {"ok none"}
                 let value = v {
                     value: "false".parse().unwrap(),
                 };
