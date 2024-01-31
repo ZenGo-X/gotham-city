@@ -272,12 +272,12 @@ mod tests {
             let coin_flip_party2_first_message_temp =
                 Rotation2::key_rotate_first_message(&coin_flip_party1_first_message_temp);
 
-            coin_flip_party2_first_message = Some(coin_flip_party2_first_message_temp);
+            coin_flip_party2_first_message = Some(coin_flip_party2_first_message_temp.clone());
 
             /*************** END: FIRST MESSAGE ***************/
 
             /*************** START: SECOND MESSAGE ***************/
-            let body = serde_json::to_string(&coin_flip_party2_first_message).unwrap();
+            let body = serde_json::to_string(&coin_flip_party2_first_message_temp).unwrap();
 
             let response = client
                 .post(format!("/ecdsa/rotate/{}/second", id))
@@ -366,11 +366,6 @@ mod tests {
 
     #[test]
     fn unit_test_keygen_sign_rotate() {
-        let settings = HashMap::<String, String>::from([
-            ("db".to_string(), "local".to_string()),
-            ("db_name".to_string(), "Rotate".to_string()),
-        ]);
-
         let server = server::get_server();
         let client = Client::tracked(server).expect("valid rocket instance");
         let customer_id = Uuid::new_v4().to_string();
@@ -380,40 +375,23 @@ mod tests {
         let first_signature: party_one::SignatureRecid =
             sign(&client, id.clone(), customer_id.clone(), &master_key, message.clone());
 
+        println!(
+            "first_signature: s = (r: {}, s: {}, recid: {})",
+            first_signature.r.to_hex(),
+            first_signature.s.to_hex(),
+            first_signature.recid
+        );
+
         let rotated_master_key = rotate(&client, customer_id.clone(), id.clone(), &master_key);
 
         let second_signature: party_one::SignatureRecid =
             sign(&client, id.clone(), customer_id.clone(), &rotated_master_key, message.clone());
-    }
-    #[test]
-    fn unit_test_key_gen_and_sign() {
-        // Passthrough mode
-        env::set_var("region", "");
-        env::set_var("pool_id", "");
-        env::set_var("issuer", "");
-        env::set_var("audience", "");
-        // env::set_var("ELASTICACHE_URL", "127.0.0.1");
-
-        let settings = HashMap::<String, String>::from([
-            ("db".to_string(), "local".to_string()),
-            ("db_name".to_string(), "KeyGenAndSign".to_string()),
-        ]);
-        let server = server::get_server();
-        let client = Client::tracked(server).expect("valid rocket instance");
-        let customer_id = Uuid::new_v4().to_string();
-        let (id, master_key_2) = key_gen(&client, customer_id.clone());
-
-        let message = BigInt::from(1234u32);
-
-        let signature: party_one::SignatureRecid =
-            sign(&client, id.clone(), customer_id.clone(), &master_key_2, message.clone());
 
         println!(
-            "s = (r: {}, s: {}, recid: {})",
-            signature.r.to_hex(),
-            signature.s.to_hex(),
-            signature.recid
+            "second_signature: s = (r: {}, s: {}, recid: {})",
+            second_signature.r.to_hex(),
+            second_signature.s.to_hex(),
+            second_signature.recid
         );
-        //test v2 sign interface with session id enabled
     }
 }

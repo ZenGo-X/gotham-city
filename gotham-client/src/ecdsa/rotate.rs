@@ -34,8 +34,12 @@ pub fn rotate_master_key<C: Client>(client_shim: &ClientShim<C>,
         let coin_flip_party1_first_message_temp: coin_flip_optimal_rounds::Party1FirstMessage =
             client_shim.post(&format!("{}/{}/first", ROT_PATH_PRE, id)).unwrap();
 
+        coin_flip_party1_first_message = Some(coin_flip_party1_first_message_temp.clone());
+
         let coin_flip_party2_first_message_temp =
             Rotation2::key_rotate_first_message(&coin_flip_party1_first_message_temp);
+
+        coin_flip_party2_first_message = Some(coin_flip_party2_first_message_temp.clone());
 
         let body = &coin_flip_party2_first_message_temp;
 
@@ -75,7 +79,7 @@ pub fn rotate_master_key<C: Client>(client_shim: &ClientShim<C>,
     let body = &rotation_party_two_second_message;
 
     let rotation_party1_third_message: party_one::Party1PDLSecondMessage = client_shim.postb(
-        &format!("{}/{}/fourth", ROT_PATH_PRE, id),
+        &format!("{}/{}/forth", ROT_PATH_PRE, id),
         body,
     )
     .unwrap();

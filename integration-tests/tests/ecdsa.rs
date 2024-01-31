@@ -10,51 +10,84 @@ use std::collections::HashMap;
 use two_party_ecdsa::curv::arithmetic::big_gmp::BigInt;
 use two_party_ecdsa::curv::arithmetic::traits::Converter;
 use two_party_ecdsa::curv::elliptic::curves::traits::ECPoint;
+use two_party_ecdsa::curv::PK;
+use two_party_ecdsa::kms::ecdsa::two_party::MasterKey2;
+use client_lib::ecdsa::PrivateShare;
 
 #[test]
 // #[rocket::async_test]
-fn integration_test_ecdsa_key_signing() {
+fn integration_test_ecdsa_keygen_sign_rotate() {
     let mut rng = StepRng::new(0, 1);
-    let settings = HashMap::<String, String>::from([("db_name".into(), "testEcdsaSigning".into())]);
     let rocket = server::get_server();
     let client = RocketClient::new(rocket);
 
     let client_shim =
         ClientShim::new_with_client("http://localhost:8008".to_string(), None, client);
-    let ps: ecdsa::PrivateShare = ecdsa::get_master_key(&client_shim);
+
     let x_pos = BigInt::from(1);
     let y_pos = BigInt::from(2);
 
-    let child_master_key = ps.master_key.get_child(vec![x_pos.clone(), y_pos.clone()]);
-    let pk = child_master_key.public.q.get_element();
+    let private_share: ecdsa::PrivateShare = ecdsa::get_master_key(&client_shim);
+    let child_master_key = private_share.master_key.get_child(vec![x_pos.clone(), y_pos.clone()]);
+    let public_key = child_master_key.public.q.get_element();
 
     for _ in 0..10 {
-        let mut msg_buf = [0u8; 32];
-        rng.fill(&mut msg_buf);
-        let msg: BigInt = BigInt::from(&msg_buf[..]);
+        sign_and_verify(&mut rng,
+                        &client_shim,
+                        &child_master_key,
+                        &private_share.id,
+                        &public_key,
+                        x_pos.clone(),
+                        y_pos.clone());
+    }
 
-        let signature = ecdsa::sign(
-            &client_shim,
-            msg,
-            &child_master_key,
-            x_pos.clone(),
-            y_pos.clone(),
-            &ps.id,
-        )
+    let private_share = ecdsa::rotate_master_key(&client_shim, &private_share.master_key, private_share.id.as_str());
+    let child_master_key = private_share.master_key.get_child(vec![x_pos.clone(), y_pos.clone()]);
+    let public_key = child_master_key.public.q.get_element();
+
+    for _ in 0..10 {
+        sign_and_verify(&mut rng,
+                        &client_shim,
+                        &child_master_key,
+                        &private_share.id,
+                        &public_key,
+                        x_pos.clone(),
+                        y_pos.clone());
+    }
+}
+
+fn sign_and_verify(rng: &mut StepRng,
+                   client_shim: &ClientShim<RocketClient>,
+                   child_master_key: &MasterKey2,
+                   id: &str,
+                   pk: &PK,
+                   x_pos: BigInt,
+                   y_pos: BigInt) {
+    let mut msg_buf = [0u8; 32];
+    rng.fill(&mut msg_buf);
+    let msg: BigInt = BigInt::from(&msg_buf[..]);
+
+    let signature = ecdsa::sign(
+        &client_shim,
+        msg,
+        &child_master_key,
+        x_pos.clone(),
+        y_pos.clone(),
+        &id,
+    )
         .expect("ECDSA signature failed");
 
-        let r = BigInt::to_vec(&signature.r);
-        let s = BigInt::to_vec(&signature.s);
-        let msg = Message::from_slice(&msg_buf).unwrap();
+    let r = BigInt::to_vec(&signature.r);
+    let s = BigInt::to_vec(&signature.s);
+    let msg = Message::from_slice(&msg_buf).unwrap();
 
-        let mut sig = [0u8; 64];
-        sig[32 - r.len()..32].copy_from_slice(&r);
-        sig[32 + 32 - s.len()..].copy_from_slice(&s);
+    let mut sig = [0u8; 64];
+    sig[32 - r.len()..32].copy_from_slice(&r);
+    sig[32 + 32 - s.len()..].copy_from_slice(&s);
 
-        let sig = Signature::from_compact(&sig).unwrap();
+    let sig = Signature::from_compact(&sig).unwrap();
 
-        SECP256K1.verify_ecdsa(&msg, &sig, &pk).unwrap();
-    }
+    SECP256K1.verify_ecdsa(&msg, &sig, &pk).unwrap();
 }
 
 struct RocketClient(pub rocket::local::blocking::Client);

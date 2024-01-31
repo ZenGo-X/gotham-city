@@ -32,7 +32,7 @@ use jni::{
 };
 use std::ops::Deref;
 
-const KG_PATH_PRE: &str = "ecdsa/keygen";
+const KG_PATH_PRE: &str = "ecdsa/keygen_v2";
 
 pub fn get_master_key<C: Client>(client_shim: &ClientShim<C>) -> PrivateShare {
     let start = Instant::now();
