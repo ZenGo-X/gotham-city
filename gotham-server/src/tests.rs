@@ -199,10 +199,9 @@ mod tests {
         let sign_party_one_first_message: party_one::EphKeyGenFirstMsg =
             serde_json::from_str(&res_body).unwrap();
 
-        let x_pos = BigInt::from(0u32);
-        let y_pos = BigInt::from(21u32);
+        let derivation_path = vec![BigInt::from(0u32), BigInt::from(21u32), BigInt::from(42u32)];
 
-        let child_party_two_master_key = master_key_2.get_child(vec![x_pos.clone(), y_pos.clone()]);
+        let child_party_two_master_key = master_key_2.get_child(derivation_path.clone());
 
         let start = Instant::now();
 
@@ -216,8 +215,7 @@ mod tests {
         let request: SignSecondMsgRequest = SignSecondMsgRequest {
             message,
             party_two_sign_message,
-            x_pos_child_key: x_pos,
-            y_pos_child_key: y_pos,
+            derivation_path,
         };
 
         let body = serde_json::to_string(&request).unwrap();

@@ -21,16 +21,14 @@ use crate::{utilities::error_to_c_string, Client, ClientShim, Result};
 pub struct SignSecondMsgRequest {
     pub message: BigInt,
     pub party_two_sign_message: party2::SignMessage,
-    pub x_pos_child_key: BigInt,
-    pub y_pos_child_key: BigInt,
+    pub derivation_path: Vec<BigInt>,
 }
 
 pub fn sign<C: Client>(
     client_shim: &ClientShim<C>,
     message: BigInt,
     mk: &MasterKey2,
-    x_pos: BigInt,
-    y_pos: BigInt,
+    derivation_path: Vec<BigInt>,
     id: &str,
 ) -> Result<party_one::SignatureRecid> {
     let (eph_key_gen_first_message_party_two, eph_comm_witness, eph_ec_key_pair_party2) =
@@ -54,8 +52,7 @@ pub fn sign<C: Client>(
         client_shim,
         message,
         party_two_sign_message,
-        x_pos,
-        y_pos,
+        derivation_path,
         id,
     ) {
         Ok(s) => s,
@@ -69,15 +66,13 @@ fn get_signature<C: Client>(
     client_shim: &ClientShim<C>,
     message: BigInt,
     party_two_sign_message: party2::SignMessage,
-    x_pos_child_key: BigInt,
-    y_pos_child_key: BigInt,
+    derivation_path: Vec<BigInt>,
     id: &str,
 ) -> Result<party_one::SignatureRecid> {
     let request: SignSecondMsgRequest = SignSecondMsgRequest {
         message,
         party_two_sign_message,
-        x_pos_child_key,
-        y_pos_child_key,
+        derivation_path
     };
 
     let signature: party_one::SignatureRecid =

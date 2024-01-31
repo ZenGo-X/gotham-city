@@ -1,6 +1,6 @@
 use client_lib::{ecdsa, ClientShim};
 use rand::rngs::mock::StepRng;
-use rand::Rng;
+use rand::{Rng, thread_rng};
 use rocket::http::Header;
 use rocket::serde::{DeserializeOwned, Serialize};
 use rocket::{Config, Ignite, Rocket};
@@ -24,47 +24,34 @@ fn integration_test_ecdsa_keygen_sign_rotate() {
     let client_shim =
         ClientShim::new_with_client("http://localhost:8008".to_string(), None, client);
 
-    let x_pos = BigInt::from(1);
-    let y_pos = BigInt::from(2);
 
-    let private_share: ecdsa::PrivateShare = ecdsa::get_master_key(&client_shim);
-    let child_master_key = private_share.master_key.get_child(vec![x_pos.clone(), y_pos.clone()]);
-    let public_key = child_master_key.public.q.get_element();
+    let mut private_share: ecdsa::PrivateShare = ecdsa::get_master_key(&client_shim);
+
+    let mut derivation_path = Vec::new();
 
     for _ in 0..10 {
-        sign_and_verify(&mut rng,
-                        &client_shim,
+        derivation_path.push(BigInt::from(thread_rng().gen_range(0..100)));
+
+        let child_master_key = private_share.master_key.get_child(derivation_path.clone());
+        let public_key = child_master_key.public.q.get_element();
+
+        sign_and_verify(&client_shim,
                         &child_master_key,
                         &private_share.id,
                         &public_key,
-                        x_pos.clone(),
-                        y_pos.clone());
-    }
+                        derivation_path.clone());
 
-    let private_share = ecdsa::rotate_master_key(&client_shim, &private_share.master_key, private_share.id.as_str());
-    let child_master_key = private_share.master_key.get_child(vec![x_pos.clone(), y_pos.clone()]);
-    let public_key = child_master_key.public.q.get_element();
-
-    for _ in 0..10 {
-        sign_and_verify(&mut rng,
-                        &client_shim,
-                        &child_master_key,
-                        &private_share.id,
-                        &public_key,
-                        x_pos.clone(),
-                        y_pos.clone());
+        private_share = ecdsa::rotate_master_key(&client_shim, &private_share.master_key, private_share.id.as_str());
     }
 }
 
-fn sign_and_verify(rng: &mut StepRng,
-                   client_shim: &ClientShim<RocketClient>,
+fn sign_and_verify(client_shim: &ClientShim<RocketClient>,
                    child_master_key: &MasterKey2,
                    id: &str,
                    pk: &PK,
-                   x_pos: BigInt,
-                   y_pos: BigInt) {
+                   derivation_path: Vec<BigInt>) {
     let mut msg_buf = [0u8; 32];
-    rng.fill(&mut msg_buf);
+    thread_rng().fill(&mut msg_buf);
     let msg: BigInt = BigInt::from(&msg_buf[..]);
 
     println!("Message: {}", msg);
@@ -73,8 +60,7 @@ fn sign_and_verify(rng: &mut StepRng,
         &client_shim,
         msg,
         &child_master_key,
-        x_pos.clone(),
-        y_pos.clone(),
+        derivation_path,
         &id,
     )
         .expect("ECDSA signature failed");

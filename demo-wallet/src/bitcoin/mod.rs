@@ -345,8 +345,7 @@ impl BitcoinWallet {
                 client_shim,
                 BigInt::from(&sig_hash[..]),
                 mk,
-                BigInt::from(0u32),
-                BigInt::from(address_derivation.pos),
+                vec![BigInt::from(0u32), BigInt::from(address_derivation.pos)],
                 &self.private_share.id,
             )
             .unwrap();
