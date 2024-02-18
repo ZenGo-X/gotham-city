@@ -13,38 +13,27 @@ use two_party_ecdsa::curv::cryptographic_primitives::twoparty::dh_key_exchange_v
 use two_party_ecdsa::party_one;
 use two_party_ecdsa::kms::chain_code::two_party as chain_code;
 use two_party_ecdsa::kms::ecdsa::two_party::{MasterKey2, party1};
-// iOS bindings
-use std::ffi::{CStr, CString};
-use std::os::raw::c_char;
+
 use std::time::Instant;
 
 use super::types::PrivateShare;
 use crate::{Client, ClientShim};
 
-// Android bindings
-
-#[cfg(target_os = "android")]
-use jni::{
-    objects::{JClass, JString},
-    strings::JavaStr,
-    sys::jstring,
-    JNIEnv,
-};
-use std::ops::Deref;
+use two_party_ecdsa::party_one::{Party1KeyGenFirstMessage, Party1KeyGenSecondMessage};
 
 const KG_PATH_PRE: &str = "ecdsa/keygen_v2";
 
 pub fn get_master_key<C: Client>(client_shim: &ClientShim<C>) -> PrivateShare {
     let start = Instant::now();
 
-    let (id, kg_party_one_first_message): (String, party_one::KeyGenFirstMsg) =
+    let (id, kg_party_one_first_message): (String, Party1KeyGenFirstMessage) =
         client_shim.post(&format!("{}/first", KG_PATH_PRE)).unwrap();
 
     let (kg_party_two_first_message, kg_ec_key_pair_party2) = MasterKey2::key_gen_first_message();
 
     let body = &kg_party_two_first_message.d_log_proof;
 
-    let kg_party_one_second_message: party1::KeyGenParty1Message2 = client_shim
+    let kg_party_one_second_message: Party1KeyGenSecondMessage = client_shim
         .postb(&format!("{}/{}/second", KG_PATH_PRE, id), body)
         .unwrap();
 
@@ -79,7 +68,7 @@ pub fn get_master_key<C: Client>(client_shim: &ClientShim<C>) -> PrivateShare {
     )
     .expect("pdl error party1");
 
-    let cc_party_one_first_message: Party1FirstMessageDHPoK = client_shim
+    let cc_party_one_first_message: DHPoKParty1FirstMessage = client_shim
         .post(&format!("{}/{}/chaincode/first", KG_PATH_PRE, id))
         .unwrap();
 
@@ -88,7 +77,7 @@ pub fn get_master_key<C: Client>(client_shim: &ClientShim<C>) -> PrivateShare {
 
     let body = &cc_party_two_first_message.d_log_proof;
 
-    let cc_party_one_second_message: Party1SecondMessageDHPoK = client_shim
+    let cc_party_one_second_message: DHPoKParty1SecondMessage = client_shim
         .postb(&format!("{}/{}/chaincode/second", KG_PATH_PRE, id), body)
         .unwrap();
 

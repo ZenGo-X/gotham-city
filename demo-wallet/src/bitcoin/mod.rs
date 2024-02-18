@@ -38,6 +38,7 @@ use std::collections::HashMap;
 use std::process::exit;
 use std::str::FromStr;
 use two_party_ecdsa::curv::arithmetic::traits::Converter;
+use two_party_ecdsa::kms::ecdsa::two_party::party2::Party2SignMessage;
 
 pub mod commands;
 pub mod escrow;
@@ -78,7 +79,7 @@ impl BalanceFetcher for ElectrumxBalanceFetcher {
 #[derive(Serialize, Deserialize)]
 pub struct SignSecondMsgRequest {
     pub message: BigInt,
-    pub party_two_sign_message: party2::SignMessage,
+    pub party_two_sign_message: Party2SignMessage,
     pub pos_child_key: u32,
 }
 
