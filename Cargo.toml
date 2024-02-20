@@ -24,3 +24,8 @@ secp256k1 = {version = "0.21.0", features = ["global-context"]}
 rand = "0.8"
 two-party-ecdsa = { git = "https://github.com/ZenGo-X/two-party-ecdsa.git", branch="feature/rotation" }
 gotham-engine = { git = "https://github.com/ZenGo-X/gotham-engine.git", branch="feature/rotation" }
+
+# For debugging:
+#two-party-ecdsa = { path = "../two-party-ecdsa" }
+#gotham-engine = { path = "../gotham-engine" }
+

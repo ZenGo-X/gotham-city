@@ -18,8 +18,8 @@ fn not_found(req: &Request) -> String {
     format!("Unknown route '{}'.", req.uri())
 }
 
-pub fn get_server() -> Rocket<Build> {
-    let x = PublicGotham::new();
+pub fn get_server(settings: HashMap<String, String>) -> Rocket<Build> {
+    let x = PublicGotham::new(settings);
     rocket::Rocket::build()
         .register("/", catchers![internal_error, not_found, bad_request])
         .mount(
@@ -33,6 +33,10 @@ pub fn get_server() -> Rocket<Build> {
                 gotham_engine::routes::wrap_chain_code_second_message,
                 gotham_engine::routes::wrap_sign_first,
                 gotham_engine::routes::wrap_sign_second,
+                gotham_engine::routes::wrap_sign_first_v2,
+                gotham_engine::routes::wrap_sign_second_v2,
+                gotham_engine::routes::wrap_sign_first_v3,
+                gotham_engine::routes::wrap_sign_second_v3,
                 gotham_engine::routes::wrap_rotate_first,
                 gotham_engine::routes::wrap_rotate_second,
                 gotham_engine::routes::wrap_rotate_third,

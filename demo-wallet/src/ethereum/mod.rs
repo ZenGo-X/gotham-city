@@ -40,11 +40,12 @@ impl GothamWallet {
         chain_id: u64,
     ) -> Self {
         let master_share = GothamClient::ecdsa::get_master_key(gotham_client_shim);
-        let x_pos = BigInt::from(hd_path[0]);
-        let y_pos = BigInt::from(hd_path[1]);
+
+        let derivation_path: Vec<BigInt> = hd_path.clone().into_iter().map(BigInt::from).collect();
+
         let child_master_key = master_share
             .master_key
-            .get_child(vec![x_pos.clone(), y_pos.clone()]);
+            .get_child(derivation_path);
 
         let pk = child_master_key.public.q.get_element();
         let _pk_x = child_master_key.public.q.x_coor().unwrap();
@@ -103,21 +104,19 @@ impl<'w, C: GothamClient::Client> GothamSigner<C> {
     pub fn sign_hash(&self, hash: H256) -> Result<Signature, GothamSignerError> {
         let message: BigInt = BigInt::from(hash.as_ref());
 
-        let x_pos = BigInt::from(self.wallet.hd_path[0]);
-        let y_pos = BigInt::from(self.wallet.hd_path[1]);
+        let derivation_path: Vec<BigInt> = self.wallet.hd_path.clone().into_iter().map(BigInt::from).collect();
 
         let child_master_key = self
             .wallet
             .private_share
             .master_key
-            .get_child(vec![x_pos.clone(), y_pos.clone()]);
+            .get_child(derivation_path.clone());
 
         let signature = GothamClient::ecdsa::sign(
             &self.gotham_client_shim,
             message,
             &child_master_key,
-            x_pos,
-            y_pos,
+            derivation_path,
             &self.wallet.private_share.id,
         )
         .unwrap();

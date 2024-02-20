@@ -2,43 +2,27 @@ use failure::format_err;
 use serde::{Deserialize, Serialize};
 use two_party_ecdsa::kms::ecdsa::two_party::{party2, MasterKey2};
 use two_party_ecdsa::{curv::BigInt, party_one, party_two};
-// iOS bindings
-use std::ffi::{CStr, CString};
-use std::os::raw::c_char;
-//Android bindings
-#[cfg(target_os = "android")]
-use jni::{
-    objects::{JClass, JString},
-    strings::JavaStr,
-    sys::{jint, jstring},
-    JNIEnv,
-};
-use std::ops::Deref;
+use two_party_ecdsa::kms::ecdsa::two_party::party2::{Party2SignMessage, Party2SignSecondMessageVector};
+use two_party_ecdsa::party_one::{Party1EphKeyGenFirstMessage, Party1SignatureRecid};
+use two_party_ecdsa::party_two::Party2EphKeyGenFirstMessage;
 
-use crate::{utilities::error_to_c_string, Client, ClientShim, Result};
+use crate::{ Client, ClientShim, Result};
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct SignSecondMsgRequest {
-    pub message: BigInt,
-    pub party_two_sign_message: party2::SignMessage,
-    pub x_pos_child_key: BigInt,
-    pub y_pos_child_key: BigInt,
-}
 
 pub fn sign<C: Client>(
     client_shim: &ClientShim<C>,
     message: BigInt,
     mk: &MasterKey2,
-    x_pos: BigInt,
-    y_pos: BigInt,
+    pos_child_key: Vec<BigInt>,
     id: &str,
-) -> Result<party_one::SignatureRecid> {
+) -> Result<Party1SignatureRecid> {
     let (eph_key_gen_first_message_party_two, eph_comm_witness, eph_ec_key_pair_party2) =
         MasterKey2::sign_first_message();
 
-    let request: party_two::EphKeyGenFirstMsg = eph_key_gen_first_message_party_two;
-    let sign_party_one_first_message: party_one::EphKeyGenFirstMsg =
-        match client_shim.postb(&format!("/ecdsa/sign/{}/first", id), &request) {
+    let request: Party2EphKeyGenFirstMessage = eph_key_gen_first_message_party_two;
+
+    let (sid, sign_party_one_first_message): (String, Party1EphKeyGenFirstMessage) =
+        match client_shim.postb(&format!("/ecdsa/sign/{}/first_v3", id), &request) {
             Some(s) => s,
             None => return Err(failure::err_msg("party1 sign first message request failed")),
         };
@@ -54,9 +38,8 @@ pub fn sign<C: Client>(
         client_shim,
         message,
         party_two_sign_message,
-        x_pos,
-        y_pos,
-        id,
+        pos_child_key,
+        &sid,
     ) {
         Ok(s) => s,
         Err(e) => return Err(format_err!("ecdsa::get_signature failed failed: {}", e)),
@@ -68,20 +51,18 @@ pub fn sign<C: Client>(
 fn get_signature<C: Client>(
     client_shim: &ClientShim<C>,
     message: BigInt,
-    party_two_sign_message: party2::SignMessage,
-    x_pos_child_key: BigInt,
-    y_pos_child_key: BigInt,
-    id: &str,
-) -> Result<party_one::SignatureRecid> {
-    let request: SignSecondMsgRequest = SignSecondMsgRequest {
+    party_two_sign_message: Party2SignMessage,
+    pos_child_key: Vec<BigInt>,
+    sid: &str,
+) -> Result<Party1SignatureRecid> {
+    let request: Party2SignSecondMessageVector = Party2SignSecondMessageVector {
         message,
         party_two_sign_message,
-        x_pos_child_key,
-        y_pos_child_key,
+        pos_child_key,
     };
 
-    let signature: party_one::SignatureRecid =
-        match client_shim.postb(&format!("/ecdsa/sign/{}/second", id), &request) {
+    let signature: Party1SignatureRecid =
+        match client_shim.postb(&format!("/ecdsa/sign/{}/second_v3", sid), &request) {
             Some(s) => s,
             None => {
                 return Err(failure::err_msg(
