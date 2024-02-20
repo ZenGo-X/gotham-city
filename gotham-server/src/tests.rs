@@ -400,10 +400,7 @@ mod tests {
         "{} Network/Server: party1 sign second message",
         TimeFormat(start.elapsed())
         );
-        println!("======================================================\n{:?}\n======================================================\n", response);
         let res_body = response.into_string().unwrap();
-
-        println!("======================================================\n{:?}\n======================================================\n", res_body);
 
         let signature_recid: Party1SignatureRecid = serde_json::from_str(&res_body).unwrap();
 
@@ -413,11 +410,11 @@ mod tests {
 
     fn rotate(
         client: &Client,
-        customer_id: String,
+        // customer_id: String,
         id: String,
-        master_key_2: &MasterKey2
+        master_key: &MasterKey2
     ) -> MasterKey2 {
-        let x_customer_header = Header::new("x-customer-id", customer_id);
+        let x_customer_header = Header::new("x-customer-id", "xxx");
 
         let mut coin_flip_party1_first_message: Option<coin_flip_optimal_rounds::Party1FirstMessage> = None;
         let mut coin_flip_party2_first_message: Option<coin_flip_optimal_rounds::Party2FirstMessage> = None;
@@ -475,7 +472,7 @@ mod tests {
         );
 
         let result_rotate_party_one_first_message =
-            master_key_2.rotate_first_message(&random2, &rotation_party1_first_message);
+            master_key.rotate_first_message(&random2, &rotation_party1_first_message);
 
         assert!(result_rotate_party_one_first_message.is_ok());
 
@@ -523,7 +520,7 @@ mod tests {
         let rotation_party1_third_message: party_one::Party1PDLSecondMessage =
             serde_json::from_str(&res_body).unwrap();
 
-        let result_rotate_party_one_third_message = master_key_2.rotate_third_message(
+        let result_rotate_party_one_third_message = master_key.rotate_third_message(
             &random2,
             &party_two_paillier,
             &party_two_pdl_chal,
@@ -554,12 +551,12 @@ mod tests {
 
         let customer_id = Uuid::new_v4().to_string();
 
-        let (id, master_key_2): (String, MasterKey2) = key_gen(&client,
-                                                               // customer_id.clone(),
+        let (id, master_key): (String, MasterKey2) = key_gen(&client,
+                                                             // customer_id.clone(),
                                                                "/ecdsa/keygen".to_string());
 
         // TODO: Enable when keygen_v2 will work with rotation
-        // let (id, master_key_2): (String, MasterKey2) = key_gen(&client, customer_id.clone(), "/ecdsa/keygen_v2".to_string());
+        // let (id, master_key): (String, MasterKey2) = key_gen(&client, customer_id.clone(), "/ecdsa/keygen_v2".to_string());
     }
 
     #[test]
@@ -576,40 +573,47 @@ mod tests {
         let message = BigInt::from(1234u32);
 
         let customer_id = Uuid::new_v4().to_string();
-        let (id, master_key_2): (String, MasterKey2) = key_gen(&client,
-                                                               // customer_id.clone(),
+        let (id, master_key): (String, MasterKey2) = key_gen(&client,
+                                                             // customer_id.clone(),
                                                                "/ecdsa/keygen".to_string());
 
         let mut pos_child_key: Vec<BigInt> = vec![BigInt::from(0u32), BigInt::from(1u32)];
+        let child_key = master_key.get_child(pos_child_key.clone());
         let signature: Party1SignatureRecid = sign(
             &client,
             id.clone(),
             // customer_id.clone(),
-            &master_key_2,
+            &child_key,
             pos_child_key.clone(),
             message.clone(),
             SignVersion::V3,
         );
 
         pos_child_key.push(BigInt::from(2u32));
-
+        let grandchild_key = master_key.get_child(pos_child_key.clone());
 
         let signature: Party1SignatureRecid = sign(
             &client,
             id.clone(),
             // customer_id.clone(),
-            &master_key_2,
+            &grandchild_key,
             pos_child_key.clone(),
             message.clone(),
             SignVersion::V3,
         );
 
-        info!(
-        "Sign V3: s = (r: {}, s: {}, recid: {})",
-            signature.r.to_hex(),
-            signature.s.to_hex(),
-            signature.recid
+        let grandchild_key = child_key.get_child(vec![BigInt::from(2u32)]);
+
+        let signature: Party1SignatureRecid = sign(
+            &client,
+            id.clone(),
+            // customer_id.clone(),
+            &grandchild_key,
+            pos_child_key.clone(),
+            message.clone(),
+            SignVersion::V3,
         );
+
     }
 
     #[test]
@@ -699,14 +703,14 @@ mod tests {
         let message = BigInt::from(1234u32);
 
         let customer_id = Uuid::new_v4().to_string();
-        let (id, master_key_2): (String, MasterKey2) = key_gen(&client,
-                                                               // customer_id.clone(),
+        let (id, master_key): (String, MasterKey2) = key_gen(&client,
+                                                             // customer_id.clone(),
                                                                "/ecdsa/keygen".to_string());
 
 
         let pos_child_key = vec![BigInt::from(0u32), BigInt::from(21u32), BigInt::from(2u32)];
 
-        let child_key = &master_key_2.get_child(pos_child_key.clone());
+        let child_key = &master_key.get_child(pos_child_key.clone());
         let signature: Party1SignatureRecid = sign(
             &client,
             id.clone(),
@@ -723,13 +727,17 @@ mod tests {
             signature.recid
         );
 
-        let rotated_key = rotate(&client, customer_id.clone(), id.clone(), &master_key_2);
+        let rotated_master_key = rotate(&client,
+                                        // customer_id.clone(),
+                                        id.clone(),
+                                        &master_key);
+        let child_key = &rotated_master_key.get_child(pos_child_key.clone());
 
         let signature: Party1SignatureRecid = sign(
             &client,
             id.clone(),
             // customer_id.clone(),
-            &rotated_key,
+            &child_key,
             pos_child_key.clone(),
             message.clone(),
             SignVersion::V3,
