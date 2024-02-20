@@ -25,9 +25,11 @@ mod tests {
     use two_party_ecdsa::party_two::Party2EphKeyGenFirstMessage;
     use uuid::Uuid;
 
-    fn key_gen(client: &Client, customer_id: String, url_prefix: String) -> (String, MasterKey2) {
+    fn key_gen(client: &Client,
+               // customer_id: String,
+               url_prefix: String) -> (String, MasterKey2) {
         time_test!();
-        let x_customer_header = Header::new("x-customer-id", customer_id);
+        let x_customer_header = Header::new("x-customer-id", "xxx");
 
         /*************** START: FIRST MESSAGE ***************/
         let start = Instant::now();
@@ -275,12 +277,13 @@ mod tests {
     fn sign(
         client: &Client,
         id: String,
-        customer_id: String,
-        master_key_2: &MasterKey2,
+        // customer_id: String,
+        key: &MasterKey2,
+        pos_child_key: Vec<BigInt>,
         message: BigInt,
         version: SignVersion,
     ) -> Party1SignatureRecid {
-        let x_customer_header = Header::new("x-customer-id", customer_id);
+        let x_customer_header = Header::new("x-customer-id", "xxx");
         time_test!();
         let (eph_key_gen_first_message_party_two, eph_comm_witness, eph_ec_key_pair_party2) =
             MasterKey2::sign_first_message();
@@ -306,9 +309,9 @@ mod tests {
         assert_eq!(response.status(), Status::Ok);
 
         info!(
-        "{} Network/Server: party1 sign first message",
-        TimeFormat(start.elapsed())
-    );
+            "{} Network/Server: party1 sign first message",
+            TimeFormat(start.elapsed())
+        );
 
         let res_body = response.into_string().unwrap();
         let sign_party_one_first_message: (Option<String>, Party1EphKeyGenFirstMessage) = match version
@@ -324,17 +327,20 @@ mod tests {
             }
         };
 
-        let mut pos_child_key = vec![BigInt::from(0u32), BigInt::from(21u32)];
+
         match version {
-            SignVersion::V1 | SignVersion::V2 => {}
-            SignVersion::V3 => pos_child_key.push(BigInt::from(2u32)),
+            SignVersion::V1 | SignVersion::V2 => {
+                assert_eq!(pos_child_key.len(), 2);
+            }
+            SignVersion::V3 => {
+                assert!(pos_child_key.len() > 0);
+            },
         }
 
-        let child_party_two_master_key = master_key_2.get_child(pos_child_key.clone());
 
         let start = Instant::now();
 
-        let party_two_sign_message = child_party_two_master_key.sign_second_message(
+        let party_two_sign_message = key.sign_second_message(
             &eph_ec_key_pair_party2,
             eph_comm_witness.clone(),
             &sign_party_one_first_message.1,
@@ -393,9 +399,12 @@ mod tests {
         info!(
         "{} Network/Server: party1 sign second message",
         TimeFormat(start.elapsed())
-    );
-
+        );
+        println!("======================================================\n{:?}\n======================================================\n", response);
         let res_body = response.into_string().unwrap();
+
+        println!("======================================================\n{:?}\n======================================================\n", res_body);
+
         let signature_recid: Party1SignatureRecid = serde_json::from_str(&res_body).unwrap();
 
         signature_recid
@@ -531,10 +540,10 @@ mod tests {
     }
 
     #[test]
-    fn unit_test_keygen() {
+    fn unit_test_keygen_v1_v2() {
         let settings = HashMap::<String, String>::from([
             ("db".to_string(), "local".to_string()),
-            ("db_name".to_string(), "KeyGen".to_string()),
+            ("db_name".to_string(), "TestsKeyGen".to_string()),
         ]);
 
         let server = server::get_server(settings);
@@ -545,17 +554,19 @@ mod tests {
 
         let customer_id = Uuid::new_v4().to_string();
 
-        let (id, master_key_2): (String, MasterKey2) = key_gen(&client, customer_id.clone(), "/ecdsa/keygen".to_string());
+        let (id, master_key_2): (String, MasterKey2) = key_gen(&client,
+                                                               // customer_id.clone(),
+                                                               "/ecdsa/keygen".to_string());
 
         // TODO: Enable when keygen_v2 will work with rotation
         // let (id, master_key_2): (String, MasterKey2) = key_gen(&client, customer_id.clone(), "/ecdsa/keygen_v2".to_string());
     }
 
     #[test]
-    fn unit_test_keygen_sign_v1_v2_v3() {
+    fn unit_test_derivation() {
         let settings = HashMap::<String, String>::from([
             ("db".to_string(), "local".to_string()),
-            ("db_name".to_string(), "KeyGenSign".to_string()),
+            ("db_name".to_string(), "TestsDerivation".to_string()),
         ]);
 
         let server = server::get_server(settings);
@@ -565,13 +576,68 @@ mod tests {
         let message = BigInt::from(1234u32);
 
         let customer_id = Uuid::new_v4().to_string();
-        let (id, master_key_2): (String, MasterKey2) = key_gen(&client, customer_id.clone(), "/ecdsa/keygen".to_string());
+        let (id, master_key_2): (String, MasterKey2) = key_gen(&client,
+                                                               // customer_id.clone(),
+                                                               "/ecdsa/keygen".to_string());
+
+        let mut pos_child_key: Vec<BigInt> = vec![BigInt::from(0u32), BigInt::from(1u32)];
+        let signature: Party1SignatureRecid = sign(
+            &client,
+            id.clone(),
+            // customer_id.clone(),
+            &master_key_2,
+            pos_child_key.clone(),
+            message.clone(),
+            SignVersion::V3,
+        );
+
+        pos_child_key.push(BigInt::from(2u32));
+
 
         let signature: Party1SignatureRecid = sign(
             &client,
             id.clone(),
-            customer_id.clone(),
+            // customer_id.clone(),
             &master_key_2,
+            pos_child_key.clone(),
+            message.clone(),
+            SignVersion::V3,
+        );
+
+        info!(
+        "Sign V3: s = (r: {}, s: {}, recid: {})",
+            signature.r.to_hex(),
+            signature.s.to_hex(),
+            signature.recid
+        );
+    }
+
+    #[test]
+    fn unit_test_sign_v1_v2_v3() {
+        let settings = HashMap::<String, String>::from([
+            ("db".to_string(), "local".to_string()),
+            ("db_name".to_string(), "TestsKeyGenSign".to_string()),
+        ]);
+
+        let server = server::get_server(settings);
+
+        let client = Client::tracked(server).expect("invalid rocket instance");
+
+        let message = BigInt::from(1234u32);
+
+        let customer_id = Uuid::new_v4().to_string();
+        let (id, master_key): (String, MasterKey2) = key_gen(&client,
+                                                             // customer_id.clone(),
+                                                               "/ecdsa/keygen".to_string());
+
+        let mut pos_child_key = vec![BigInt::from(0u32), BigInt::from(21u32)];
+        let child_key = master_key.get_child(pos_child_key.clone());
+        let signature: Party1SignatureRecid = sign(
+            &client,
+            id.clone(),
+            // customer_id.clone(),
+            &child_key,
+            pos_child_key.clone(),
             message.clone(),
             SignVersion::V1,
         );
@@ -582,12 +648,12 @@ mod tests {
             signature.recid
         );
 
-
         let signature: Party1SignatureRecid = sign(
             &client,
             id.clone(),
-            customer_id.clone(),
-            &master_key_2,
+            // customer_id.clone(),
+            &child_key,
+            pos_child_key.clone(),
             message.clone(),
             SignVersion::V2,
         );
@@ -598,11 +664,16 @@ mod tests {
             signature.recid
         );
 
+        pos_child_key.push(BigInt::from(2u32));
+
+        let child_key = master_key.get_child(pos_child_key.clone());
+
         let signature: Party1SignatureRecid = sign(
             &client,
             id.clone(),
-            customer_id.clone(),
-            &master_key_2,
+            // customer_id.clone(),
+            &child_key,
+            pos_child_key.clone(),
             message.clone(),
             SignVersion::V3,
         );
@@ -618,9 +689,8 @@ mod tests {
     fn unit_test_keygen_sign_rotate() {
         let settings = HashMap::<String, String>::from([
             ("db".to_string(), "local".to_string()),
-            ("db_name".to_string(), "KeyGenSignRotate".to_string()),
+            ("db_name".to_string(), "TestsKeyGenSignRotate".to_string()),
         ]);
-
 
         let server = server::get_server(settings);
 
@@ -629,8 +699,47 @@ mod tests {
         let message = BigInt::from(1234u32);
 
         let customer_id = Uuid::new_v4().to_string();
-        let (id, master_key_2): (String, MasterKey2) = key_gen(&client, customer_id.clone(), "/ecdsa/keygen".to_string());
+        let (id, master_key_2): (String, MasterKey2) = key_gen(&client,
+                                                               // customer_id.clone(),
+                                                               "/ecdsa/keygen".to_string());
 
+
+        let pos_child_key = vec![BigInt::from(0u32), BigInt::from(21u32), BigInt::from(2u32)];
+
+        let child_key = &master_key_2.get_child(pos_child_key.clone());
+        let signature: Party1SignatureRecid = sign(
+            &client,
+            id.clone(),
+            // customer_id.clone(),
+            &child_key,
+            pos_child_key.clone(),
+            message.clone(),
+            SignVersion::V3,
+        );
+        info!(
+        "Sign V3: s = (r: {}, s: {}, recid: {})",
+            signature.r.to_hex(),
+            signature.s.to_hex(),
+            signature.recid
+        );
+
+        let rotated_key = rotate(&client, customer_id.clone(), id.clone(), &master_key_2);
+
+        let signature: Party1SignatureRecid = sign(
+            &client,
+            id.clone(),
+            // customer_id.clone(),
+            &rotated_key,
+            pos_child_key.clone(),
+            message.clone(),
+            SignVersion::V3,
+        );
+        info!(
+        "Sign V3: s = (r: {}, s: {}, recid: {})",
+            signature.r.to_hex(),
+            signature.s.to_hex(),
+            signature.recid
+        );
 
     }
 }
