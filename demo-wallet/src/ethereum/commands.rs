@@ -1,7 +1,4 @@
-use crate::ethereum::{
-    create_new_wallet, get_balance, send_transaction, transfer_erc20, GothamSigner, GothamWallet,
-    TransactionDetails, TransferDetails,
-};
+use crate::ethereum::{create_new_wallet, get_balance, send_transaction, transfer_erc20, GothamSigner, GothamWallet, TransactionDetails, TransferDetails, rotate_wallet_key};
 use crate::Settings;
 use clap::{Args, Subcommand};
 use ethers::prelude::{Address, LocalWallet, Signer};
@@ -27,6 +24,9 @@ pub enum EvmSubCommands {
     /// Create new MPC EVM wallet
     New(NewEvmWalletArgs),
 
+    /// Rotate MPC EVM wallet key, creates a new key and makes the old key invalid
+    Rotate(RotateEvmWalletArgs),
+
     /// Broadcast a transaction to the network
     Send(SendEvmWalletArgs),
 
@@ -48,10 +48,16 @@ pub struct NewEvmWalletArgs {
     #[arg(
         long,
         use_value_delimiter = true,
-        value_delimiter = ',',
+        value_delimiter = ' ',
+        num_args = 2..,
         help = "Hierarchical Deterministic path"
     )]
     pub hd_path: Vec<u32>,
+}
+
+#[derive(Args)]
+pub struct RotateEvmWalletArgs {
+
 }
 
 #[derive(Args)]
@@ -138,6 +144,16 @@ pub async fn evm_commands(
                     .expect("Missing 'gotham_server_url' in settings.toml"),
                 args.hd_path.clone(),
                 args.chain_id,
+            );
+        }
+        EvmSubCommands::Rotate(args) => {
+            rotate_wallet_key(
+                settings
+                    .wallet_file
+                    .expect("Missing 'wallet_file' in settings.toml"),
+                settings
+                    .gotham_server_url
+                    .expect("Missing 'gotham_server_url' in settings.toml")
             );
         }
         EvmSubCommands::Send(args) => {

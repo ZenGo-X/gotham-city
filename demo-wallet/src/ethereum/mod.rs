@@ -67,6 +67,20 @@ impl GothamWallet {
         }
     }
 
+    pub fn rotate<C: GothamClient::Client>(
+        mut self,
+        gotham_client_shim: &GothamClient::ClientShim<C>,
+    ) -> Self {
+        let new_master_share = GothamClient::ecdsa::rotate_master_key(
+            gotham_client_shim,
+            &self.private_share.master_key,
+            &self.private_share.id);
+
+        self.private_share = new_master_share;
+
+        self
+    }
+
     pub fn save<P: AsRef<Path>>(&self, path: P) -> () {
         let file = File::create(path).expect("Error while creating file");
         serde_json::to_writer_pretty(&file, &self).expect("Error while serializing wallet")
@@ -267,6 +281,7 @@ pub async fn transfer_erc20<S: Signer + 'static>(
     Ok(())
 }
 
+#[derive(Debug)]
 pub struct TransactionDetails {
     pub to_address: String,
     pub amount: f64,
@@ -281,6 +296,8 @@ pub async fn send_transaction<S: Signer + 'static>(
     signer: S,
     details: TransactionDetails,
 ) -> Result<(), Box<dyn Error>> {
+    println!("{:?}", details);
+
     let provider = Provider::<Http>::try_from(rpc_url)?.with_signer(signer.with_chain_id(chain_id));
     let amount: U256 = parse_units(details.amount, "ether").unwrap().into();
 
@@ -337,5 +354,12 @@ pub async fn get_balance(
 pub fn create_new_wallet(file_path: String, server_url: String, hd_path: Vec<u32>, chain_id: u64) {
     let client = GothamClient::ClientShim::new(server_url.clone(), None);
     let wallet = GothamWallet::new(&client, hd_path.clone(), chain_id);
+    wallet.save(file_path);
+}
+
+pub fn rotate_wallet_key(file_path: String, server_url: String) {
+    let client = GothamClient::ClientShim::new(server_url.clone(), None);
+    let old_wallet = GothamWallet::load(file_path.clone());
+    let wallet = old_wallet.rotate(&client);
     wallet.save(file_path);
 }
