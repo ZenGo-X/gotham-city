@@ -357,6 +357,11 @@ pub fn create_new_wallet(file_path: String, server_url: String, hd_path: Vec<u32
     wallet.save(file_path);
 }
 
+pub fn show_wallet_address(file_path: String) {
+    let wallet = GothamWallet::load(file_path);
+    println!("{:?}", wallet.address);
+}
+
 pub fn rotate_wallet_key(file_path: String, server_url: String) {
     let client = GothamClient::ClientShim::new(server_url.clone(), None);
     let old_wallet = GothamWallet::load(file_path.clone());

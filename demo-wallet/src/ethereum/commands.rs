@@ -1,4 +1,4 @@
-use crate::ethereum::{create_new_wallet, get_balance, send_transaction, transfer_erc20, GothamSigner, GothamWallet, TransactionDetails, TransferDetails, rotate_wallet_key};
+use crate::ethereum::{create_new_wallet, get_balance, send_transaction, transfer_erc20, GothamSigner, GothamWallet, TransactionDetails, TransferDetails, rotate_wallet_key, show_wallet_address};
 use crate::Settings;
 use clap::{Args, Subcommand};
 use ethers::prelude::{Address, LocalWallet, Signer};
@@ -23,6 +23,9 @@ pub struct EvmArgs {
 pub enum EvmSubCommands {
     /// Create new MPC EVM wallet
     New(NewEvmWalletArgs),
+
+    /// Show wallet address
+    Address(AddressEvmWalletArgs),
 
     /// Rotate MPC EVM wallet key, creates a new key and makes the old key invalid
     Rotate(RotateEvmWalletArgs),
@@ -57,6 +60,11 @@ pub struct NewEvmWalletArgs {
 
 #[derive(Args)]
 pub struct RotateEvmWalletArgs {
+
+}
+
+#[derive(Args)]
+pub struct AddressEvmWalletArgs {
 
 }
 
@@ -136,6 +144,10 @@ pub async fn evm_commands(
     top_args: &EvmArgs,
 ) -> Result<(), Box<dyn std::error::Error>> {
     match &top_args.commands {
+        EvmSubCommands::Address(args) => {
+            show_wallet_address(settings.wallet_file
+                .expect("Missing 'wallet_file' in settings.toml"));
+        }
         EvmSubCommands::New(args) => {
             create_new_wallet(
                 args.output.clone(),
@@ -288,6 +300,7 @@ pub async fn evm_commands(
             )
             .await?;
         }
+
     }
 
     Ok(())
